@@ -11,16 +11,24 @@ namespace or_ompl
     {
         public:
             OMPLPlannerParameters() :
-                m_timeLimit(10), m_plannerType("RRTConnect"), m_isProcessing(false)
+                m_timeLimit(10), m_plannerType("RRTConnect"), m_isProcessing(false), m_rrtGoalBias(0.5), m_rrtStarMaxBallRadius(1.0), m_rrtStarMaxPathLength(5), m_rrtRange(0.1)
             {
                 _vXMLParameters.push_back("time_limit");
                 _vXMLParameters.push_back("planner_type");
+                _vXMLParameters.push_back("rrt_goal_bias");
+                _vXMLParameters.push_back("rrtstar_max_ball_radius");
+                _vXMLParameters.push_back("rrtstar_max_path_length");
+                _vXMLParameters.push_back("rrt_range");
 
             }
 
             double m_timeLimit;
             std::string m_plannerType;
             bool m_isProcessing;
+            double m_rrtGoalBias;
+            double m_rrtStarMaxBallRadius;
+            double m_rrtStarMaxPathLength;
+            double m_rrtRange;
 
         protected:
             virtual bool serialize(std::ostream& O) const
@@ -31,8 +39,11 @@ namespace or_ompl
                 }
 
                 O << "<time_limit>" << m_timeLimit << "</time_limit>" << std::endl;
-
-                O << "<planner_type>" << m_plannerType << "/<planner_type>" << std::endl;
+                O << "<planner_type>" << m_plannerType << "</planner_type>" << std::endl;
+                O << "<rrt_goal_bias>" << m_rrtGoalBias << "</rrt_goal_bias>" << std::endl;
+                O << "<rrtstar_max_ball_radius>" << m_rrtStarMaxBallRadius << "</rrtstar_max_ball_radius>" << std::endl;
+                O << "<rrtstar_max_path_length>" << m_rrtStarMaxPathLength << "</rrtstar_max_path_length>" << std::endl;
+                O << "<rrt_range>" << m_rrtRange << "</rrt_range>" << std::endl;
 
                 return !!O;
             }
@@ -70,6 +81,22 @@ namespace or_ompl
                     else if(name == "planner_type")
                     {
                         _ss >> m_plannerType;
+                    }
+                    else if(name == "rrt_goal_bias")
+                    {
+                        _ss >> m_rrtGoalBias;
+                    }
+                    else if(name == "rrtstar_max_ball_radius")
+                    {
+                        _ss >> m_rrtStarMaxBallRadius;
+                    }
+                    else if(name == "rrtstar_max_path_length")
+                    {
+                        _ss >> m_rrtStarMaxPathLength;
+                    }
+                    else if(name == "rrt_range")
+                    {
+                        _ss >> m_rrtRange;
                     }
                     else
                     {

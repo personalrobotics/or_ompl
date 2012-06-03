@@ -117,19 +117,30 @@ namespace or_ompl
         }
         else if(plannerName == "RRT")
         {
-            m_planner.reset(new ompl::geometric::RRT(spaceInformation));
+            ompl::geometric::RRT* rrt = new ompl::geometric::RRT(spaceInformation);
+            m_planner.reset(rrt);
+            rrt->setGoalBias(m_parameters->m_rrtGoalBias);
+            rrt->setRange(m_parameters->m_rrtRange);
         }
         else if(plannerName == "RRTConnect")
         {
-            m_planner.reset(new ompl::geometric::RRTConnect(spaceInformation));
+            ompl::geometric::RRTConnect* rrtConnect = new ompl::geometric::RRTConnect(spaceInformation);
+            m_planner.reset(rrtConnect);
+            rrtConnect->setRange(m_parameters->m_rrtRange);
         }
         else if(plannerName == "pRRT")
         {
-            m_planner.reset(new ompl::geometric::pRRT(spaceInformation));
+            ompl::geometric::pRRT* prrt = new ompl::geometric::pRRT(spaceInformation);
+            m_planner.reset(prrt);
+            prrt->setRange(m_parameters->m_rrtRange);
+            prrt->setGoalBias(m_parameters->m_rrtGoalBias);
         }
         else if(plannerName == "LazyRRT")
         {
+            ompl::geometric::LazyRRT* lazyRRT = new ompl::geometric::LazyRRT(spaceInformation);
             m_planner.reset(new ompl::geometric::LazyRRT(spaceInformation));
+            lazyRRT->setGoalBias(m_parameters->m_rrtGoalBias);
+            lazyRRT->setRange(m_parameters->m_rrtRange);
         }
         else if(plannerName == "PRM")
         {
@@ -137,11 +148,19 @@ namespace or_ompl
         }
         else if(plannerName == "RRTstar")
         {
-            m_planner.reset(new ompl::geometric::RRTstar(spaceInformation));
+            ompl::geometric::RRTstar* rrtStar = new ompl::geometric::RRTstar(spaceInformation);
+            m_planner.reset(rrtStar);
+            rrtStar->setGoalBias(m_parameters->m_rrtGoalBias);
+            rrtStar->setMaxBallRadius(m_parameters->m_rrtStarMaxBallRadius);
+            rrtStar->setRange(m_parameters->m_rrtRange);
         }
         else if(plannerName == "BallTreeRRTstar")
         {
-            m_planner.reset(new ompl::geometric::BallTreeRRTstar(spaceInformation));
+            ompl::geometric::BallTreeRRTstar* ballTree = new ompl::geometric::BallTreeRRTstar(spaceInformation);
+            m_planner.reset(ballTree);
+            ballTree->setGoalBias(m_parameters->m_rrtGoalBias);
+            ballTree->setMaxBallRadius(m_parameters->m_rrtStarMaxBallRadius);
+            ballTree->setRange(m_parameters->m_rrtRange);
         }
         else
         {
