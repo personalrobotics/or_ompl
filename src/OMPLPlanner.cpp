@@ -25,18 +25,32 @@ namespace or_ompl
         }
     }
 
+    bool OMPLPlanner::InitPlan(OpenRAVE::RobotBasePtr robot, std::istream& input)
+    {
+        OMPLPlannerParameters* params = new OMPLPlannerParameters();
+        input >> (*params);
+
+        return InitPlan(robot, PlannerParametersConstPtr(params));
+    }
+
     bool OMPLPlanner::InitPlan(RobotBasePtr robot, PlannerParametersConstPtr params)
     {
+        RAVELOG_INFO("Initializing plan\n");
         if(m_simpleSetup != NULL)
         {
             delete m_simpleSetup;
             m_simpleSetup = NULL;
         }
 
+        m_parameters.reset(new OMPLPlannerParameters());
+        m_parameters->copy(params);
+
         m_robot = robot;
 
+        RAVELOG_INFO("Setting state space\n");
         m_stateSpace.reset(new ompl::base::RealVectorStateSpace(robot->GetActiveDOF()));
 
+        RAVELOG_INFO("Setting joint limits\n");
         ompl::base::RealVectorBounds bounds(m_robot->GetActiveDOF());
         std::vector<double> lowerLimits;
         std::vector<double> upperLimits;
@@ -50,36 +64,42 @@ namespace or_ompl
 
         m_stateSpace->as<ompl::base::RealVectorStateSpace>()->setBounds(bounds);
 
-
+        RAVELOG_INFO("Setting up simplesetup class.\n");
         m_simpleSetup = new ompl::geometric::SimpleSetup(GetStateSpace());
 
+        RAVELOG_INFO("Initializing the planner.\n");
         if(!InitializePlanner())
         {
             return false;
         }
 
+        RAVELOG_INFO("Setting the planner.\n");
         m_simpleSetup->setPlanner(m_planner);
 
 
+        RAVELOG_INFO("Creating the start pose.\n");
         ompl::base::ScopedState<ompl::base::RealVectorStateSpace> startPose(m_stateSpace);
         for(int i = 0; i < m_robot->GetActiveDOF(); i++)
         {
-            (*(startPose->as<ompl::base::RealVectorStateSpace::StateType>()))[i]= params->vinitialconfig[i];
+            startPose->values[i] = m_parameters->vinitialconfig[i];
         }
 
+        RAVELOG_INFO("Checking collisions.\n");
         if(IsInCollision(params->vinitialconfig))
         {
-            ROS_ERROR("Can't plan. Initial configuration in collision!");
+            ROS_ERROR("Can't plan. Initial configuration in collision!\n");
             delete m_simpleSetup;
             return false;
         }
 
+        RAVELOG_INFO("Setting the end pose.\n");
         ompl::base::ScopedState<ompl::base::RealVectorStateSpace> endPose(m_stateSpace);
         for(int i = 0; i < m_robot->GetActiveDOF(); i++)
         {
-            (*(endPose->as<ompl::base::RealVectorStateSpace::StateType>()))[i] = params->vgoalconfig[i];
+            endPose->values[i] = params->vgoalconfig[i];
         }
 
+        RAVELOG_INFO("Checking collisions\n");
         if(IsInCollision(params->vgoalconfig))
         {
             ROS_ERROR("Can't plan. Final configuration is in collision!");
@@ -87,18 +107,23 @@ namespace or_ompl
             return false;
         }
 
+        RAVELOG_INFO("Setting state validity checker\n");
         m_simpleSetup->setStateValidityChecker(boost::bind(&or_ompl::OMPLPlanner::IsStateValid, this, _1));
         m_simpleSetup->setStartState(startPose);
         m_simpleSetup->setGoalState(endPose);
+
+        m_collisionReport.reset(new CollisionReport());
 
         return true;
     }
 
     bool OMPLPlanner::InitializePlanner()
     {
+        RAVELOG_INFO("Getting planner name.\n");
         std::string plannerName = m_parameters->m_plannerType;
 
-        ompl::base::SpaceInformationPtr spaceInformation(new ompl::base::SpaceInformation(m_stateSpace));
+        RAVELOG_INFO("Setting up space information");
+        ompl::base::SpaceInformationPtr spaceInformation = m_simpleSetup->getSpaceInformation();
         if(plannerName == "KPIECE")
         {
             m_planner.reset(new ompl::geometric::KPIECE1(spaceInformation));
@@ -148,8 +173,15 @@ namespace or_ompl
         }
         else if(plannerName == "RRTstar")
         {
+            RAVELOG_INFO("RRT Star Planner name\n");
+
             ompl::geometric::RRTstar* rrtStar = new ompl::geometric::RRTstar(spaceInformation);
+
+            RAVELOG_INFO("Created RRTStar\n");
+
             m_planner.reset(rrtStar);
+
+            RAVELOG_INFO("Setting parameters\n");
             rrtStar->setGoalBias(m_parameters->m_rrtGoalBias);
             rrtStar->setMaxBallRadius(m_parameters->m_rrtStarMaxBallRadius);
             rrtStar->setRange(m_parameters->m_rrtRange);
@@ -173,6 +205,7 @@ namespace or_ompl
 
     OpenRAVE::PlannerStatus OMPLPlanner::PlanPath(OpenRAVE::TrajectoryBasePtr ptraj)
     {
+        OpenRAVE::EnvironmentMutex::scoped_lock lockenv(GetEnv()->GetMutex());
         if(!m_simpleSetup)
         {
             ROS_ERROR("Couldn't plan a path. Simple setup was null!");
@@ -221,9 +254,8 @@ namespace or_ompl
 
     bool OMPLPlanner::IsInCollision(std::vector<double> values)
     {
-        m_robot->SetActiveDOFValues(values, true);
-        CollisionReportPtr preport(new CollisionReport());
-        return (GetEnv()->CheckCollision(KinBodyConstPtr(m_robot), preport)) || (m_robot->CheckSelfCollision(preport));
+        m_robot->SetActiveDOFValues(values, false);
+        return (GetEnv()->CheckCollision(KinBodyConstPtr(m_robot), m_collisionReport)) || (m_robot->CheckSelfCollision(m_collisionReport));
     }
 
     bool OMPLPlanner::IsStateValid(const ompl::base::State* state)

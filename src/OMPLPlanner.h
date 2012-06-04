@@ -42,6 +42,7 @@ namespace or_ompl
             virtual ~OMPLPlanner();
 
             virtual bool InitPlan(OpenRAVE::RobotBasePtr robot, PlannerParametersConstPtr params);
+            virtual bool InitPlan(OpenRAVE::RobotBasePtr robot, std::istream& input);
             virtual OpenRAVE::PlannerStatus PlanPath (OpenRAVE::TrajectoryBasePtr ptraj);
             virtual PlannerParametersConstPtr GetParameters () const { return m_parameters; }
             inline ompl::geometric::SimpleSetup* GetSimpleSetup() { return m_simpleSetup; }
@@ -56,6 +57,7 @@ namespace or_ompl
             ompl::base::StateSpacePtr m_stateSpace;
             ompl::base::PlannerPtr m_planner;
             OpenRAVE::RobotBasePtr m_robot;
+            OpenRAVE::CollisionReportPtr m_collisionReport;
 
 
     };

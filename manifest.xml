@@ -11,7 +11,10 @@
   <depend package="openrave"/>
   <depend package="generalik"/>
   <depend package="ompl"/>
-
+  <export>
+    <!-- See http://personalrobotics.ri.cmu.edu/intel-pkg/ros_exportenv -->
+    <python path="ENV/OPENRAVE_PLUGINS+=\x3A${prefix}/lib"/>
+  </export>
 </package>
 
 

@@ -6,8 +6,6 @@
  */
 
 #include "OMPLModule.h"
-#include <openrave/plugin.h>
-
 namespace or_ompl
 {
 
