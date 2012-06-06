@@ -12,24 +12,7 @@
 #include <openrave/planner.h>
 #include <openrave/planningutils.h>
 #include <ompl/geometric/SimpleSetup.h>
-#include <ompl/base/StateSpaceTypes.h>
-#include <ompl/base/StateSpace.h>
-#include <ompl/base/spaces/RealVectorStateSpace.h>
-#include <ompl/geometric/planners/PlannerIncludes.h>
-#include <ompl/geometric/planners/est/EST.h>
-#include <ompl/geometric/planners/kpiece/KPIECE1.h>
-#include <ompl/geometric/planners/kpiece/BKPIECE1.h>
-#include <ompl/geometric/planners/kpiece/LBKPIECE1.h>
-#include <ompl/geometric/planners/prm/BasicPRM.h>
-#include <ompl/geometric/planners/rrt/RRT.h>
-#include <ompl/geometric/planners/rrt/RRTConnect.h>
-#include <ompl/geometric/planners/rrt/LazyRRT.h>
-#include <ompl/geometric/planners/rrt/pRRT.h>
-#include <ompl/geometric/planners/sbl/SBL.h>
-#include <ompl/geometric/planners/sbl/pSBL.h>
-#include <ompl/contrib/rrt_star/RRTstar.h>
-#include <ompl/contrib/rrt_star/BallTreeRRTstar.h>
-#include <ros/console.h>
+
 #include "OMPLPlannerParameters.h"
 
 namespace or_ompl
@@ -65,4 +48,5 @@ namespace or_ompl
     typedef boost::shared_ptr<OMPLPlanner> OMPLPlannerPtr;
 
 } /* namespace or_ompl */
+
 #endif /* OMPLPLANNER_H_ */

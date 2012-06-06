@@ -1,15 +1,12 @@
 <package>
   <description brief="or_ompl">
-
      or_ompl
-
   </description>
   <author>mklingen</author>
   <license>BSD</license>
   <review status="unreviewed" notes=""/>
   <url>http://ros.org/wiki/or_ompl</url>
   <depend package="openrave"/>
-  <depend package="generalik"/>
   <depend package="ompl"/>
   <export>
     <!-- See http://personalrobotics.ri.cmu.edu/intel-pkg/ros_exportenv -->

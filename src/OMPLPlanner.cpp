@@ -5,11 +5,42 @@
  *      Author: mklingen
  */
 
+#include <time.h>
+
+#include <ompl/config.h>
+#define OMPL_VERSION_COMP (  OMPL_MAJOR_VERSION * 1000000 \
+                           + OMPL_MINOR_VERSION * 1000 \
+                           + OMPL_PATCH_VERSION)
+
+#include <ompl/base/StateSpaceTypes.h>
+#include <ompl/base/StateSpace.h>
+#include <ompl/base/spaces/RealVectorStateSpace.h>
+#include <ompl/geometric/planners/PlannerIncludes.h>
+#include <ompl/geometric/planners/est/EST.h>
+#include <ompl/geometric/planners/kpiece/KPIECE1.h>
+#include <ompl/geometric/planners/kpiece/BKPIECE1.h>
+#include <ompl/geometric/planners/kpiece/LBKPIECE1.h>
+
+#if OMPL_VERSION_COMP >= 000010002
+#  include <ompl/geometric/planners/prm/PRM.h>
+#else
+#  include <ompl/geometric/planners/prm/BasicPRM.h>
+#endif
+
+#include <ompl/geometric/planners/rrt/RRT.h>
+#include <ompl/geometric/planners/rrt/RRTConnect.h>
+#include <ompl/geometric/planners/rrt/LazyRRT.h>
+#include <ompl/geometric/planners/rrt/pRRT.h>
+#include <ompl/geometric/planners/sbl/SBL.h>
+#include <ompl/geometric/planners/sbl/pSBL.h>
+#include <ompl/contrib/rrt_star/RRTstar.h>
+#include <ompl/contrib/rrt_star/BallTreeRRTstar.h>
+
 #include "OMPLPlanner.h"
 
 using namespace OpenRAVE;
 
-#include <time.h>
+
 
 #define CD_OS_TIMESPEC_SET_ZERO(t) do { (t)->tv_sec = 0; (t)->tv_nsec = 0; } while (0)
 #define CD_OS_TIMESPEC_ADD(dst, src) do { (dst)->tv_sec += (src)->tv_sec; (dst)->tv_nsec += (src)->tv_nsec; \
@@ -96,7 +127,7 @@ namespace or_ompl
         RAVELOG_INFO("Checking collisions.\n");
         if(IsInCollision(params->vinitialconfig))
         {
-            ROS_ERROR("Can't plan. Initial configuration in collision!\n");
+            RAVELOG_ERROR("Can't plan. Initial configuration in collision!\n");
             delete m_simpleSetup;
             return false;
         }
@@ -111,7 +142,7 @@ namespace or_ompl
         RAVELOG_INFO("Checking collisions\n");
         if(IsInCollision(params->vgoalconfig))
         {
-            ROS_ERROR("Can't plan. Final configuration is in collision!");
+            RAVELOG_ERROR("Can't plan. Final configuration is in collision!");
             delete m_simpleSetup;
             return false;
         }
@@ -178,7 +209,11 @@ namespace or_ompl
         }
         else if(plannerName == "PRM")
         {
+#if OMPL_VERSION_COMP >= 000010002
+            m_planner.reset(new ompl::geometric::PRM(spaceInformation));
+#else
             m_planner.reset(new ompl::geometric::BasicPRM(spaceInformation));
+#endif
         }
         else if(plannerName == "RRTstar")
         {
@@ -205,7 +240,7 @@ namespace or_ompl
         }
         else
         {
-            ROS_ERROR("Urecognized planner: %s", plannerName.c_str());
+            RAVELOG_ERROR("Urecognized planner: %s", plannerName.c_str());
             return false;
         }
 
@@ -216,7 +251,7 @@ namespace or_ompl
     {
         if(!m_simpleSetup)
         {
-            ROS_ERROR("Couldn't plan a path. Simple setup was null!");
+            RAVELOG_ERROR("Couldn't plan a path. Simple setup was null!");
             return OpenRAVE::PS_Failed;
         }
         else
@@ -238,13 +273,17 @@ namespace or_ompl
 
             if(success)
             {
+#if OMPL_VERSION_COMP >= 000010002
+                std::vector<ompl::base::State*>& states = m_simpleSetup->getSolutionPath().getStates();
+#else
                 std::vector<ompl::base::State*>& states = m_simpleSetup->getSolutionPath().states;
+#endif
                 for(size_t i = 0; i < states.size(); i++)
                 {
                     const ompl::base::RealVectorStateSpace::StateType* state = states[i]->as<ompl::base::RealVectorStateSpace::StateType>();
                     if(!state)
                     {
-                        ROS_ERROR("Invalid state type!");
+                        RAVELOG_ERROR("Invalid state type!");
                         return OpenRAVE::PS_Failed;
                     }
                     else
@@ -288,7 +327,7 @@ namespace or_ompl
 
         if(!realVectorState)
         {
-            ROS_ERROR("State type requested was invalid!");
+            RAVELOG_ERROR("State type requested was invalid!");
             return false;
         }
         else

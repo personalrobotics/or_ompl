@@ -22,8 +22,9 @@ set(LIBRARY_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/lib)
 #rosbuild_gensrv()
 
 #common commands for building c++ executables and libraries
-rosbuild_add_library(${PROJECT_NAME} SHARED src/OMPLMain.cpp src/OMPLModule.cpp src/OMPLPlanner.cpp)
+rosbuild_add_library(${PROJECT_NAME} SHARED src/OMPLMain.cpp src/OMPLPlanner.cpp)
 #rosbuild_add_boost_directories()
 #rosbuild_link_boost(${PROJECT_NAME} thread)
 #rosbuild_add_executable(example examples/example.cpp)
-#target_link_libraries(example ${PROJECT_NAME})
+
+#target_link_libraries(${PROJECT_NAME} ompl)
