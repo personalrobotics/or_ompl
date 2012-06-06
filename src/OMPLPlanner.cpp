@@ -9,6 +9,15 @@
 
 using namespace OpenRAVE;
 
+#include <time.h>
+
+#define CD_OS_TIMESPEC_SET_ZERO(t) do { (t)->tv_sec = 0; (t)->tv_nsec = 0; } while (0)
+#define CD_OS_TIMESPEC_ADD(dst, src) do { (dst)->tv_sec += (src)->tv_sec; (dst)->tv_nsec += (src)->tv_nsec; \
+   if ((dst)->tv_nsec > 999999999) { (dst)->tv_sec += 1; (dst)->tv_nsec -= 1000000000; } } while (0)
+#define CD_OS_TIMESPEC_SUB(dst, src) do { (dst)->tv_sec -= (src)->tv_sec; (dst)->tv_nsec -= (src)->tv_nsec; \
+   if ((dst)->tv_nsec < 0) { (dst)->tv_sec -= 1; (dst)->tv_nsec += 1000000000; } } while (0)
+#define CD_OS_TIMESPEC_DOUBLE(src) ((src)->tv_sec + ((double)((src)->tv_nsec))/1000000000.0)
+
 namespace or_ompl
 {
 
@@ -205,7 +214,6 @@ namespace or_ompl
 
     OpenRAVE::PlannerStatus OMPLPlanner::PlanPath(OpenRAVE::TrajectoryBasePtr ptraj)
     {
-        OpenRAVE::EnvironmentMutex::scoped_lock lockenv(GetEnv()->GetMutex());
         if(!m_simpleSetup)
         {
             ROS_ERROR("Couldn't plan a path. Simple setup was null!");
@@ -213,7 +221,17 @@ namespace or_ompl
         }
         else
         {
+            struct timespec tic;
+            clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &tic);
+
             bool success = m_simpleSetup->solve(m_parameters->m_timeLimit);
+
+            struct timespec toc;
+            clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &toc);
+            CD_OS_TIMESPEC_SUB(&toc, &tic);
+            std::ofstream fileStream;
+            std::stringstream fileName;
+            double seconds = CD_OS_TIMESPEC_DOUBLE(&toc);
 
             ConfigurationSpecification spec =  m_robot->GetActiveConfigurationSpecification();
             ptraj->Init(spec);
@@ -241,6 +259,11 @@ namespace or_ompl
                     }
                 }
 
+                fileName << m_parameters->m_dumpFileName << seconds;
+                fileStream.open(fileName.str().c_str());
+                ptraj->serialize(fileStream);
+                fileStream.close();
+
                 return OpenRAVE::PS_HasSolution;
             }
             else
@@ -254,6 +277,7 @@ namespace or_ompl
 
     bool OMPLPlanner::IsInCollision(std::vector<double> values)
     {
+        OpenRAVE::EnvironmentMutex::scoped_lock lockenv(GetEnv()->GetMutex());
         m_robot->SetActiveDOFValues(values, false);
         return (GetEnv()->CheckCollision(KinBodyConstPtr(m_robot), m_collisionReport)) || (m_robot->CheckSelfCollision(m_collisionReport));
     }

@@ -11,7 +11,7 @@ namespace or_ompl
     {
         public:
             OMPLPlannerParameters() :
-                m_timeLimit(10), m_plannerType("RRTConnect"), m_isProcessing(false), m_rrtGoalBias(0.5), m_rrtStarMaxBallRadius(1.0), m_rrtStarMaxPathLength(5), m_rrtRange(0.1)
+                m_timeLimit(10), m_plannerType("RRTConnect"), m_isProcessing(false), m_rrtGoalBias(0.1), m_rrtStarMaxBallRadius(1.0), m_rrtStarMaxPathLength(5), m_rrtRange(0.1), m_dumpFileName("OMPL ")
             {
                 _vXMLParameters.push_back("time_limit");
                 _vXMLParameters.push_back("planner_type");
@@ -19,7 +19,7 @@ namespace or_ompl
                 _vXMLParameters.push_back("rrtstar_max_ball_radius");
                 _vXMLParameters.push_back("rrtstar_max_path_length");
                 _vXMLParameters.push_back("rrt_range");
-
+                _vXMLParameters.push_back("dum_file_name");
             }
 
             double m_timeLimit;
@@ -29,6 +29,7 @@ namespace or_ompl
             double m_rrtStarMaxBallRadius;
             double m_rrtStarMaxPathLength;
             double m_rrtRange;
+            std::string m_dumpFileName;
 
         protected:
             virtual bool serialize(std::ostream& O) const
@@ -44,6 +45,7 @@ namespace or_ompl
                 O << "<rrtstar_max_ball_radius>" << m_rrtStarMaxBallRadius << "</rrtstar_max_ball_radius>" << std::endl;
                 O << "<rrtstar_max_path_length>" << m_rrtStarMaxPathLength << "</rrtstar_max_path_length>" << std::endl;
                 O << "<rrt_range>" << m_rrtRange << "</rrt_range>" << std::endl;
+                O << "<file_name>" << m_dumpFileName << "</file_name>" << std::endl;
 
                 return !!O;
             }
@@ -64,7 +66,9 @@ namespace or_ompl
                         return PE_Ignore;
                 }
 
-                m_isProcessing =  name == "time_limit" || name == "planner_type";
+                m_isProcessing =  name == "time_limit" || name == "planner_type" || name == "rrt_goal_bias"
+                        || name == "rrtstar_max_ball_radius" || name == "rrtstar_max_path_length" || name == "rrt_range"
+                        || name == "dum_file_name";
 
                 return m_isProcessing ? PE_Support : PE_Pass;
             }
@@ -97,6 +101,10 @@ namespace or_ompl
                     else if(name == "rrt_range")
                     {
                         _ss >> m_rrtRange;
+                    }
+                    else if(name == "dum_file_name")
+                    {
+                        _ss >> m_dumpFileName;
                     }
                     else
                     {
