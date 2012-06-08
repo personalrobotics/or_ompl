@@ -249,6 +249,7 @@ namespace or_ompl
 
     OpenRAVE::PlannerStatus OMPLPlanner::PlanPath(OpenRAVE::TrajectoryBasePtr ptraj)
     {
+        OpenRAVE::EnvironmentMutex::scoped_lock lockenv(GetEnv()->GetMutex());
         if(!m_simpleSetup)
         {
             RAVELOG_ERROR("Couldn't plan a path. Simple setup was null!");
@@ -257,57 +258,88 @@ namespace or_ompl
         else
         {
             struct timespec tic;
-            clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &tic);
+            clock_gettime(CLOCK_THREAD_CPUTIME_ID, &tic);
 
             bool success = m_simpleSetup->solve(m_parameters->m_timeLimit);
 
             struct timespec toc;
-            clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &toc);
+            clock_gettime(CLOCK_THREAD_CPUTIME_ID, &toc);
             CD_OS_TIMESPEC_SUB(&toc, &tic);
-            std::ofstream fileStream;
-            std::stringstream fileName;
-            double seconds = CD_OS_TIMESPEC_DOUBLE(&toc);
+            printf("cputime seconds: %f\n", CD_OS_TIMESPEC_DOUBLE(&toc));
+            
 
             ConfigurationSpecification spec =  m_robot->GetActiveConfigurationSpecification();
             ptraj->Init(spec);
 
             if(success)
             {
+               /* write success dat file */
+               if (m_parameters->m_dat_filename.c_str()[0])
+               {
+                  FILE * fp;
+                  fp = fopen(m_parameters->m_dat_filename.c_str(), "w");
+                  fprintf(fp, "0 %f 1\n", CD_OS_TIMESPEC_DOUBLE(&toc));
+                  fclose(fp);
+               }
+               
+               /* write trajectory file */
+               if (m_parameters->m_trajs_fileformat.c_str()[0])
+               {
+                  char trajs_filename[1024];
+                  sprintf(trajs_filename, m_parameters->m_trajs_fileformat.c_str(), 0); /* iter = 0 */
+                  OpenRAVE::TrajectoryBasePtr t = OpenRAVE::RaveCreateTrajectory(GetEnv());
+                  t->Init(m_robot->GetActiveConfigurationSpecification());
+                  
 #if OMPL_VERSION_COMP >= 000010002
-                std::vector<ompl::base::State*>& states = m_simpleSetup->getSolutionPath().getStates();
+                  std::vector<ompl::base::State*>& states = m_simpleSetup->getSolutionPath().getStates();
 #else
-                std::vector<ompl::base::State*>& states = m_simpleSetup->getSolutionPath().states;
+                  std::vector<ompl::base::State*>& states = m_simpleSetup->getSolutionPath().states;
 #endif
-                for(size_t i = 0; i < states.size(); i++)
-                {
-                    const ompl::base::RealVectorStateSpace::StateType* state = states[i]->as<ompl::base::RealVectorStateSpace::StateType>();
-                    if(!state)
-                    {
-                        RAVELOG_ERROR("Invalid state type!");
-                        return OpenRAVE::PS_Failed;
-                    }
-                    else
-                    {
-                        OpenRAVE::TrajectoryBase::Point point;
-
-                        for(int j = 0; j < m_robot->GetActiveDOF(); j++)
-                        {
-                            point.q.push_back((*state)[j]);
-                        }
-                        ptraj->Insert(i, point.q, true);
-                    }
-                }
-
-                fileName << m_parameters->m_dumpFileName << seconds;
-                fileStream.open(fileName.str().c_str());
-                ptraj->serialize(fileStream);
-                fileStream.close();
-
-                return OpenRAVE::PS_HasSolution;
+                  for(size_t i = 0; i < states.size(); i++)
+                  {
+                     const ompl::base::RealVectorStateSpace::StateType* state = states[i]->as<ompl::base::RealVectorStateSpace::StateType>();
+                     if(!state) { RAVELOG_ERROR("Invalid state type!"); return OpenRAVE::PS_Failed; }
+                     OpenRAVE::TrajectoryBase::Point point;
+                     for(int j = 0; j < m_robot->GetActiveDOF(); j++)
+                        point.q.push_back((*state)[j]);
+                     t->Insert(i, point.q, true);
+                  }
+                  std::ofstream f(trajs_filename);
+                  f << std::setprecision(std::numeric_limits<OpenRAVE::dReal>::digits10+1); /// have to do this or otherwise precision gets lost
+                  t->serialize(f);
+                  f.close();
+               }
+               
+#if OMPL_VERSION_COMP >= 000010002
+               std::vector<ompl::base::State*>& states = m_simpleSetup->getSolutionPath().getStates();
+#else
+               std::vector<ompl::base::State*>& states = m_simpleSetup->getSolutionPath().states;
+#endif
+               /* write into the actual trajectory to be passed back to our caller */
+               ptraj->Init(m_robot->GetActiveConfigurationSpecification());
+               for(size_t i = 0; i < states.size(); i++)
+               {
+                  const ompl::base::RealVectorStateSpace::StateType* state = states[i]->as<ompl::base::RealVectorStateSpace::StateType>();
+                  if(!state) { RAVELOG_ERROR("Invalid state type!"); return OpenRAVE::PS_Failed; }
+                  OpenRAVE::TrajectoryBase::Point point;
+                  for(int j = 0; j < m_robot->GetActiveDOF(); j++)
+                     point.q.push_back((*state)[j]);
+                  ptraj->Insert(i, point.q, true);
+               }
+               
+               return OpenRAVE::PS_HasSolution;
             }
             else
             {
-                return OpenRAVE::PS_Failed;
+               /* write failure dat file */
+               if (m_parameters->m_dat_filename.c_str()[0])
+               {
+                  FILE * fp;
+                  fp = fopen(m_parameters->m_dat_filename.c_str(), "w");
+                  fprintf(fp, "0 %f 0\n", CD_OS_TIMESPEC_DOUBLE(&toc));
+                  fclose(fp);
+               }
+               return OpenRAVE::PS_Failed;
             }
         }
 

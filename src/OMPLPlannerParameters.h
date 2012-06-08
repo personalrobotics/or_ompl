@@ -11,7 +11,7 @@ namespace or_ompl
     {
         public:
             OMPLPlannerParameters() :
-                m_timeLimit(10), m_plannerType("RRTConnect"), m_isProcessing(false), m_rrtGoalBias(0.1), m_rrtStarMaxBallRadius(1.0), m_rrtStarMaxPathLength(5), m_rrtRange(0.1), m_dumpFileName("OMPL ")
+                m_timeLimit(10), m_plannerType("RRTConnect"), m_isProcessing(false), m_rrtGoalBias(0.1), m_rrtStarMaxBallRadius(1.0), m_rrtStarMaxPathLength(5), m_rrtRange(0.1), m_dat_filename(""), m_trajs_fileformat("")
             {
                 _vXMLParameters.push_back("time_limit");
                 _vXMLParameters.push_back("planner_type");
@@ -19,7 +19,8 @@ namespace or_ompl
                 _vXMLParameters.push_back("rrtstar_max_ball_radius");
                 _vXMLParameters.push_back("rrtstar_max_path_length");
                 _vXMLParameters.push_back("rrt_range");
-                _vXMLParameters.push_back("dum_file_name");
+                _vXMLParameters.push_back("dat_filename");
+                _vXMLParameters.push_back("trajs_fileformat");
             }
 
             double m_timeLimit;
@@ -29,7 +30,8 @@ namespace or_ompl
             double m_rrtStarMaxBallRadius;
             double m_rrtStarMaxPathLength;
             double m_rrtRange;
-            std::string m_dumpFileName;
+            std::string m_dat_filename;
+            std::string m_trajs_fileformat;
 
         protected:
             virtual bool serialize(std::ostream& O) const
@@ -45,7 +47,8 @@ namespace or_ompl
                 O << "<rrtstar_max_ball_radius>" << m_rrtStarMaxBallRadius << "</rrtstar_max_ball_radius>" << std::endl;
                 O << "<rrtstar_max_path_length>" << m_rrtStarMaxPathLength << "</rrtstar_max_path_length>" << std::endl;
                 O << "<rrt_range>" << m_rrtRange << "</rrt_range>" << std::endl;
-                O << "<file_name>" << m_dumpFileName << "</file_name>" << std::endl;
+                O << "<dat_filename>" << m_dat_filename << "</dat_filename>" << std::endl;
+                O << "<trajs_fileformat>" << m_trajs_fileformat << "</trajs_fileformat>" << std::endl;
 
                 return !!O;
             }
@@ -68,7 +71,7 @@ namespace or_ompl
 
                 m_isProcessing =  name == "time_limit" || name == "planner_type" || name == "rrt_goal_bias"
                         || name == "rrtstar_max_ball_radius" || name == "rrtstar_max_path_length" || name == "rrt_range"
-                        || name == "dum_file_name";
+                        || name == "dat_filename" || name == "trajs_fileformat";
 
                 return m_isProcessing ? PE_Support : PE_Pass;
             }
@@ -102,9 +105,13 @@ namespace or_ompl
                     {
                         _ss >> m_rrtRange;
                     }
-                    else if(name == "dum_file_name")
+                    else if(name == "dat_filename")
                     {
-                        _ss >> m_dumpFileName;
+                        _ss >> m_dat_filename;
+                    }
+                    else if(name == "trajs_fileformat")
+                    {
+                        _ss >> m_trajs_fileformat;
                     }
                     else
                     {
