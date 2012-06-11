@@ -51,10 +51,8 @@ using namespace OpenRAVE;
 
 namespace or_ompl
 {
-
     OMPLPlanner::OMPLPlanner(OpenRAVE::EnvironmentBasePtr penv) :  OpenRAVE::PlannerBase(penv), m_simpleSetup(NULL)
     {
-
     }
 
     OMPLPlanner::~OMPLPlanner()
@@ -84,6 +82,19 @@ namespace or_ompl
 
         m_parameters.reset(new OMPLPlannerParameters());
         m_parameters->copy(params);
+        
+        if (m_parameters->m_seed)
+        {
+           RAVELOG_INFO("Setting random seed to %u ...\n", m_parameters->m_seed);
+           ompl::RNG::setSeed(m_parameters->m_seed);
+           if (ompl::RNG::getSeed() != m_parameters->m_seed)
+           {
+              RAVELOG_ERROR("Could not set the seed! Was this the first or_ompl plan attempted?\n");
+              return false;
+           }
+        }
+        else
+           RAVELOG_INFO("Using default (time-based) seed (%u) for OMPL ...\n", ompl::RNG::getSeed());
 
         m_robot = robot;
 
@@ -103,7 +114,7 @@ namespace or_ompl
         }
 
         m_stateSpace->as<ompl::base::RealVectorStateSpace>()->setBounds(bounds);
-
+        
         RAVELOG_INFO("Setting up simplesetup class.\n");
         m_simpleSetup = new ompl::geometric::SimpleSetup(GetStateSpace());
 
@@ -162,7 +173,7 @@ namespace or_ompl
         RAVELOG_INFO("Getting planner name.\n");
         std::string plannerName = m_parameters->m_plannerType;
 
-        RAVELOG_INFO("Setting up space information");
+        RAVELOG_INFO("Setting up space information\n");
         ompl::base::SpaceInformationPtr spaceInformation = m_simpleSetup->getSpaceInformation();
         if(plannerName == "KPIECE")
         {

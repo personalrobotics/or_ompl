@@ -11,8 +11,18 @@ namespace or_ompl
     {
         public:
             OMPLPlannerParameters() :
-                m_timeLimit(10), m_plannerType("RRTConnect"), m_isProcessing(false), m_rrtGoalBias(0.1), m_rrtStarMaxBallRadius(1.0), m_rrtStarMaxPathLength(5), m_rrtRange(0.1), m_dat_filename(""), m_trajs_fileformat("")
+                m_seed(0),
+                m_timeLimit(10),
+                m_plannerType("RRTConnect"),
+                m_isProcessing(false),
+                m_rrtGoalBias(0.1),
+                m_rrtStarMaxBallRadius(1.0),
+                m_rrtStarMaxPathLength(5),
+                m_rrtRange(0.1),
+                m_dat_filename(""),
+                m_trajs_fileformat("")
             {
+                _vXMLParameters.push_back("seed");
                 _vXMLParameters.push_back("time_limit");
                 _vXMLParameters.push_back("planner_type");
                 _vXMLParameters.push_back("rrt_goal_bias");
@@ -23,6 +33,7 @@ namespace or_ompl
                 _vXMLParameters.push_back("trajs_fileformat");
             }
 
+            unsigned int m_seed;
             double m_timeLimit;
             std::string m_plannerType;
             bool m_isProcessing;
@@ -41,6 +52,7 @@ namespace or_ompl
                     return false;
                 }
 
+                O << "<seed>" << m_seed << "</seed>" << std::endl;
                 O << "<time_limit>" << m_timeLimit << "</time_limit>" << std::endl;
                 O << "<planner_type>" << m_plannerType << "</planner_type>" << std::endl;
                 O << "<rrt_goal_bias>" << m_rrtGoalBias << "</rrt_goal_bias>" << std::endl;
@@ -69,9 +81,16 @@ namespace or_ompl
                         return PE_Ignore;
                 }
 
-                m_isProcessing =  name == "time_limit" || name == "planner_type" || name == "rrt_goal_bias"
-                        || name == "rrtstar_max_ball_radius" || name == "rrtstar_max_path_length" || name == "rrt_range"
-                        || name == "dat_filename" || name == "trajs_fileformat";
+                m_isProcessing =
+                     name == "seed"
+                  || name == "time_limit"
+                  || name == "planner_type"
+                  || name == "rrt_goal_bias"
+                  || name == "rrtstar_max_ball_radius"
+                  || name == "rrtstar_max_path_length"
+                  || name == "rrt_range"
+                  || name == "dat_filename"
+                  || name == "trajs_fileformat";
 
                 return m_isProcessing ? PE_Support : PE_Pass;
             }
@@ -80,8 +99,11 @@ namespace or_ompl
             {
                 if (m_isProcessing)
                 {
-
-                    if (name == "time_limit")
+                    if (name == "seed")
+                    {
+                        _ss >> m_seed;
+                    }
+                    else if (name == "time_limit")
                     {
                         _ss >> m_timeLimit;
                     }
