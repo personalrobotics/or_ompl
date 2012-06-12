@@ -49,6 +49,8 @@ using namespace OpenRAVE;
    if ((dst)->tv_nsec < 0) { (dst)->tv_sec -= 1; (dst)->tv_nsec += 1000000000; } } while (0)
 #define CD_OS_TIMESPEC_DOUBLE(src) ((src)->tv_sec + ((double)((src)->tv_nsec))/1000000000.0)
 
+#define TIME_COLLISION_CHECKS
+
 namespace or_ompl
 {
     OMPLPlanner::OMPLPlanner(OpenRAVE::EnvironmentBasePtr penv) :  OpenRAVE::PlannerBase(penv), m_simpleSetup(NULL)
@@ -65,6 +67,9 @@ namespace or_ompl
 
     bool OMPLPlanner::InitPlan(OpenRAVE::RobotBasePtr robot, std::istream& input)
     {
+        m_totalCollisionTime = 0.0;
+        m_numCollisionChecks = 0;
+
         OMPLPlannerParameters* params = new OMPLPlannerParameters();
         input >> (*params);
 
@@ -289,7 +294,7 @@ namespace or_ompl
                {
                   FILE * fp;
                   fp = fopen(m_parameters->m_dat_filename.c_str(), "w");
-                  fprintf(fp, "0 %f 1\n", CD_OS_TIMESPEC_DOUBLE(&toc));
+                  fprintf(fp, "0 %f 1 %d %f\n", CD_OS_TIMESPEC_DOUBLE(&toc), m_numCollisionChecks, m_totalCollisionTime);
                   fclose(fp);
                }
                
@@ -359,9 +364,22 @@ namespace or_ompl
 
     bool OMPLPlanner::IsInCollision(std::vector<double> values)
     {
+#ifdef TIME_COLLISION_CHECKS
+        struct timespec tic;
+        clock_gettime(CLOCK_THREAD_CPUTIME_ID, &tic);
+#endif
         OpenRAVE::EnvironmentMutex::scoped_lock lockenv(GetEnv()->GetMutex());
         m_robot->SetActiveDOFValues(values, false);
-        return (GetEnv()->CheckCollision(KinBodyConstPtr(m_robot), m_collisionReport)) || (m_robot->CheckSelfCollision(m_collisionReport));
+        bool collided = (GetEnv()->CheckCollision(KinBodyConstPtr(m_robot), m_collisionReport)) || (m_robot->CheckSelfCollision(m_collisionReport));
+        m_numCollisionChecks++;
+
+#ifdef TIME_COLLISION_CHECKS
+        struct timespec toc;
+        clock_gettime(CLOCK_THREAD_CPUTIME_ID, &toc);
+        CD_OS_TIMESPEC_SUB(&toc, &tic);
+        m_totalCollisionTime += CD_OS_TIMESPEC_DOUBLE(&toc);
+#endif
+
     }
 
     bool OMPLPlanner::IsStateValid(const ompl::base::State* state)

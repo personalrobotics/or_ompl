@@ -41,6 +41,8 @@ namespace or_ompl
             ompl::base::PlannerPtr m_planner;
             OpenRAVE::RobotBasePtr m_robot;
             OpenRAVE::CollisionReportPtr m_collisionReport;
+            int m_numCollisionChecks;
+            double m_totalCollisionTime;
 
 
     };
