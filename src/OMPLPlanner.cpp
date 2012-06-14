@@ -352,7 +352,7 @@ namespace or_ompl
                {
                   FILE * fp;
                   fp = fopen(m_parameters->m_dat_filename.c_str(), "w");
-                  fprintf(fp, "0 %f 0\n", CD_OS_TIMESPEC_DOUBLE(&toc));
+                  fprintf(fp, "0 %f 0 %d %f\n", CD_OS_TIMESPEC_DOUBLE(&toc), m_numCollisionChecks, m_totalCollisionTime);
                   fclose(fp);
                }
                return OpenRAVE::PS_Failed;
@@ -379,7 +379,7 @@ namespace or_ompl
         CD_OS_TIMESPEC_SUB(&toc, &tic);
         m_totalCollisionTime += CD_OS_TIMESPEC_DOUBLE(&toc);
 #endif
-
+        return collided;
     }
 
     bool OMPLPlanner::IsStateValid(const ompl::base::State* state)
