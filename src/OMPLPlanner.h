@@ -31,7 +31,7 @@ namespace or_ompl
             inline ompl::geometric::SimpleSetup* GetSimpleSetup() { return m_simpleSetup; }
             inline ompl::base::StateSpacePtr GetStateSpace() { return m_stateSpace; }
             bool IsStateValid(const ompl::base::State* state);
-            bool IsInCollision(std::vector<double> jointValues);
+            bool IsInOrCollision(std::vector<double> jointValues);
             bool InitializePlanner();
 
         private:
@@ -43,6 +43,7 @@ namespace or_ompl
             OpenRAVE::CollisionReportPtr m_collisionReport;
             int m_numCollisionChecks;
             double m_totalCollisionTime;
+            double scale_radii[7];
 
 
     };

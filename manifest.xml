@@ -7,7 +7,8 @@
   <review status="unreviewed" notes=""/>
   <url>http://ros.org/wiki/or_ompl</url>
   <depend package="openrave"/>
-  <depend package="ompl"/>
+  <!--<depend package="ompl"/>-->
+  <depend package="ompl_rrtstar_modified"/>
   <export>
     <!-- See http://personalrobotics.ri.cmu.edu/intel-pkg/ros_exportenv -->
     <python path="ENV/OPENRAVE_PLUGINS+=\x3A${prefix}/lib"/>

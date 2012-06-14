@@ -36,6 +36,8 @@
 #include <ompl/contrib/rrt_star/RRTstar.h>
 #include <ompl/contrib/rrt_star/BallTreeRRTstar.h>
 
+#include <ompl_rrtstar_modified/RRTstarModified.h>
+
 #include "OMPLPlanner.h"
 
 using namespace OpenRAVE;
@@ -105,6 +107,16 @@ namespace or_ompl
 
         RAVELOG_INFO("Setting state space\n");
         m_stateSpace.reset(new ompl::base::RealVectorStateSpace(robot->GetActiveDOF()));
+        
+        if (robot->GetActiveDOF() != 7)
+        {
+           RAVELOG_ERROR("Right now, or_omple has hacks for the WAM arm only!\n");
+           return false;
+        }
+        scale_radii[0] = scale_radii[1] = 1.2;
+        scale_radii[2] = scale_radii[3] = 0.7;
+        scale_radii[4] = scale_radii[5] = 0.4;
+        scale_radii[6] = 0.2;
 
         RAVELOG_INFO("Setting joint limits\n");
         ompl::base::RealVectorBounds bounds(m_robot->GetActiveDOF());
@@ -114,8 +126,8 @@ namespace or_ompl
 
         for(int i = 0; i < m_robot->GetActiveDOF(); i++)
         {
-            bounds.setLow(i, lowerLimits[i]);
-            bounds.setHigh(i, upperLimits[i]);
+            bounds.setLow(i, scale_radii[i] * lowerLimits[i]);
+            bounds.setHigh(i, scale_radii[i] * upperLimits[i]);
         }
 
         m_stateSpace->as<ompl::base::RealVectorStateSpace>()->setBounds(bounds);
@@ -137,11 +149,11 @@ namespace or_ompl
         ompl::base::ScopedState<ompl::base::RealVectorStateSpace> startPose(m_stateSpace);
         for(int i = 0; i < m_robot->GetActiveDOF(); i++)
         {
-            startPose->values[i] = m_parameters->vinitialconfig[i];
+            startPose->values[i] = scale_radii[i] * m_parameters->vinitialconfig[i];
         }
 
         RAVELOG_INFO("Checking collisions.\n");
-        if(IsInCollision(params->vinitialconfig))
+        if(IsInOrCollision(params->vinitialconfig))
         {
             RAVELOG_ERROR("Can't plan. Initial configuration in collision!\n");
             delete m_simpleSetup;
@@ -152,11 +164,11 @@ namespace or_ompl
         ompl::base::ScopedState<ompl::base::RealVectorStateSpace> endPose(m_stateSpace);
         for(int i = 0; i < m_robot->GetActiveDOF(); i++)
         {
-            endPose->values[i] = params->vgoalconfig[i];
+            endPose->values[i] = scale_radii[i] * params->vgoalconfig[i];
         }
 
         RAVELOG_INFO("Checking collisions\n");
-        if(IsInCollision(params->vgoalconfig))
+        if(IsInOrCollision(params->vgoalconfig))
         {
             RAVELOG_ERROR("Can't plan. Final configuration is in collision!");
             delete m_simpleSetup;
@@ -207,6 +219,7 @@ namespace or_ompl
         {
             ompl::geometric::RRTConnect* rrtConnect = new ompl::geometric::RRTConnect(spaceInformation);
             m_planner.reset(rrtConnect);
+            printf("setting range to be %f!\n", m_parameters->m_rrtRange);
             rrtConnect->setRange(m_parameters->m_rrtRange);
         }
         else if(plannerName == "pRRT")
@@ -245,6 +258,21 @@ namespace or_ompl
             rrtStar->setGoalBias(m_parameters->m_rrtGoalBias);
             rrtStar->setMaxBallRadius(m_parameters->m_rrtStarMaxBallRadius);
             rrtStar->setRange(m_parameters->m_rrtRange);
+        }
+        else if(plannerName == "RRTstarModified")
+        {
+            RAVELOG_INFO("RRT Star Modified Planner name\n");
+
+            ompl::geometric::RRTstarModified* rrtStarModified = new ompl::geometric::RRTstarModified(spaceInformation);
+
+            RAVELOG_INFO("Created RRTstarModified\n");
+
+            m_planner.reset(rrtStarModified);
+
+            RAVELOG_INFO("Setting parameters\n");
+            rrtStarModified->setGoalBias(m_parameters->m_rrtGoalBias);
+            rrtStarModified->setMaxBallRadius(m_parameters->m_rrtStarMaxBallRadius);
+            rrtStarModified->setRange(m_parameters->m_rrtRange);
         }
         else if(plannerName == "BallTreeRRTstar")
         {
@@ -317,7 +345,7 @@ namespace or_ompl
                      if(!state) { RAVELOG_ERROR("Invalid state type!"); return OpenRAVE::PS_Failed; }
                      OpenRAVE::TrajectoryBase::Point point;
                      for(int j = 0; j < m_robot->GetActiveDOF(); j++)
-                        point.q.push_back((*state)[j]);
+                        point.q.push_back((*state)[j] / scale_radii[j]);
                      t->Insert(i, point.q, true);
                   }
                   std::ofstream f(trajs_filename);
@@ -339,7 +367,7 @@ namespace or_ompl
                   if(!state) { RAVELOG_ERROR("Invalid state type!"); return OpenRAVE::PS_Failed; }
                   OpenRAVE::TrajectoryBase::Point point;
                   for(int j = 0; j < m_robot->GetActiveDOF(); j++)
-                     point.q.push_back((*state)[j]);
+                     point.q.push_back((*state)[j] / scale_radii[j]);
                   ptraj->Insert(i, point.q, true);
                }
                
@@ -362,7 +390,7 @@ namespace or_ompl
         return OpenRAVE::PS_Failed;
     }
 
-    bool OMPLPlanner::IsInCollision(std::vector<double> values)
+    bool OMPLPlanner::IsInOrCollision(std::vector<double> values)
     {
 #ifdef TIME_COLLISION_CHECKS
         struct timespec tic;
@@ -396,10 +424,10 @@ namespace or_ompl
             std::vector<double> values;
             for(int i = 0; i < m_robot->GetActiveDOF(); i++)
             {
-                values.push_back(realVectorState->values[i]);
+                values.push_back(realVectorState->values[i] / scale_radii[i]);
             }
 
-            return !IsInCollision(values);
+            return !IsInOrCollision(values);
         }
 
     }
