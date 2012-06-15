@@ -45,7 +45,6 @@ namespace or_ompl
             double m_totalCollisionTime;
             double scale_radii[7];
 
-
     };
 
     typedef boost::shared_ptr<OMPLPlanner> OMPLPlannerPtr;

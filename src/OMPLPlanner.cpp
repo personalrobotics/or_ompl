@@ -124,7 +124,7 @@ namespace or_ompl
         std::vector<double> upperLimits;
         m_robot->GetActiveDOFLimits(lowerLimits, upperLimits);
 
-        for(int i = 0; i < m_robot->GetActiveDOF(); i++)
+        for (int i = 0; i < m_robot->GetActiveDOF(); i++)
         {
             bounds.setLow(i, scale_radii[i] * lowerLimits[i]);
             bounds.setHigh(i, scale_radii[i] * upperLimits[i]);
@@ -270,6 +270,10 @@ namespace or_ompl
             m_planner.reset(rrtStarModified);
 
             RAVELOG_INFO("Setting parameters\n");
+            rrtStarModified->scale_radii_ = scale_radii;
+            if (m_parameters->m_dat_filename.c_str()[0])
+               rrtStarModified->dat_filename_ = m_parameters->m_dat_filename + "-rrtstar.dat";
+            /*rrtStarModified->trajs_fileformat_ = m_parameters->m_trajs_fileformat;*/
             rrtStarModified->setGoalBias(m_parameters->m_rrtGoalBias);
             rrtStarModified->setMaxBallRadius(m_parameters->m_rrtStarMaxBallRadius);
             rrtStarModified->setRange(m_parameters->m_rrtRange);
@@ -301,10 +305,17 @@ namespace or_ompl
         }
         else
         {
+            /* also, set something max path length so it continues after finding a solution! */
+            m_simpleSetup->getGoal()->setMaximumPathLength(0.0);
+           
             struct timespec tic;
             clock_gettime(CLOCK_THREAD_CPUTIME_ID, &tic);
 
-            bool success = m_simpleSetup->solve(m_parameters->m_timeLimit);
+            bool success;
+            if (m_parameters->m_plannerType == "RRTstarModified")
+               success = m_simpleSetup->solve(2.0 * m_parameters->m_timeLimit);
+            else
+               success = m_simpleSetup->solve(m_parameters->m_timeLimit);
 
             struct timespec toc;
             clock_gettime(CLOCK_THREAD_CPUTIME_ID, &toc);
@@ -315,7 +326,7 @@ namespace or_ompl
             ConfigurationSpecification spec =  m_robot->GetActiveConfigurationSpecification();
             ptraj->Init(spec);
 
-            if(success)
+            if (success)
             {
                /* write success dat file */
                if (m_parameters->m_dat_filename.c_str()[0])
@@ -339,12 +350,12 @@ namespace or_ompl
 #else
                   std::vector<ompl::base::State*>& states = m_simpleSetup->getSolutionPath().states;
 #endif
-                  for(size_t i = 0; i < states.size(); i++)
+                  for (size_t i = 0; i < states.size(); i++)
                   {
                      const ompl::base::RealVectorStateSpace::StateType* state = states[i]->as<ompl::base::RealVectorStateSpace::StateType>();
                      if(!state) { RAVELOG_ERROR("Invalid state type!"); return OpenRAVE::PS_Failed; }
                      OpenRAVE::TrajectoryBase::Point point;
-                     for(int j = 0; j < m_robot->GetActiveDOF(); j++)
+                     for (int j = 0; j < m_robot->GetActiveDOF(); j++)
                         point.q.push_back((*state)[j] / scale_radii[j]);
                      t->Insert(i, point.q, true);
                   }
@@ -361,7 +372,7 @@ namespace or_ompl
 #endif
                /* write into the actual trajectory to be passed back to our caller */
                ptraj->Init(m_robot->GetActiveConfigurationSpecification());
-               for(size_t i = 0; i < states.size(); i++)
+               for (size_t i = 0; i < states.size(); i++)
                {
                   const ompl::base::RealVectorStateSpace::StateType* state = states[i]->as<ompl::base::RealVectorStateSpace::StateType>();
                   if(!state) { RAVELOG_ERROR("Invalid state type!"); return OpenRAVE::PS_Failed; }
