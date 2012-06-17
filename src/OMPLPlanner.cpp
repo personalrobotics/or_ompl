@@ -274,9 +274,39 @@ namespace or_ompl
             if (m_parameters->m_dat_filename.c_str()[0])
                rrtStarModified->dat_filename_ = m_parameters->m_dat_filename + "-rrtstar.dat";
             /*rrtStarModified->trajs_fileformat_ = m_parameters->m_trajs_fileformat;*/
-            rrtStarModified->setGoalBias(m_parameters->m_rrtGoalBias);
-            rrtStarModified->setMaxBallRadius(m_parameters->m_rrtStarMaxBallRadius);
-            rrtStarModified->setRange(m_parameters->m_rrtRange);
+            
+            if (m_parameters->m_rrtRange)
+               rrtStarModified->setRange(m_parameters->m_rrtRange);
+            
+            if (m_parameters->m_rrtGoalBias)
+               rrtStarModified->setGoalBias(m_parameters->m_rrtGoalBias);
+            
+            if (m_parameters->m_rrtStarBallRadiusConstant)
+               rrtStarModified->setBallRadiusConstant(m_parameters->m_rrtStarBallRadiusConstant);
+            else
+            {
+               double max_sidelen;
+               std::vector<double> diffs = m_stateSpace->as<ompl::base::RealVectorStateSpace>()->getBounds().getDifference();
+               max_sidelen = 0.0;
+               for (int i=0; i<m_robot->GetActiveDOF(); i++)
+                  if (diffs[i] > max_sidelen)
+                     max_sidelen = diffs[i];
+               rrtStarModified->setBallRadiusConstant(max_sidelen);
+               printf("### setting BallRadiusConstant to %f!\n", max_sidelen);
+            }
+            
+            if (m_parameters->m_rrtStarMaxBallRadius)
+               rrtStarModified->setMaxBallRadius(m_parameters->m_rrtStarMaxBallRadius);
+            else
+            {
+               double len2;
+               std::vector<double> diffs = m_stateSpace->as<ompl::base::RealVectorStateSpace>()->getBounds().getDifference();
+               len2 = 0.0;
+               for (int i=0; i<m_robot->GetActiveDOF(); i++)
+                  len2 += diffs[i] * diffs[i];
+               rrtStarModified->setMaxBallRadius(sqrt(len2));
+               printf("### setting MaxBallRadius to %f!\n", sqrt(len2));
+            }
         }
         else if(plannerName == "BallTreeRRTstar")
         {
