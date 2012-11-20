@@ -271,12 +271,21 @@ namespace or_ompl
 
             RAVELOG_INFO("Setting parameters\n");
             rrtStarModified->scale_radii_ = scale_radii;
+            
             if (m_parameters->m_dat_filename.c_str()[0])
                rrtStarModified->dat_filename_ = m_parameters->m_dat_filename + "-rrtstar.dat";
-            /*rrtStarModified->trajs_fileformat_ = m_parameters->m_trajs_fileformat;*/
+            
+            if (m_parameters->m_trajs_fileformat.c_str()[0])
+               rrtStarModified->trajs_fileformat_ = m_parameters->m_trajs_fileformat;
             
             if (m_parameters->m_rrtRange)
                rrtStarModified->setRange(m_parameters->m_rrtRange);
+               
+            /* we must call setup() to prevernt simplesetup from
+             * calling it later and clobbering all our parameters!
+             * it must be AFTER setting range, but BEFORE setting
+             * ball radius constant and max ball radius*/
+            rrtStarModified->setup();
             
             if (m_parameters->m_rrtGoalBias)
                rrtStarModified->setGoalBias(m_parameters->m_rrtGoalBias);
@@ -291,8 +300,8 @@ namespace or_ompl
                for (int i=0; i<m_robot->GetActiveDOF(); i++)
                   if (diffs[i] > max_sidelen)
                      max_sidelen = diffs[i];
-               rrtStarModified->setBallRadiusConstant(max_sidelen);
-               printf("### setting BallRadiusConstant to %f!\n", max_sidelen);
+               rrtStarModified->setBallRadiusConstant(0.2*max_sidelen);
+               printf("### setting BallRadiusConstant to %f!\n", 0.2*max_sidelen);
             }
             
             if (m_parameters->m_rrtStarMaxBallRadius)
@@ -304,8 +313,8 @@ namespace or_ompl
                len2 = 0.0;
                for (int i=0; i<m_robot->GetActiveDOF(); i++)
                   len2 += diffs[i] * diffs[i];
-               rrtStarModified->setMaxBallRadius(sqrt(len2));
-               printf("### setting MaxBallRadius to %f!\n", sqrt(len2));
+               rrtStarModified->setMaxBallRadius(1.0*sqrt(len2));
+               printf("### setting MaxBallRadius to %f!\n", 1.0*sqrt(len2));
             }
         }
         else if(plannerName == "BallTreeRRTstar")
@@ -342,10 +351,7 @@ namespace or_ompl
             clock_gettime(CLOCK_THREAD_CPUTIME_ID, &tic);
 
             bool success;
-            if (m_parameters->m_plannerType == "RRTstarModified")
-               success = m_simpleSetup->solve(2.0 * m_parameters->m_timeLimit);
-            else
-               success = m_simpleSetup->solve(m_parameters->m_timeLimit);
+            success = m_simpleSetup->solve(m_parameters->m_timeLimit);
 
             struct timespec toc;
             clock_gettime(CLOCK_THREAD_CPUTIME_ID, &toc);
