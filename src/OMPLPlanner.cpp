@@ -113,10 +113,16 @@ namespace or_ompl
            RAVELOG_ERROR("Right now, or_omple has hacks for the WAM arm only!\n");
            return false;
         }
+#if 0
         scale_radii[0] = scale_radii[1] = 1.2;
         scale_radii[2] = scale_radii[3] = 0.7;
         scale_radii[4] = scale_radii[5] = 0.4;
         scale_radii[6] = 0.2;
+#endif
+        scale_radii[0] = scale_radii[1] = 1.0;
+        scale_radii[2] = scale_radii[3] = 1.0;
+        scale_radii[4] = scale_radii[5] = 1.0;
+        scale_radii[6] = 1.0;
 
         RAVELOG_INFO("Setting joint limits\n");
         ompl::base::RealVectorBounds bounds(m_robot->GetActiveDOF());
