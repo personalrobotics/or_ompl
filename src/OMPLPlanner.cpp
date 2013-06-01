@@ -36,8 +36,6 @@
 #include <ompl/contrib/rrt_star/RRTstar.h>
 #include <ompl/contrib/rrt_star/BallTreeRRTstar.h>
 
-#include <ompl_rrtstar_modified/RRTstarModified.h>
-
 #include "OMPLPlanner.h"
 
 using namespace OpenRAVE;
@@ -265,64 +263,6 @@ namespace or_ompl
             rrtStar->setMaxBallRadius(m_parameters->m_rrtStarMaxBallRadius);
             rrtStar->setRange(m_parameters->m_rrtRange);
         }
-        else if(plannerName == "RRTstarModified")
-        {
-            RAVELOG_INFO("RRT Star Modified Planner name\n");
-
-            ompl::geometric::RRTstarModified* rrtStarModified = new ompl::geometric::RRTstarModified(spaceInformation);
-
-            RAVELOG_INFO("Created RRTstarModified\n");
-
-            m_planner.reset(rrtStarModified);
-
-            RAVELOG_INFO("Setting parameters\n");
-            rrtStarModified->scale_radii_ = scale_radii;
-            
-            if (m_parameters->m_dat_filename.c_str()[0])
-               rrtStarModified->dat_filename_ = m_parameters->m_dat_filename + "-rrtstar.dat";
-            
-            if (m_parameters->m_trajs_fileformat.c_str()[0])
-               rrtStarModified->trajs_fileformat_ = m_parameters->m_trajs_fileformat;
-            
-            if (m_parameters->m_rrtRange)
-               rrtStarModified->setRange(m_parameters->m_rrtRange);
-               
-            /* we must call setup() to prevernt simplesetup from
-             * calling it later and clobbering all our parameters!
-             * it must be AFTER setting range, but BEFORE setting
-             * ball radius constant and max ball radius*/
-            rrtStarModified->setup();
-            
-            if (m_parameters->m_rrtGoalBias)
-               rrtStarModified->setGoalBias(m_parameters->m_rrtGoalBias);
-            
-            if (m_parameters->m_rrtStarBallRadiusConstant)
-               rrtStarModified->setBallRadiusConstant(m_parameters->m_rrtStarBallRadiusConstant);
-            else
-            {
-               double max_sidelen;
-               std::vector<double> diffs = m_stateSpace->as<ompl::base::RealVectorStateSpace>()->getBounds().getDifference();
-               max_sidelen = 0.0;
-               for (int i=0; i<m_robot->GetActiveDOF(); i++)
-                  if (diffs[i] > max_sidelen)
-                     max_sidelen = diffs[i];
-               rrtStarModified->setBallRadiusConstant(0.2*max_sidelen);
-               printf("### setting BallRadiusConstant to %f!\n", 0.2*max_sidelen);
-            }
-            
-            if (m_parameters->m_rrtStarMaxBallRadius)
-               rrtStarModified->setMaxBallRadius(m_parameters->m_rrtStarMaxBallRadius);
-            else
-            {
-               double len2;
-               std::vector<double> diffs = m_stateSpace->as<ompl::base::RealVectorStateSpace>()->getBounds().getDifference();
-               len2 = 0.0;
-               for (int i=0; i<m_robot->GetActiveDOF(); i++)
-                  len2 += diffs[i] * diffs[i];
-               rrtStarModified->setMaxBallRadius(1.0*sqrt(len2));
-               printf("### setting MaxBallRadius to %f!\n", 1.0*sqrt(len2));
-            }
-        }
         else if(plannerName == "BallTreeRRTstar")
         {
             ompl::geometric::BallTreeRRTstar* ballTree = new ompl::geometric::BallTreeRRTstar(spaceInformation);
@@ -351,7 +291,7 @@ namespace or_ompl
         else
         {
             /* also, set something max path length so it continues after finding a solution! */
-            m_simpleSetup->getGoal()->setMaximumPathLength(0.0);
+            //m_simpleSetup->getGoal()->setMaximumPathLength(0.0);
            
             struct timespec tic;
             clock_gettime(CLOCK_THREAD_CPUTIME_ID, &tic);
