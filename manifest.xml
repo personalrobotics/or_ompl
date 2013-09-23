@@ -10,6 +10,7 @@
   <!--<depend package="ompl"/>-->
   <export>
     <openrave plugins="${prefix}/lib"/>
+    <cpp cflags="-I${prefix}/src" lflags="-L${prefix}/lib"/>
   </export>
 </package>
 
