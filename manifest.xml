@@ -4,6 +4,7 @@
   </description>
   <author>mklingen</author>
   <license>BSD</license>
+  <review status="released" notes="approved on 3/13"/>
   <review status="unreviewed" notes=""/>
   <url>http://ros.org/wiki/or_ompl</url>
   <depend package="openrave"/>
