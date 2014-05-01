@@ -105,22 +105,6 @@ namespace or_ompl
 
         RAVELOG_INFO("Setting state space\n");
         m_stateSpace.reset(new ompl::base::RealVectorStateSpace(robot->GetActiveDOF()));
-        
-        if (robot->GetActiveDOF() != 7)
-        {
-           RAVELOG_ERROR("Right now, or_omple has hacks for the WAM arm only!\n");
-           return false;
-        }
-#if 0
-        scale_radii[0] = scale_radii[1] = 1.2;
-        scale_radii[2] = scale_radii[3] = 0.7;
-        scale_radii[4] = scale_radii[5] = 0.4;
-        scale_radii[6] = 0.2;
-#endif
-        scale_radii[0] = scale_radii[1] = 1.0;
-        scale_radii[2] = scale_radii[3] = 1.0;
-        scale_radii[4] = scale_radii[5] = 1.0;
-        scale_radii[6] = 1.0;
 
         RAVELOG_INFO("Setting joint limits\n");
         ompl::base::RealVectorBounds bounds(m_robot->GetActiveDOF());
@@ -130,8 +114,8 @@ namespace or_ompl
 
         for (int i = 0; i < m_robot->GetActiveDOF(); i++)
         {
-            bounds.setLow(i, scale_radii[i] * lowerLimits[i]);
-            bounds.setHigh(i, scale_radii[i] * upperLimits[i]);
+            bounds.setLow(i, lowerLimits[i]);
+            bounds.setHigh(i, upperLimits[i]);
         }
 
         m_stateSpace->as<ompl::base::RealVectorStateSpace>()->setBounds(bounds);
@@ -153,7 +137,7 @@ namespace or_ompl
         ompl::base::ScopedState<ompl::base::RealVectorStateSpace> startPose(m_stateSpace);
         for(int i = 0; i < m_robot->GetActiveDOF(); i++)
         {
-            startPose->values[i] = scale_radii[i] * m_parameters->vinitialconfig[i];
+            startPose->values[i] = m_parameters->vinitialconfig[i];
         }
 
         RAVELOG_INFO("Checking collisions.\n");
@@ -168,7 +152,7 @@ namespace or_ompl
         ompl::base::ScopedState<ompl::base::RealVectorStateSpace> endPose(m_stateSpace);
         for(int i = 0; i < m_robot->GetActiveDOF(); i++)
         {
-            endPose->values[i] = scale_radii[i] * params->vgoalconfig[i];
+            endPose->values[i] = params->vgoalconfig[i];
         }
 
         RAVELOG_INFO("Checking collisions\n");
@@ -337,8 +321,9 @@ namespace or_ompl
                      const ompl::base::RealVectorStateSpace::StateType* state = states[i]->as<ompl::base::RealVectorStateSpace::StateType>();
                      if(!state) { RAVELOG_ERROR("Invalid state type!"); return OpenRAVE::PS_Failed; }
                      OpenRAVE::TrajectoryBase::Point point;
-                     for (int j = 0; j < m_robot->GetActiveDOF(); j++)
-                        point.q.push_back((*state)[j] / scale_radii[j]);
+                     for (int j = 0; j < m_robot->GetActiveDOF(); j++) {
+                        point.q.push_back((*state)[j]);
+                     }
                      t->Insert(i, point.q, true);
                   }
                   std::ofstream f(trajs_filename);
@@ -359,8 +344,9 @@ namespace or_ompl
                   const ompl::base::RealVectorStateSpace::StateType* state = states[i]->as<ompl::base::RealVectorStateSpace::StateType>();
                   if(!state) { RAVELOG_ERROR("Invalid state type!"); return OpenRAVE::PS_Failed; }
                   OpenRAVE::TrajectoryBase::Point point;
-                  for(int j = 0; j < m_robot->GetActiveDOF(); j++)
-                     point.q.push_back((*state)[j] / scale_radii[j]);
+                  for(int j = 0; j < m_robot->GetActiveDOF(); j++) {
+                     point.q.push_back((*state)[j]);
+                  }
                   ptraj->Insert(i, point.q, true);
                }
                
@@ -417,7 +403,7 @@ namespace or_ompl
             std::vector<double> values;
             for(int i = 0; i < m_robot->GetActiveDOF(); i++)
             {
-                values.push_back(realVectorState->values[i] / scale_radii[i]);
+                values.push_back(realVectorState->values[i]);
             }
 
             return !IsInOrCollision(values);
