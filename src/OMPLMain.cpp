@@ -29,37 +29,26 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 *************************************************************************/
 #include <openrave/plugin.h>
 #include "OMPLPlanner.h"
-#if 0
-#include "OMPLModule.h"
-#endif
 
 using namespace OpenRAVE;
 
-InterfaceBasePtr CreateInterfaceValidated(InterfaceType type, const std::string& interfacename, std::istream& sinput, EnvironmentBasePtr penv)
+InterfaceBasePtr CreateInterfaceValidated(
+        InterfaceType type, std::string const &interfacename,
+        std::istream &sinput, EnvironmentBasePtr penv)
 {
-    if (type == PT_Planner && interfacename == "ompl")
-    {
+    if (type == PT_Planner && interfacename == "ompl") {
         return InterfaceBasePtr(new or_ompl::OMPLPlanner(penv));
+    } else {
+        return InterfaceBasePtr();
     }
-#if 0
-    else if(type == PT_Module && interfacename == "ompl")
-    {
-        return InterfaceBasePtr(new or_ompl::OMPLModule(penv));
-    }
-#endif
-    return InterfaceBasePtr();
 }
 
 void GetPluginAttributesValidated(PLUGININFO& info)
 {
     info.interfacenames[PT_Planner].push_back("ompl");
-#if 0
-    info.interfacenames[PT_Module].push_back("OMPL");
-#endif
 }
 
 RAVE_PLUGIN_API void DestroyPlugin()
 {
-    RAVELOG_INFO("destroying plugin\n");
 }
 

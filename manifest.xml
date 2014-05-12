@@ -1,6 +1,6 @@
 <package>
     <description brief="OpenRAVE bindings for OMPL.">
-        OpenRAVE bindings for OMPL planners and path smoothers.
+        OpenRAVE bindings for OMPL planners.
     </description>
     <author>Matthew Klingensmith, Christopher Dellin, Michael Koval</author>
     <license>BSD</license>
