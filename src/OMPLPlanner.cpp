@@ -151,6 +151,23 @@ bool OMPLPlanner::InitPlan(OpenRAVE::RobotBasePtr robot,
     double const max_extent = m_stateSpace->getMaximumExtent();
     double const segment_fraction = conservative_resolution / max_extent;
     m_stateSpace->setLongestValidSegmentFraction(segment_fraction);
+
+    // Per-DOF weights are not supported by OMPL. We could emulate this by
+    // scaling the joint values, but I'm not sure if that's a good idea.
+    RAVELOG_DEBUG("Checking joint weights.\n");
+    std::vector<OpenRAVE::dReal> dof_weights;
+    m_robot->GetActiveDOFWeights(dof_weights);
+    bool has_weights = false;
+
+    for (int i = 0; !has_weights && i < m_robot->GetActiveDOF(); ++i) {
+        has_weights = dof_weights[i] != 1.;
+    }
+
+    if (has_weights) {
+        RAVELOG_WARN("Robot specifies DOF weights. Only unit weights are"
+                     "supported by OMPL; planning will commence as if there are no"
+                     "weights.\n");
+    }
     
     RAVELOG_DEBUG("Setting up simplesetup class.\n");
     m_simpleSetup = boost::make_shared<ompl::geometric::SimpleSetup>(GetStateSpace());
