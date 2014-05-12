@@ -32,8 +32,6 @@
 
 #include "OMPLPlanner.h"
 
-using namespace OpenRAVE;
-
 #define CD_OS_TIMESPEC_SET_ZERO(t) do { (t)->tv_sec = 0; (t)->tv_nsec = 0; } while (0)
 #define CD_OS_TIMESPEC_ADD(dst, src) do { (dst)->tv_sec += (src)->tv_sec; (dst)->tv_nsec += (src)->tv_nsec; \
    if ((dst)->tv_nsec > 999999999) { (dst)->tv_sec += 1; (dst)->tv_nsec -= 1000000000; } } while (0)
@@ -66,7 +64,8 @@ bool OMPLPlanner::InitPlan(OpenRAVE::RobotBasePtr robot, std::istream& input)
     return InitPlan(robot, PlannerParametersConstPtr(params));
 }
 
-bool OMPLPlanner::InitPlan(RobotBasePtr robot, PlannerParametersConstPtr params)
+bool OMPLPlanner::InitPlan(OpenRAVE::RobotBasePtr robot,
+                           PlannerParametersConstPtr params)
 {
     RAVELOG_DEBUG("Initializing plan\n");
     if (m_simpleSetup) {
@@ -146,7 +145,7 @@ bool OMPLPlanner::InitPlan(RobotBasePtr robot, PlannerParametersConstPtr params)
     m_simpleSetup->setStartState(startPose);
     m_simpleSetup->setGoalState(endPose);
 
-    m_collisionReport = boost::make_shared<CollisionReport>();
+    m_collisionReport = boost::make_shared<OpenRAVE::CollisionReport>();
 
     return true;
 }
@@ -278,7 +277,8 @@ bool OMPLPlanner::IsInOrCollision(std::vector<double> values)
 #endif
     OpenRAVE::EnvironmentMutex::scoped_lock lockenv(GetEnv()->GetMutex());
     m_robot->SetActiveDOFValues(values, false);
-    bool collided = (GetEnv()->CheckCollision(KinBodyConstPtr(m_robot), m_collisionReport)) || (m_robot->CheckSelfCollision(m_collisionReport));
+    bool collided = (GetEnv()->CheckCollision(m_robot, m_collisionReport))
+                 || (m_robot->CheckSelfCollision(m_collisionReport));
     m_numCollisionChecks++;
 
 #ifdef TIME_COLLISION_CHECKS
