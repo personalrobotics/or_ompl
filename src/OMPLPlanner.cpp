@@ -1,10 +1,3 @@
-/*
- * OMPLPlanner.cpp
- *
- *  Created on: Jun 2, 2012
- *      Author: mklingen
- */
-
 #include <time.h>
 
 #include <boost/make_shared.hpp>
@@ -75,7 +68,7 @@ bool OMPLPlanner::InitPlan(OpenRAVE::RobotBasePtr robot, std::istream& input)
 
 bool OMPLPlanner::InitPlan(RobotBasePtr robot, PlannerParametersConstPtr params)
 {
-    RAVELOG_INFO("Initializing plan\n");
+    RAVELOG_DEBUG("Initializing plan\n");
     if (m_simpleSetup) {
         m_simpleSetup.reset();
     }
@@ -85,7 +78,7 @@ bool OMPLPlanner::InitPlan(RobotBasePtr robot, PlannerParametersConstPtr params)
     
     if (m_parameters->m_seed)
     {
-       RAVELOG_INFO("Setting random seed to %u ...\n", m_parameters->m_seed);
+       RAVELOG_DEBUG("Setting random seed to %u ...\n", m_parameters->m_seed);
        ompl::RNG::setSeed(m_parameters->m_seed);
        if (ompl::RNG::getSeed() != m_parameters->m_seed) {
           RAVELOG_ERROR("Could not set the seed! Was this the first or_ompl plan attempted?\n");
@@ -93,15 +86,15 @@ bool OMPLPlanner::InitPlan(RobotBasePtr robot, PlannerParametersConstPtr params)
        }
     }
     else {
-       RAVELOG_INFO("Using default (time-based) seed (%u) for OMPL ...\n", ompl::RNG::getSeed());
+       RAVELOG_DEBUG("Using default (time-based) seed (%u) for OMPL ...\n", ompl::RNG::getSeed());
     }
 
     m_robot = robot;
 
-    RAVELOG_INFO("Setting state space\n");
+    RAVELOG_DEBUG("Setting state space\n");
     m_stateSpace = boost::make_shared<ompl::base::RealVectorStateSpace>(robot->GetActiveDOF());
 
-    RAVELOG_INFO("Setting joint limits\n");
+    RAVELOG_DEBUG("Setting joint limits\n");
     ompl::base::RealVectorBounds bounds(m_robot->GetActiveDOF());
     std::vector<double> lowerLimits, upperLimits;
     m_robot->GetActiveDOFLimits(lowerLimits, upperLimits);
@@ -113,42 +106,42 @@ bool OMPLPlanner::InitPlan(RobotBasePtr robot, PlannerParametersConstPtr params)
 
     m_stateSpace->as<ompl::base::RealVectorStateSpace>()->setBounds(bounds);
     
-    RAVELOG_INFO("Setting up simplesetup class.\n");
+    RAVELOG_DEBUG("Setting up simplesetup class.\n");
     m_simpleSetup = boost::make_shared<ompl::geometric::SimpleSetup>(GetStateSpace());
 
-    RAVELOG_INFO("Initializing the planner.\n");
+    RAVELOG_DEBUG("Initializing the planner.\n");
     if (!InitializePlanner()) {
         return false;
     }
 
-    RAVELOG_INFO("Setting the planner.\n");
+    RAVELOG_DEBUG("Setting the planner.\n");
     m_simpleSetup->setPlanner(m_planner);
 
-    RAVELOG_INFO("Creating the start pose.\n");
+    RAVELOG_DEBUG("Creating the start pose.\n");
     ompl::base::ScopedState<ompl::base::RealVectorStateSpace> startPose(m_stateSpace);
     for (int i = 0; i < m_robot->GetActiveDOF(); i++) {
         startPose->values[i] = m_parameters->vinitialconfig[i];
     }
 
-    RAVELOG_INFO("Checking collisions.\n");
+    RAVELOG_DEBUG("Checking collisions.\n");
     if (IsInOrCollision(params->vinitialconfig)) {
         RAVELOG_ERROR("Can't plan. Initial configuration in collision!\n");
         return false;
     }
 
-    RAVELOG_INFO("Setting the end pose.\n");
+    RAVELOG_DEBUG("Setting the end pose.\n");
     ompl::base::ScopedState<ompl::base::RealVectorStateSpace> endPose(m_stateSpace);
     for (int i = 0; i < m_robot->GetActiveDOF(); i++) {
         endPose->values[i] = params->vgoalconfig[i];
     }
 
-    RAVELOG_INFO("Checking collisions\n");
+    RAVELOG_DEBUG("Checking collisions\n");
     if (IsInOrCollision(params->vgoalconfig)) {
         RAVELOG_ERROR("Can't plan. Final configuration is in collision!");
         return false;
     }
 
-    RAVELOG_INFO("Setting state validity checker\n");
+    RAVELOG_DEBUG("Setting state validity checker\n");
     m_simpleSetup->setStateValidityChecker(boost::bind(&or_ompl::OMPLPlanner::IsStateValid, this, _1));
     m_simpleSetup->setStartState(startPose);
     m_simpleSetup->setGoalState(endPose);
@@ -160,10 +153,10 @@ bool OMPLPlanner::InitPlan(RobotBasePtr robot, PlannerParametersConstPtr params)
 
 bool OMPLPlanner::InitializePlanner()
 {
-    RAVELOG_INFO("Getting planner name.\n");
+    RAVELOG_DEBUG("Getting planner name.\n");
     std::string plannerName = m_parameters->m_plannerType;
 
-    RAVELOG_INFO("Setting up space information\n");
+    RAVELOG_DEBUG("Setting up space information\n");
     ompl::base::SpaceInformationPtr spaceInformation = m_simpleSetup->getSpaceInformation();
     if(plannerName == "KPIECE")
     {
@@ -219,15 +212,15 @@ bool OMPLPlanner::InitializePlanner()
     }
     else if(plannerName == "RRTstar")
     {
-        RAVELOG_INFO("RRT Star Planner name\n");
+        RAVELOG_DEBUG("RRT Star Planner name\n");
 
         ompl::geometric::RRTstar* rrtStar = new ompl::geometric::RRTstar(spaceInformation);
 
-        RAVELOG_INFO("Created RRTStar\n");
+        RAVELOG_DEBUG("Created RRTStar\n");
 
         m_planner.reset(rrtStar);
 
-        RAVELOG_INFO("Setting parameters\n");
+        RAVELOG_DEBUG("Setting parameters\n");
         rrtStar->setGoalBias(m_parameters->m_rrtGoalBias);
         rrtStar->setMaxBallRadius(m_parameters->m_rrtStarMaxBallRadius);
         rrtStar->setRange(m_parameters->m_rrtRange);
