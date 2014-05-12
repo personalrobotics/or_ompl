@@ -1,17 +1,14 @@
 <package>
-  <description brief="or_ompl">
-     or_ompl
-  </description>
-  <author>mklingen</author>
-  <license>BSD</license>
-  <review status="released" notes="approved on 3/13"/>
-  <review status="unreviewed" notes=""/>
-  <url>http://ros.org/wiki/or_ompl</url>
-  <depend package="openrave"/>
-  <!--<depend package="ompl"/>-->
-  <export>
-    <openrave plugins="${prefix}/lib"/>
-  </export>
+    <description brief="OpenRAVE bindings for OMPL.">
+        OpenRAVE bindings for OMPL planners and path smoothers.
+    </description>
+    <author>Matthew Klingensmith, Christopher Dellin, Michael Koval</author>
+    <license>BSD</license>
+    <review status="released" notes="approved on 3/13"/>
+    <url>https://personalrobotics.ri.cmu.edu</url>
+    <rosdep name="ompl"/>
+    <depend package="openrave"/>
+    <export>
+        <openrave plugins="${prefix}/lib"/>
+    </export>
 </package>
-
-
