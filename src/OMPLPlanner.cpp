@@ -127,12 +127,30 @@ bool OMPLPlanner::InitPlan(OpenRAVE::RobotBasePtr robot,
     std::vector<double> lowerLimits, upperLimits;
     m_robot->GetActiveDOFLimits(lowerLimits, upperLimits);
 
-    for (int i = 0; i < m_robot->GetActiveDOF(); i++) {
+    for (int i = 0; i < m_robot->GetActiveDOF(); ++i) {
         bounds.setLow(i, lowerLimits[i]);
         bounds.setHigh(i, upperLimits[i]);
     }
-
     m_stateSpace->as<ompl::base::RealVectorStateSpace>()->setBounds(bounds);
+
+    // Set the resolution at which OMPL should discretize edges for collision
+    // checking. OpenRAVE supports per-joint resolutions, so we compute one
+    // conservative value for all joints. We then convert this to a fraction
+    // of the workspace extents to call setLongestValidSegmentFraction.
+    // TODO: We could emulate per-joint resolutions by scaling the joint
+    // values. Is that a good idea?
+    RAVELOG_DEBUG("Setting collision checking resolution.\n");
+    std::vector<OpenRAVE::dReal> dof_resolutions;
+    m_robot->GetActiveDOFResolutions(dof_resolutions);
+
+    double conservative_resolution = std::numeric_limits<double>::max();
+    for (int i = 0; i < m_robot->GetActiveDOF(); ++i) {
+        conservative_resolution = std::min(dof_resolutions[i], conservative_resolution);
+    }
+
+    double const max_extent = m_stateSpace->getMaximumExtent();
+    double const segment_fraction = conservative_resolution / max_extent;
+    m_stateSpace->setLongestValidSegmentFraction(segment_fraction);
     
     RAVELOG_DEBUG("Setting up simplesetup class.\n");
     m_simpleSetup = boost::make_shared<ompl::geometric::SimpleSetup>(GetStateSpace());
