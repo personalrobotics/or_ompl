@@ -43,8 +43,9 @@ namespace or_ompl
             OpenRAVE::CollisionReportPtr m_collisionReport;
             int m_numCollisionChecks;
             double m_totalCollisionTime;
-            double scale_radii[7];
 
+            OpenRAVE::PlannerStatus ToORTrajectory(ompl::geometric::PathGeometric &ompl_traj,
+                                                   OpenRAVE::TrajectoryBasePtr or_traj) const;
     };
 
     typedef boost::shared_ptr<OMPLPlanner> OMPLPlannerPtr;

@@ -247,95 +247,27 @@ OpenRAVE::PlannerStatus OMPLPlanner::PlanPath(OpenRAVE::TrajectoryBasePtr ptraj)
     if (!m_simpleSetup) {
         RAVELOG_ERROR("Unable to plan. Did you call InitPlan?");
         return OpenRAVE::PS_Failed;
-    } else {
-        /* also, set something max path length so it continues after finding a solution! */
-        //m_simpleSetup->getGoal()->setMaximumPathLength(0.0);
-       
-        // TODO: What is all of this? Should this really be in the planner?
-        struct timespec tic;
-        clock_gettime(CLOCK_THREAD_CPUTIME_ID, &tic);
-
-        bool success;
-        success = m_simpleSetup->solve(m_parameters->m_timeLimit);
-
-        struct timespec toc;
-        clock_gettime(CLOCK_THREAD_CPUTIME_ID, &toc);
-        CD_OS_TIMESPEC_SUB(&toc, &tic);
-        printf("cputime seconds: %f\n", CD_OS_TIMESPEC_DOUBLE(&toc));
-
-        ConfigurationSpecification spec =  m_robot->GetActiveConfigurationSpecification();
-        ptraj->Init(spec);
-
-        if (success) {
-            // TODO: What is all of this? Should this really be in the planner?
-            /* write success dat file */
-            if (m_parameters->m_dat_filename.c_str()[0])
-            {
-               FILE * fp;
-               fp = fopen(m_parameters->m_dat_filename.c_str(), "w");
-               fprintf(fp, "0 %f 1 %d %f\n", CD_OS_TIMESPEC_DOUBLE(&toc), m_numCollisionChecks, m_totalCollisionTime);
-               fclose(fp);
-            }
-            
-            /* write trajectory file */
-            if (m_parameters->m_trajs_fileformat.c_str()[0]) {
-                char trajs_filename[1024];
-                sprintf(trajs_filename, m_parameters->m_trajs_fileformat.c_str(), 0); /* iter = 0 */
-                OpenRAVE::TrajectoryBasePtr t = OpenRAVE::RaveCreateTrajectory(GetEnv());
-                t->Init(m_robot->GetActiveConfigurationSpecification());
-                
-#if OMPL_VERSION_COMP >= 000010002
-                std::vector<ompl::base::State*>& states = m_simpleSetup->getSolutionPath().getStates();
-#else
-                std::vector<ompl::base::State*>& states = m_simpleSetup->getSolutionPath().states;
-#endif
-                for (size_t i = 0; i < states.size(); i++)
-                {
-                   const ompl::base::RealVectorStateSpace::StateType* state = states[i]->as<ompl::base::RealVectorStateSpace::StateType>();
-                   if(!state) { RAVELOG_ERROR("Invalid state type!"); return OpenRAVE::PS_Failed; }
-                   OpenRAVE::TrajectoryBase::Point point;
-                   for (int j = 0; j < m_robot->GetActiveDOF(); j++) {
-                      point.q.push_back((*state)[j]);
-                   }
-                   t->Insert(i, point.q, true);
-                }
-                std::ofstream f(trajs_filename);
-                f << std::setprecision(std::numeric_limits<OpenRAVE::dReal>::digits10+1); /// have to do this or otherwise precision gets lost
-                t->serialize(f);
-                f.close();
-             }
-           
-#if OMPL_VERSION_COMP >= 000010002
-             std::vector<ompl::base::State*>& states = m_simpleSetup->getSolutionPath().getStates();
-#else
-             std::vector<ompl::base::State*>& states = m_simpleSetup->getSolutionPath().states;
-#endif
-             /* write into the actual trajectory to be passed back to our caller */
-             ptraj->Init(m_robot->GetActiveConfigurationSpecification());
-             for (size_t i = 0; i < states.size(); i++)
-             {
-                ompl::base::RealVectorStateSpace::StateType const* state = states[i]->as<ompl::base::RealVectorStateSpace::StateType>();
-                if(!state) { RAVELOG_ERROR("Invalid state type!"); return OpenRAVE::PS_Failed; }
-                OpenRAVE::TrajectoryBase::Point point;
-                for(int j = 0; j < m_robot->GetActiveDOF(); j++) {
-                   point.q.push_back((*state)[j]);
-                }
-                ptraj->Insert(i, point.q, true);
-             }
-             return OpenRAVE::PS_HasSolution;
-         } else {
-             /* write failure dat file */
-             if (m_parameters->m_dat_filename.c_str()[0])
-             {
-                FILE * fp;
-                fp = fopen(m_parameters->m_dat_filename.c_str(), "w");
-                fprintf(fp, "0 %f 0 %d %f\n", CD_OS_TIMESPEC_DOUBLE(&toc), m_numCollisionChecks, m_totalCollisionTime);
-                fclose(fp);
-             }
-             return OpenRAVE::PS_Failed;
-         }
     }
-    return OpenRAVE::PS_Failed;
+    /* also, set something max path length so it continues after finding a solution! */
+    //m_simpleSetup->getGoal()->setMaximumPathLength(0.0);
+   
+    // TODO: What is all of this? Should this really be in the planner?
+    struct timespec tic;
+    clock_gettime(CLOCK_THREAD_CPUTIME_ID, &tic);
+
+    bool success;
+    success = m_simpleSetup->solve(m_parameters->m_timeLimit);
+
+    struct timespec toc;
+    clock_gettime(CLOCK_THREAD_CPUTIME_ID, &toc);
+    CD_OS_TIMESPEC_SUB(&toc, &tic);
+    printf("cputime seconds: %f\n", CD_OS_TIMESPEC_DOUBLE(&toc));
+
+    if (success) { 
+        return ToORTrajectory(m_simpleSetup->getSolutionPath(), ptraj);
+    } else {
+        return OpenRAVE::PS_Failed;
+    }
 }
 
 bool OMPLPlanner::IsInOrCollision(std::vector<double> values)
@@ -372,6 +304,37 @@ bool OMPLPlanner::IsStateValid(ompl::base::State const *state)
         }
         return !IsInOrCollision(values);
     }
+}
+
+OpenRAVE::PlannerStatus OMPLPlanner::ToORTrajectory(
+        ompl::geometric::PathGeometric &ompl_traj,
+        OpenRAVE::TrajectoryBasePtr or_traj) const
+{
+#if OMPL_VERSION_COMP >= 000010002
+    std::vector<ompl::base::State*> const &states = ompl_traj.getStates();
+#else
+    std::vector<ompl::base::State*> const &states = ompl_traj.states;
+#endif
+
+    size_t const num_dof = m_robot->GetActiveDOF();
+    or_traj->Init(m_robot->GetActiveConfigurationSpecification());
+
+    for (size_t i = 0; i < states.size(); ++i){
+        ompl::base::RealVectorStateSpace::StateType const *state
+            = states[i]->as<ompl::base::RealVectorStateSpace::StateType>();
+        if (!state) {
+            RAVELOG_ERROR("Unable to convert output trajectory."
+                          "State is not a RealVectorStateSpace::StateType.");
+            return OpenRAVE::PS_Failed;
+        }
+
+        std::vector<OpenRAVE::dReal> sample(num_dof);
+        for (size_t j = 0; j < num_dof; ++j) {
+            sample[j] = (*state)[j];
+        }
+        or_traj->Insert(i, sample, true);
+    }
+    return OpenRAVE::PS_HasSolution;
 }
 
 } /* namespace or_ompl */
