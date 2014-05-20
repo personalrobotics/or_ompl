@@ -20,21 +20,15 @@
 #include <ompl/geometric/planners/kpiece/KPIECE1.h>
 #include <ompl/geometric/planners/kpiece/BKPIECE1.h>
 #include <ompl/geometric/planners/kpiece/LBKPIECE1.h>
-
-#if OMPL_VERSION_COMP >= 000010002
-#  include <ompl/geometric/planners/prm/PRM.h>
-#else
-#  include <ompl/geometric/planners/prm/BasicPRM.h>
-#endif
-
+#include <ompl/geometric/planners/prm/PRM.h>
 #include <ompl/geometric/planners/rrt/RRT.h>
 #include <ompl/geometric/planners/rrt/RRTConnect.h>
 #include <ompl/geometric/planners/rrt/LazyRRT.h>
 #include <ompl/geometric/planners/rrt/pRRT.h>
+#include <ompl/geometric/planners/rrt/RRTstar.h>
+#include <ompl/geometric/planners/rrt/BallTreeRRTstar.h>
 #include <ompl/geometric/planners/sbl/SBL.h>
 #include <ompl/geometric/planners/sbl/pSBL.h>
-#include <ompl/contrib/rrt_star/RRTstar.h>
-#include <ompl/contrib/rrt_star/BallTreeRRTstar.h>
 
 #include "OMPLPlanner.h"
 
@@ -260,7 +254,6 @@ namespace or_ompl
 
             RAVELOG_INFO("Setting parameters\n");
             rrtStar->setGoalBias(m_parameters->m_rrtGoalBias);
-            rrtStar->setMaxBallRadius(m_parameters->m_rrtStarMaxBallRadius);
             rrtStar->setRange(m_parameters->m_rrtRange);
         }
         else if(plannerName == "BallTreeRRTstar")
