@@ -1,9 +1,10 @@
 cmake_minimum_required(VERSION 2.8.3)
 
+# TODO: We might be missing dependencies here.
+find_package(catkin REQUIRED)
 catkin_package(
-    INCLUDE_DIRS include
+    INCLUDE_DIRS include/
     LIBRARIES ${PROJECT_NAME}
-    DEPENDS openrave ompl
 )
 
 include(FindPkgConfig)
