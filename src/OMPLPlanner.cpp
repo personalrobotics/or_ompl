@@ -28,8 +28,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 *************************************************************************/
 #include <time.h>
-
 #include <boost/make_shared.hpp>
+
 #include <ompl/config.h>
 #define OMPL_VERSION_COMP (  OMPL_MAJOR_VERSION * 1000000 \
                            + OMPL_MINOR_VERSION * 1000 \
@@ -43,13 +43,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <ompl/geometric/planners/kpiece/KPIECE1.h>
 #include <ompl/geometric/planners/kpiece/BKPIECE1.h>
 #include <ompl/geometric/planners/kpiece/LBKPIECE1.h>
-
-#if OMPL_VERSION_COMP >= 000010002
-#include <ompl/geometric/planners/prm/PRM.h>
-#else
-#include <ompl/geometric/planners/prm/BasicPRM.h>
-#endif
-
 #include <ompl/geometric/planners/rrt/RRT.h>
 #include <ompl/geometric/planners/rrt/RRTConnect.h>
 #include <ompl/geometric/planners/rrt/LazyRRT.h>
@@ -57,12 +50,18 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <ompl/geometric/planners/sbl/SBL.h>
 #include <ompl/geometric/planners/sbl/pSBL.h>
 
-#if OMPL_VERSION_COMP >= 0000130000
-#include <ompl/geometric/planners/rrt/RRTstar.h>
-#include <ompl/geometric/planners/rrt/BallTreeRRTstar.h>
+#if OMPL_VERSION_COMP >= 000010002
+#   include <ompl/geometric/planners/prm/PRM.h>
 #else
-#include <ompl/contrib/rrt_star/RRTstar.h>
-#include <ompl/contrib/rrt_star/BallTreeRRTstar.h>
+#   include <ompl/geometric/planners/prm/BasicPRM.h>
+#endif
+
+#if OMPL_VERSION_COMP >= 000013000
+#   include <ompl/geometric/planners/rrt/RRTstar.h>
+#   include <ompl/geometric/planners/rrt/BallTreeRRTstar.h>
+#else
+#   include <ompl/contrib/rrt_star/RRTstar.h>
+#   include <ompl/contrib/rrt_star/BallTreeRRTstar.h>
 #endif
 
 #include "OMPLPlanner.h"
