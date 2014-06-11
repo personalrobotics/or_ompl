@@ -51,4 +51,3 @@ void GetPluginAttributesValidated(PLUGININFO& info)
 RAVE_PLUGIN_API void DestroyPlugin()
 {
 }
-

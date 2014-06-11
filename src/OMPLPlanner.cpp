@@ -56,8 +56,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <ompl/geometric/planners/rrt/pRRT.h>
 #include <ompl/geometric/planners/sbl/SBL.h>
 #include <ompl/geometric/planners/sbl/pSBL.h>
-#include <ompl/contrib/rrt_star/RRTstar.h>
-#include <ompl/contrib/rrt_star/BallTreeRRTstar.h>
+#include <ompl/geometric/planners/rrt/RRTstar.h>
+#include <ompl/geometric/planners/rrt/BallTreeRRTstar.h>
 
 #include "OMPLPlanner.h"
 
@@ -285,7 +285,7 @@ bool OMPLPlanner::InitializePlanner()
 
         RAVELOG_DEBUG("Setting parameters\n");
         rrtStar->setGoalBias(m_parameters->m_rrtGoalBias);
-        rrtStar->setMaxBallRadius(m_parameters->m_rrtStarMaxBallRadius);
+        //rrtStar->setMaxBallRadius(m_parameters->m_rrtStarMaxBallRadius);
         rrtStar->setRange(m_parameters->m_rrtRange);
     }
     else if(plannerName == "BallTreeRRTstar")
