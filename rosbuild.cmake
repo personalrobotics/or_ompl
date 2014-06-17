@@ -16,5 +16,19 @@ include_directories(${PROJECT_SOURCE_DIR}/include/or_ompl)
 set(EXECUTABLE_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/bin)
 set(LIBRARY_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/lib)
 
-rosbuild_add_library(${PROJECT_NAME} SHARED src/OMPLMain.cpp src/OMPLPlanner.cpp)
+# Generate the OMPL planner wrappers.
+file(MAKE_DIRECTORY "${CMAKE_BINARY_DIR}/src")
+add_custom_command(OUTPUT "${CMAKE_BINARY_DIR}/src/PlannerRegistry.cpp"
+    MAIN_DEPENDENCY "${PROJECT_SOURCE_DIR}/planners.json"
+    DEPENDS "${PROJECT_SOURCE_DIR}/scripts/wrap_planners.py"
+    COMMAND "${PROJECT_SOURCE_DIR}/scripts/wrap_planners.py"
+            < "${PROJECT_SOURCE_DIR}/planners.json"
+            > "${CMAKE_BINARY_DIR}/src/PlannerRegistry.cpp"
+)
+
+rosbuild_add_library(${PROJECT_NAME} SHARED
+    src/OMPLMain.cpp
+    src/OMPLPlanner.cpp
+    "${CMAKE_BINARY_DIR}/src/PlannerRegistry.cpp"
+)
 target_link_libraries(${PROJECT_NAME} ompl)

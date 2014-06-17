@@ -38,33 +38,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <ompl/base/StateSpaceTypes.h>
 #include <ompl/base/StateSpace.h>
 #include <ompl/base/spaces/RealVectorStateSpace.h>
-#include <ompl/geometric/planners/PlannerIncludes.h>
-#include <ompl/geometric/planners/est/EST.h>
-#include <ompl/geometric/planners/kpiece/KPIECE1.h>
-#include <ompl/geometric/planners/kpiece/BKPIECE1.h>
-#include <ompl/geometric/planners/kpiece/LBKPIECE1.h>
-#include <ompl/geometric/planners/rrt/RRT.h>
-#include <ompl/geometric/planners/rrt/RRTConnect.h>
-#include <ompl/geometric/planners/rrt/LazyRRT.h>
-#include <ompl/geometric/planners/rrt/pRRT.h>
-#include <ompl/geometric/planners/sbl/SBL.h>
-#include <ompl/geometric/planners/sbl/pSBL.h>
-
-#if OMPL_VERSION_COMP >= 10002
-#   include <ompl/geometric/planners/prm/PRM.h>
-#else
-#   include <ompl/geometric/planners/prm/BasicPRM.h>
-#endif
-
-#if OMPL_VERSION_COMP >= 13000
-#   include <ompl/geometric/planners/rrt/RRTstar.h>
-#   include <ompl/geometric/planners/rrt/BallTreeRRTstar.h>
-#else
-#   include <ompl/contrib/rrt_star/RRTstar.h>
-#   include <ompl/contrib/rrt_star/BallTreeRRTstar.h>
-#endif
-
 #include "OMPLPlanner.h"
+#include "PlannerRegistry.h"
 
 #define CD_OS_TIMESPEC_SET_ZERO(t) do { (t)->tv_sec = 0; (t)->tv_nsec = 0; } while (0)
 #define CD_OS_TIMESPEC_ADD(dst, src) do { (dst)->tv_sec += (src)->tv_sec; (dst)->tv_nsec += (src)->tv_nsec; \
@@ -221,91 +196,9 @@ bool OMPLPlanner::InitPlan(OpenRAVE::RobotBasePtr robot,
 
 bool OMPLPlanner::InitializePlanner()
 {
-    RAVELOG_DEBUG("Getting planner name.\n");
-    std::string plannerName = m_parameters->m_plannerType;
-
-    RAVELOG_DEBUG("Setting up space information\n");
+    std::string const plannerName = m_parameters->m_plannerType;
     ompl::base::SpaceInformationPtr spaceInformation = m_simpleSetup->getSpaceInformation();
-    if(plannerName == "KPIECE")
-    {
-        m_planner.reset(new ompl::geometric::KPIECE1(spaceInformation));
-    }
-    else if(plannerName == "BKPIECE")
-    {
-        m_planner.reset(new ompl::geometric::BKPIECE1(spaceInformation));
-    }
-    else if(plannerName == "LBKPIECE")
-    {
-        m_planner.reset(new ompl::geometric::LBKPIECE1(spaceInformation));
-    }
-    else if(plannerName == "EST")
-    {
-        m_planner.reset(new ompl::geometric::EST(spaceInformation));
-    }
-    else if(plannerName == "RRT")
-    {
-        ompl::geometric::RRT* rrt = new ompl::geometric::RRT(spaceInformation);
-        m_planner.reset(rrt);
-        rrt->setGoalBias(m_parameters->m_rrtGoalBias);
-        rrt->setRange(m_parameters->m_rrtRange);
-    }
-    else if(plannerName == "RRTConnect")
-    {
-        ompl::geometric::RRTConnect* rrtConnect = new ompl::geometric::RRTConnect(spaceInformation);
-        m_planner.reset(rrtConnect);
-        printf("setting range to be %f!\n", m_parameters->m_rrtRange);
-        rrtConnect->setRange(m_parameters->m_rrtRange);
-    }
-    else if(plannerName == "pRRT")
-    {
-        ompl::geometric::pRRT* prrt = new ompl::geometric::pRRT(spaceInformation);
-        m_planner.reset(prrt);
-        prrt->setRange(m_parameters->m_rrtRange);
-        prrt->setGoalBias(m_parameters->m_rrtGoalBias);
-    }
-    else if(plannerName == "LazyRRT")
-    {
-        ompl::geometric::LazyRRT* lazyRRT = new ompl::geometric::LazyRRT(spaceInformation);
-        m_planner.reset(new ompl::geometric::LazyRRT(spaceInformation));
-        lazyRRT->setGoalBias(m_parameters->m_rrtGoalBias);
-        lazyRRT->setRange(m_parameters->m_rrtRange);
-    }
-    else if(plannerName == "PRM")
-    {
-#if OMPL_VERSION_COMP >= 000010002
-        m_planner.reset(new ompl::geometric::PRM(spaceInformation));
-#else
-        m_planner.reset(new ompl::geometric::BasicPRM(spaceInformation));
-#endif
-    }
-    else if(plannerName == "RRTstar")
-    {
-        RAVELOG_DEBUG("RRT Star Planner name\n");
-
-        ompl::geometric::RRTstar* rrtStar = new ompl::geometric::RRTstar(spaceInformation);
-
-        RAVELOG_DEBUG("Created RRTStar\n");
-
-        m_planner.reset(rrtStar);
-
-        RAVELOG_DEBUG("Setting parameters\n");
-        rrtStar->setGoalBias(m_parameters->m_rrtGoalBias);
-        //rrtStar->setMaxBallRadius(m_parameters->m_rrtStarMaxBallRadius);
-        rrtStar->setRange(m_parameters->m_rrtRange);
-    }
-    else if(plannerName == "BallTreeRRTstar")
-    {
-        ompl::geometric::BallTreeRRTstar* ballTree = new ompl::geometric::BallTreeRRTstar(spaceInformation);
-        m_planner.reset(ballTree);
-        ballTree->setGoalBias(m_parameters->m_rrtGoalBias);
-        ballTree->setMaxBallRadius(m_parameters->m_rrtStarMaxBallRadius);
-        ballTree->setRange(m_parameters->m_rrtRange);
-    }
-    else
-    {
-        RAVELOG_ERROR("Urecognized planner: %s", plannerName.c_str());
-        return false;
-    }
+    m_planner.reset(registry::create(plannerName, spaceInformation));
     return true;
 }
 
