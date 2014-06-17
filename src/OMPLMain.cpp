@@ -27,6 +27,7 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 *************************************************************************/
+#include <boost/make_shared.hpp>
 #include <openrave/plugin.h>
 #include "OMPLPlanner.h"
 
@@ -37,13 +38,13 @@ InterfaceBasePtr CreateInterfaceValidated(
         std::istream &sinput, EnvironmentBasePtr penv)
 {
     if (type == PT_Planner && interfacename == "ompl") {
-        return InterfaceBasePtr(new or_ompl::OMPLPlanner(penv));
+        return boost::make_shared<or_ompl::OMPLPlanner>(penv);
     } else {
         return InterfaceBasePtr();
     }
 }
 
-void GetPluginAttributesValidated(PLUGININFO& info)
+void GetPluginAttributesValidated(PLUGININFO &info)
 {
     info.interfacenames[PT_Planner].push_back("ompl");
 }

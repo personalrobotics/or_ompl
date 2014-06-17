@@ -27,8 +27,8 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 *************************************************************************/
-#ifndef OMPLPLANNER_H
-#define OMPLPLANNER_H
+#ifndef OMPLSIMPLIFIER_H
+#define OMPLPIMPLIFIER_H
 
 #include <openrave-core.h>
 #include <openrave/planner.h>
@@ -40,34 +40,32 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 namespace or_ompl
 {
 
-class OMPLPlanner: public OpenRAVE::PlannerBase {
+class OMPLSimplifier : public OpenRAVE::PlannerBase {
 public:
     OMPLPlanner(OpenRAVE::EnvironmentBasePtr penv);
     virtual ~OMPLPlanner();
 
-    virtual bool InitPlan(OpenRAVE::RobotBasePtr robot,
-                          PlannerParametersConstPtr params);
+    virtual bool InitPlan(OpenRAVE::RobotBasePtr robot, PlannerParametersConstPtr params);
     virtual bool InitPlan(OpenRAVE::RobotBasePtr robot, std::istream& input);
 
-    virtual OpenRAVE::PlannerStatus PlanPath (OpenRAVE::TrajectoryBasePtr ptraj);
-
-    virtual PlannerParametersConstPtr GetParameters () const
-    {
-        return m_parameters;
-    }
+    virtual OpenRAVE::PlannerStatus PlanPath(OpenRAVE::TrajectoryBasePtr ptraj);
+    virtual PlannerParametersConstPtr GetParameters() const { return m_parameters; }
+    ompl::geometric::SimpleSetupPtr GetSimpleSetup() { return m_simpleSetup; }
+    ompl::base::StateSpacePtr GetStateSpace() { return m_stateSpace; }
 
 private:
-    bool m_initialized;
     OMPLPlannerParametersPtr m_parameters;
-    ompl::geometric::SimpleSetupPtr m_simple_setup;
-    ompl::base::StateSpacePtr m_state_space;
+    ompl::geometric::SimpleSetupPtr m_simpleSetup;
+    ompl::base::StateSpacePtr m_stateSpace;
     ompl::base::PlannerPtr m_planner;
     OpenRAVE::RobotBasePtr m_robot;
     OpenRAVE::CollisionReportPtr m_collisionReport;
     int m_numCollisionChecks;
     double m_totalCollisionTime;
 
-    ompl::base::PlannerPtr CreatePlanner(OMPLPlannerParameters const &params);
+    bool InitializePlanner();
+
+    ompl::base::PlannerPtr OMPLPlanner::CreatePlanner(OMPLPlannerParameters const &params);
     bool IsStateValid(const ompl::base::State* state);
     bool IsInOrCollision(std::vector<double> jointValues);
     OpenRAVE::PlannerStatus ToORTrajectory(ompl::geometric::PathGeometric &ompl_traj,

@@ -11,10 +11,43 @@ set(ROS_BUILD_TYPE RelWithDebInfo)
 
 rosbuild_init()
 
-include_directories(${PROJECT_SOURCE_DIR}/include/or_ompl)
-
 set(EXECUTABLE_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/bin)
 set(LIBRARY_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/lib)
 
-rosbuild_add_library(${PROJECT_NAME} SHARED src/OMPLMain.cpp src/OMPLPlanner.cpp)
-target_link_libraries(${PROJECT_NAME} ompl)
+include_directories(
+    ${PROJECT_SOURCE_DIR}/include/${PROJECT_NAME}
+    ${OMPL_INCLUDE_DIRS}
+    ${TinyXML_INCLUDE_DIRS}
+)
+
+find_package(PkgConfig)
+pkg_check_modules(OMPL QUIET ompl)
+pkg_check_modules(TinyXML QUIET tinyxml)
+
+# Generate the OMPL planner wrappers.
+file(MAKE_DIRECTORY "${CMAKE_BINARY_DIR}/src")
+
+execute_process(COMMAND pkg-config ompl --modversion
+    OUTPUT_VARIABLE OMPL_VERSION
+    OUTPUT_STRIP_TRAILING_WHITESPACE
+)
+
+add_custom_command(OUTPUT "${CMAKE_BINARY_DIR}/src/PlannerRegistry.cpp"
+    MAIN_DEPENDENCY "${PROJECT_SOURCE_DIR}/planners.yaml"
+    DEPENDS "${PROJECT_SOURCE_DIR}/scripts/wrap_planners.py"
+    COMMAND "${PROJECT_SOURCE_DIR}/scripts/wrap_planners.py"
+            --version="${OMPL_VERSION}"
+            < "${PROJECT_SOURCE_DIR}/planners.yaml"
+            > "${CMAKE_BINARY_DIR}/src/PlannerRegistry.cpp"
+)
+
+rosbuild_add_library(${PROJECT_NAME} SHARED
+    src/OMPLMain.cpp
+    src/OMPLPlanner.cpp
+    src/OMPLConversions.cpp
+    "${CMAKE_BINARY_DIR}/src/PlannerRegistry.cpp"
+)
+target_link_libraries(${PROJECT_NAME}
+    ${OMPL_LIBRARIES}
+    ${TinyXML_LIBRARIES}
+)

@@ -28,43 +28,20 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 *************************************************************************/
 #include <time.h>
+#include <tinyxml.h>
+#include <boost/foreach.hpp>
 #include <boost/make_shared.hpp>
-
 #include <ompl/config.h>
-#define OMPL_VERSION_COMP (  OMPL_MAJOR_VERSION * 1000000 \
-                           + OMPL_MINOR_VERSION * 1000 \
-                           + OMPL_PATCH_VERSION)
-
 #include <ompl/base/StateSpaceTypes.h>
 #include <ompl/base/StateSpace.h>
 #include <ompl/base/spaces/RealVectorStateSpace.h>
-#include <ompl/geometric/planners/PlannerIncludes.h>
-#include <ompl/geometric/planners/est/EST.h>
-#include <ompl/geometric/planners/kpiece/KPIECE1.h>
-#include <ompl/geometric/planners/kpiece/BKPIECE1.h>
-#include <ompl/geometric/planners/kpiece/LBKPIECE1.h>
-#include <ompl/geometric/planners/rrt/RRT.h>
-#include <ompl/geometric/planners/rrt/RRTConnect.h>
-#include <ompl/geometric/planners/rrt/LazyRRT.h>
-#include <ompl/geometric/planners/rrt/pRRT.h>
-#include <ompl/geometric/planners/sbl/SBL.h>
-#include <ompl/geometric/planners/sbl/pSBL.h>
-
-#if OMPL_VERSION_COMP >= 10002
-#   include <ompl/geometric/planners/prm/PRM.h>
-#else
-#   include <ompl/geometric/planners/prm/BasicPRM.h>
-#endif
-
-#if OMPL_VERSION_COMP >= 13000
-#   include <ompl/geometric/planners/rrt/RRTstar.h>
-#   include <ompl/geometric/planners/rrt/BallTreeRRTstar.h>
-#else
-#   include <ompl/contrib/rrt_star/RRTstar.h>
-#   include <ompl/contrib/rrt_star/BallTreeRRTstar.h>
-#endif
-
+#include "OMPLConversions.h"
 #include "OMPLPlanner.h"
+#include "PlannerRegistry.h"
+
+#define OMPL_VERSION_COMP (  OMPL_MAJOR_VERSION * 1000000 \
+                           + OMPL_MINOR_VERSION * 1000 \
+                           + OMPL_PATCH_VERSION)
 
 #define CD_OS_TIMESPEC_SET_ZERO(t) do { (t)->tv_sec = 0; (t)->tv_nsec = 0; } while (0)
 #define CD_OS_TIMESPEC_ADD(dst, src) do { (dst)->tv_sec += (src)->tv_sec; (dst)->tv_nsec += (src)->tv_nsec; \
@@ -80,6 +57,7 @@ namespace or_ompl
 
 OMPLPlanner::OMPLPlanner(OpenRAVE::EnvironmentBasePtr penv)
     : OpenRAVE::PlannerBase(penv)
+    , m_initialized(false)
 {
 }
 
@@ -89,251 +67,209 @@ OMPLPlanner::~OMPLPlanner()
 
 bool OMPLPlanner::InitPlan(OpenRAVE::RobotBasePtr robot, std::istream& input)
 {
-    m_totalCollisionTime = 0.0;
-    m_numCollisionChecks = 0;
-
-    OMPLPlannerParameters* params = new OMPLPlannerParameters();
-    input >> (*params);
-
-    return InitPlan(robot, PlannerParametersConstPtr(params));
+    OMPLPlannerParametersPtr params = boost::make_shared<OMPLPlannerParameters>();
+    input >> *params;
+    return InitPlan(robot, params);
 }
 
 bool OMPLPlanner::InitPlan(OpenRAVE::RobotBasePtr robot,
-                           PlannerParametersConstPtr params)
+                           PlannerParametersConstPtr params_raw)
 {
-    RAVELOG_DEBUG("Initializing plan\n");
-    if (m_simpleSetup) {
-        m_simpleSetup.reset();
-    }
+    m_initialized = false;
 
-    m_parameters = boost::make_shared<OMPLPlannerParameters>();
-    m_parameters->copy(params);
-    
-    if (m_parameters->m_seed)
-    {
-       RAVELOG_DEBUG("Setting random seed to %u ...\n", m_parameters->m_seed);
-       ompl::RNG::setSeed(m_parameters->m_seed);
-       if (ompl::RNG::getSeed() != m_parameters->m_seed) {
-          RAVELOG_ERROR("Could not set the seed! Was this the first or_ompl plan attempted?\n");
-          return false;
-       }
-    }
-    else {
-       RAVELOG_DEBUG("Using default (time-based) seed (%u) for OMPL ...\n", ompl::RNG::getSeed());
-    }
+    try {
+        typedef ompl::base::ScopedState<ompl::base::RealVectorStateSpace> ScopedState;
 
-    m_robot = robot;
+        if (!robot) {
+            RAVELOG_ERROR("Robot must not be NULL.\n");
+            return false;
+        } else if (!params_raw) {
+            RAVELOG_ERROR("Parameters must not be NULL.\n");
+            return false;
+        }
 
-    RAVELOG_DEBUG("Setting state space\n");
-    m_stateSpace = boost::make_shared<ompl::base::RealVectorStateSpace>(robot->GetActiveDOF());
+        m_robot = robot;
+        m_totalCollisionTime = 0.0;
+        m_numCollisionChecks = 0;
 
-    RAVELOG_DEBUG("Setting joint limits\n");
-    ompl::base::RealVectorBounds bounds(m_robot->GetActiveDOF());
-    std::vector<double> lowerLimits, upperLimits;
-    m_robot->GetActiveDOFLimits(lowerLimits, upperLimits);
+        size_t const num_dof = robot->GetActiveDOF();
+        m_parameters = boost::make_shared<OMPLPlannerParameters>();
+        m_parameters->copy(params_raw);
 
-    for (int i = 0; i < m_robot->GetActiveDOF(); ++i) {
-        bounds.setLow(i, lowerLimits[i]);
-        bounds.setHigh(i, upperLimits[i]);
-    }
-    m_stateSpace->as<ompl::base::RealVectorStateSpace>()->setBounds(bounds);
+        RAVELOG_DEBUG("Creating state space.\n");
+        m_state_space = CreateStateSpace(robot, *m_parameters);
+        if (!m_state_space) {
+            RAVELOG_ERROR("Failed creating state space.\n");
+            return false;
+        }
 
-    // Set the resolution at which OMPL should discretize edges for collision
-    // checking. OpenRAVE supports per-joint resolutions, so we compute one
-    // conservative value for all joints. We then convert this to a fraction
-    // of the workspace extents to call setLongestValidSegmentFraction.
-    // TODO: We could emulate per-joint resolutions by scaling the joint
-    // values. Is that a good idea?
-    RAVELOG_DEBUG("Setting collision checking resolution.\n");
-    std::vector<OpenRAVE::dReal> dof_resolutions;
-    m_robot->GetActiveDOFResolutions(dof_resolutions);
+        RAVELOG_DEBUG("Creating OMPL setup.\n");
+        m_simple_setup = boost::make_shared<ompl::geometric::SimpleSetup>(m_state_space);
 
-    double conservative_resolution = std::numeric_limits<double>::max();
-    for (int i = 0; i < m_robot->GetActiveDOF(); ++i) {
-        conservative_resolution = std::min(dof_resolutions[i], conservative_resolution);
-    }
+        RAVELOG_DEBUG("Setting initial configuration.\n");
+        if (m_parameters->vinitialconfig.size() != num_dof) {
+            RAVELOG_ERROR("Start configuration has incorrect DOF;"
+                          " expected %d, got %d.\n",
+                          num_dof, m_parameters->vinitialconfig.size());
+            return false;
+        } else if (IsInOrCollision(m_parameters->vinitialconfig)) {
+            RAVELOG_ERROR("Initial configuration in collision.\n");
+            return false;
+        }
 
-    double const max_extent = m_stateSpace->getMaximumExtent();
-    double const segment_fraction = conservative_resolution / max_extent;
-    m_stateSpace->setLongestValidSegmentFraction(segment_fraction);
+        ScopedState q_start(m_state_space);
+        for (size_t i = 0; i < num_dof; i++) {
+            q_start->values[i] = m_parameters->vinitialconfig[i];
+        }
+        m_simple_setup->setStartState(q_start);
 
-    // Per-DOF weights are not supported by OMPL. We could emulate this by
-    // scaling the joint values, but I'm not sure if that's a good idea.
-    RAVELOG_DEBUG("Checking joint weights.\n");
-    std::vector<OpenRAVE::dReal> dof_weights;
-    m_robot->GetActiveDOFWeights(dof_weights);
-    bool has_weights = false;
+        RAVELOG_DEBUG("Setting goal configuration.\n");
+        if (m_parameters->vgoalconfig.size() != num_dof) {
+            RAVELOG_ERROR("End configuration has incorrect DOF;"
+                          "  expected %d, got %d.\n",
+                          num_dof, m_parameters->vgoalconfig.size());
+            return false;
+        } else if (IsInOrCollision(m_parameters->vgoalconfig)) {
+            RAVELOG_ERROR("Goal configuration is in collision.\n");
+            return false;
+        }
 
-    for (int i = 0; !has_weights && i < m_robot->GetActiveDOF(); ++i) {
-        has_weights = dof_weights[i] != 1.;
-    }
+        ScopedState q_goal(m_state_space);
+        for (size_t i = 0; i < num_dof; i++) {
+            q_goal->values[i] = m_parameters->vgoalconfig[i];
+        }
+        m_simple_setup->setGoalState(q_goal);
 
-    if (has_weights) {
-        RAVELOG_WARN("Robot specifies DOF weights. Only unit weights are"
-                     "supported by OMPL; planning will commence as if there are no"
-                     "weights.\n");
-    }
-    
-    RAVELOG_DEBUG("Setting up simplesetup class.\n");
-    m_simpleSetup = boost::make_shared<ompl::geometric::SimpleSetup>(GetStateSpace());
+        RAVELOG_DEBUG("Creating planner.\n");
+        m_planner = CreatePlanner(*m_parameters);
+        if (!m_planner) {
+            RAVELOG_ERROR("Failed creating OMPL planner.\n");
+            return false;
+        }
+        m_simple_setup->setPlanner(m_planner);
 
-    RAVELOG_DEBUG("Initializing the planner.\n");
-    if (!InitializePlanner()) {
+        RAVELOG_DEBUG("Setting state validity checker.\n");
+        m_simple_setup->setStateValidityChecker(
+            boost::bind(&or_ompl::OMPLPlanner::IsStateValid, this, _1));
+
+        m_initialized = true;
+        return true;
+    } catch (std::runtime_error const &e) {
+        RAVELOG_ERROR("IntPlan failed: %s\n", e.what());
         return false;
     }
-
-    RAVELOG_DEBUG("Setting the planner.\n");
-    m_simpleSetup->setPlanner(m_planner);
-
-    RAVELOG_DEBUG("Creating the start pose.\n");
-    ompl::base::ScopedState<ompl::base::RealVectorStateSpace> startPose(m_stateSpace);
-    for (int i = 0; i < m_robot->GetActiveDOF(); i++) {
-        startPose->values[i] = m_parameters->vinitialconfig[i];
-    }
-
-    RAVELOG_DEBUG("Checking collisions.\n");
-    if (IsInOrCollision(params->vinitialconfig)) {
-        RAVELOG_ERROR("Can't plan. Initial configuration in collision!\n");
-        return false;
-    }
-
-    RAVELOG_DEBUG("Setting the end pose.\n");
-    ompl::base::ScopedState<ompl::base::RealVectorStateSpace> endPose(m_stateSpace);
-    for (int i = 0; i < m_robot->GetActiveDOF(); i++) {
-        endPose->values[i] = params->vgoalconfig[i];
-    }
-
-    RAVELOG_DEBUG("Checking collisions\n");
-    if (IsInOrCollision(params->vgoalconfig)) {
-        RAVELOG_ERROR("Can't plan. Final configuration is in collision!");
-        return false;
-    }
-
-    RAVELOG_DEBUG("Setting state validity checker\n");
-    m_simpleSetup->setStateValidityChecker(boost::bind(&or_ompl::OMPLPlanner::IsStateValid, this, _1));
-    m_simpleSetup->setStartState(startPose);
-    m_simpleSetup->setGoalState(endPose);
-
-    m_collisionReport = boost::make_shared<OpenRAVE::CollisionReport>();
-
-    return true;
 }
 
-bool OMPLPlanner::InitializePlanner()
+ompl::base::PlannerPtr OMPLPlanner::CreatePlanner(
+    OMPLPlannerParameters const &params)
 {
-    RAVELOG_DEBUG("Getting planner name.\n");
-    std::string plannerName = m_parameters->m_plannerType;
+    // Create the planner.
+    std::string const plannerName = m_parameters->m_plannerType;
+    ompl::base::SpaceInformationPtr const spaceInformation
+            = m_simple_setup->getSpaceInformation();
 
-    RAVELOG_DEBUG("Setting up space information\n");
-    ompl::base::SpaceInformationPtr spaceInformation = m_simpleSetup->getSpaceInformation();
-    if(plannerName == "KPIECE")
-    {
-        m_planner.reset(new ompl::geometric::KPIECE1(spaceInformation));
+    ompl::base::PlannerPtr planner(registry::create(
+            plannerName, spaceInformation));
+    if (!planner) {
+        RAVELOG_ERROR("Failed creating planner '%s'.\n", plannerName.c_str());
+        return ompl::base::PlannerPtr();
     }
-    else if(plannerName == "BKPIECE")
-    {
-        m_planner.reset(new ompl::geometric::BKPIECE1(spaceInformation));
-    }
-    else if(plannerName == "LBKPIECE")
-    {
-        m_planner.reset(new ompl::geometric::LBKPIECE1(spaceInformation));
-    }
-    else if(plannerName == "EST")
-    {
-        m_planner.reset(new ompl::geometric::EST(spaceInformation));
-    }
-    else if(plannerName == "RRT")
-    {
-        ompl::geometric::RRT* rrt = new ompl::geometric::RRT(spaceInformation);
-        m_planner.reset(rrt);
-        rrt->setGoalBias(m_parameters->m_rrtGoalBias);
-        rrt->setRange(m_parameters->m_rrtRange);
-    }
-    else if(plannerName == "RRTConnect")
-    {
-        ompl::geometric::RRTConnect* rrtConnect = new ompl::geometric::RRTConnect(spaceInformation);
-        m_planner.reset(rrtConnect);
-        printf("setting range to be %f!\n", m_parameters->m_rrtRange);
-        rrtConnect->setRange(m_parameters->m_rrtRange);
-    }
-    else if(plannerName == "pRRT")
-    {
-        ompl::geometric::pRRT* prrt = new ompl::geometric::pRRT(spaceInformation);
-        m_planner.reset(prrt);
-        prrt->setRange(m_parameters->m_rrtRange);
-        prrt->setGoalBias(m_parameters->m_rrtGoalBias);
-    }
-    else if(plannerName == "LazyRRT")
-    {
-        ompl::geometric::LazyRRT* lazyRRT = new ompl::geometric::LazyRRT(spaceInformation);
-        m_planner.reset(new ompl::geometric::LazyRRT(spaceInformation));
-        lazyRRT->setGoalBias(m_parameters->m_rrtGoalBias);
-        lazyRRT->setRange(m_parameters->m_rrtRange);
-    }
-    else if(plannerName == "PRM")
-    {
-#if OMPL_VERSION_COMP >= 000010002
-        m_planner.reset(new ompl::geometric::PRM(spaceInformation));
-#else
-        m_planner.reset(new ompl::geometric::BasicPRM(spaceInformation));
-#endif
-    }
-    else if(plannerName == "RRTstar")
-    {
-        RAVELOG_DEBUG("RRT Star Planner name\n");
 
-        ompl::geometric::RRTstar* rrtStar = new ompl::geometric::RRTstar(spaceInformation);
-
-        RAVELOG_DEBUG("Created RRTStar\n");
-
-        m_planner.reset(rrtStar);
-
-        RAVELOG_DEBUG("Setting parameters\n");
-        rrtStar->setGoalBias(m_parameters->m_rrtGoalBias);
-        //rrtStar->setMaxBallRadius(m_parameters->m_rrtStarMaxBallRadius);
-        rrtStar->setRange(m_parameters->m_rrtRange);
+    // Populate planner parameters from the PlannerParameters.
+    std::string const params_str = "<ExtraParams>"
+                                   + m_parameters->_sExtraParameters
+                                   + "</ExtraParams>";
+    TiXmlDocument doc_xml;
+    doc_xml.Parse(params_str.c_str());
+    if (doc_xml.Error()) {
+        RAVELOG_ERROR("Failed parsing XML parameters: %s\n",
+                      doc_xml.ErrorDesc());
+        return ompl::base::PlannerPtr();
     }
-    else if(plannerName == "BallTreeRRTstar")
-    {
-        ompl::geometric::BallTreeRRTstar* ballTree = new ompl::geometric::BallTreeRRTstar(spaceInformation);
-        m_planner.reset(ballTree);
-        ballTree->setGoalBias(m_parameters->m_rrtGoalBias);
-        ballTree->setMaxBallRadius(m_parameters->m_rrtStarMaxBallRadius);
-        ballTree->setRange(m_parameters->m_rrtRange);
+
+    TiXmlElement const *root_xml = doc_xml.RootElement();
+    std::map<std::string, std::string> params_map;
+
+    for (TiXmlElement const *it_ele = root_xml->FirstChildElement();
+         it_ele;
+         it_ele = it_ele->NextSiblingElement()) {
+        // Extract the property name.
+        std::string const key = it_ele->ValueStr();
+
+        // Extract the property value.
+        TiXmlNode const *node = it_ele->FirstChild();
+        if (!node) {
+            RAVELOG_ERROR("Failed parsing planner parameters:"
+                          " Element '%s' does not contain a value.\n",
+                          key.c_str());
+            return ompl::base::PlannerPtr();
+        }
+        TiXmlText const *text = node->ToText();
+        TiXmlNode const *next_node = node->NextSibling();
+        if (!text || next_node) {
+            RAVELOG_ERROR("Failed parsing planner parameters:"
+                          " Element '%s' contains complex data.\n",
+                          key.c_str());
+        }
+        std::string const value = text->Value();
+
+        params_map.insert(std::make_pair(key, value));
     }
-    else
-    {
-        RAVELOG_ERROR("Urecognized planner: %s", plannerName.c_str());
-        return false;
+
+    ompl::base::ParamSet &param_set = planner->params();
+    bool const is_success = param_set.setParams(params_map, false);
+
+    // Print out the list of valid parameters.
+    if (!is_success) {
+        std::vector<std::string> param_names;
+        param_set.getParamNames(param_names);
+
+        std::stringstream param_stream; 
+        BOOST_FOREACH (std::string const &param_name, param_names) {
+            param_stream << " " << param_name;
+        }
+        std::string const param_str = param_stream.str();
+
+        RAVELOG_ERROR("Invalid planner parameters."
+                      " The following parameters are supported:%s\n",
+                      param_str.c_str());
+        return ompl::base::PlannerPtr();
     }
-    return true;
+    return planner;
 }
 
 OpenRAVE::PlannerStatus OMPLPlanner::PlanPath(OpenRAVE::TrajectoryBasePtr ptraj)
 {
-    OpenRAVE::EnvironmentMutex::scoped_lock lockenv(GetEnv()->GetMutex());
-    if (!m_simpleSetup) {
-        RAVELOG_ERROR("Unable to plan. Did you call InitPlan?");
-        return OpenRAVE::PS_Failed;
-    }
-    /* also, set something max path length so it continues after finding a solution! */
-    //m_simpleSetup->getGoal()->setMaximumPathLength(0.0);
-   
-    // TODO: What is all of this? Should this really be in the planner?
-    struct timespec tic;
-    clock_gettime(CLOCK_THREAD_CPUTIME_ID, &tic);
+    try {
+        if (!m_initialized) {
+            RAVELOG_ERROR("Unable to plan. Did you call InitPlan?\n");
+            return OpenRAVE::PS_Failed;
+        }
 
-    bool success;
-    success = m_simpleSetup->solve(m_parameters->m_timeLimit);
+        // TODO: Configure anytime algorithms to keep planning.
+        //m_simpleSetup->getGoal()->setMaximumPathLength(0.0);
+       
+        // TODO: What is all of this? Should this really be in the planner?
+        struct timespec tic;
+        clock_gettime(CLOCK_THREAD_CPUTIME_ID, &tic);
 
-    struct timespec toc;
-    clock_gettime(CLOCK_THREAD_CPUTIME_ID, &toc);
-    CD_OS_TIMESPEC_SUB(&toc, &tic);
-    printf("cputime seconds: %f\n", CD_OS_TIMESPEC_DOUBLE(&toc));
+        // Call the planner.
+        bool const success = m_simple_setup->solve(m_parameters->m_timeLimit);
 
-    if (success) { 
-        return ToORTrajectory(m_simpleSetup->getSolutionPath(), ptraj);
-    } else {
+        struct timespec toc;
+        clock_gettime(CLOCK_THREAD_CPUTIME_ID, &toc);
+        CD_OS_TIMESPEC_SUB(&toc, &tic);
+        RAVELOG_DEBUG("cputime seconds: %f\n", CD_OS_TIMESPEC_DOUBLE(&toc));
+
+        if (success) {
+            ToORTrajectory(m_simple_setup->getSolutionPath(), ptraj);
+            return OpenRAVE::PS_HasSolution;
+        } else {
+            return OpenRAVE::PS_Failed;
+        }
+
+    } catch (std::runtime_error const &e) {
+        RAVELOG_ERROR("Planning failed: %s\n", e.what());
         return OpenRAVE::PS_Failed;
     }
 }
@@ -344,10 +280,10 @@ bool OMPLPlanner::IsInOrCollision(std::vector<double> values)
     struct timespec tic;
     clock_gettime(CLOCK_THREAD_CPUTIME_ID, &tic);
 #endif
-    OpenRAVE::EnvironmentMutex::scoped_lock lockenv(GetEnv()->GetMutex());
-    m_robot->SetActiveDOFValues(values, false);
-    bool collided = (GetEnv()->CheckCollision(m_robot, m_collisionReport))
-                 || (m_robot->CheckSelfCollision(m_collisionReport));
+
+    m_robot->SetActiveDOFValues(values, OpenRAVE::KinBody::CLA_Nothing);
+    bool const collided = GetEnv()->CheckCollision(m_robot)
+                       || m_robot->CheckSelfCollision();
     m_numCollisionChecks++;
 
 #ifdef TIME_COLLISION_CHECKS
@@ -361,17 +297,19 @@ bool OMPLPlanner::IsInOrCollision(std::vector<double> values)
 
 bool OMPLPlanner::IsStateValid(ompl::base::State const *state)
 {
-    ompl::base::RealVectorStateSpace::StateType const* realVectorState = state->as<ompl::base::RealVectorStateSpace::StateType>();
+    typedef ompl::base::RealVectorStateSpace::StateType StateType;
+    StateType const *realVectorState = state->as<StateType>();
+    size_t const num_dof = m_robot->GetActiveDOF();
 
-    if (!realVectorState) {
-        RAVELOG_ERROR("State type requested was invalid!");
-        return false;
-    } else {
-        std::vector<double> values;
-        for (int i = 0; i < m_robot->GetActiveDOF(); i++) {
-            values.push_back(realVectorState->values[i]);
+    if (realVectorState) {
+        std::vector<OpenRAVE::dReal> values(num_dof);
+        for (size_t i = 0; i < num_dof; i++) {
+            values[i] = realVectorState->values[i];
         }
         return !IsInOrCollision(values);
+    } else {
+        RAVELOG_ERROR("Invalid StateType. This should never happen.\n");
+        return false;
     }
 }
 
@@ -406,4 +344,4 @@ OpenRAVE::PlannerStatus OMPLPlanner::ToORTrajectory(
     return OpenRAVE::PS_HasSolution;
 }
 
-} /* namespace or_ompl */
+}
