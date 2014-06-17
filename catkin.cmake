@@ -16,13 +16,28 @@ include_directories(
     ${OMPL_INCLUDE_DIRS})
 link_directories(${OpenRAVE_LIBRARY_DIRS} ${OMPL_LIBRARY_DIRS})
 
-add_library(${PROJECT_NAME} src/OMPLPlanner.cpp)
+# Generate the OMPL planner wrappers.
+file(MAKE_DIRECTORY "${CMAKE_BINARY_DIR}/src")
+add_custom_command(OUTPUT "${CMAKE_BINARY_DIR}/src/PlannerRegistry.cpp"
+    MAIN_DEPENDENCY "${PROJECT_SOURCE_DIR}/planners.json"
+    DEPENDS "${PROJECT_SOURCE_DIR}/scripts/wrap_planners.py"
+    COMMAND "${PROJECT_SOURCE_DIR}/scripts/wrap_planners.py"
+            < "${PROJECT_SOURCE_DIR}/planners.json"
+            > "${CMAKE_BINARY_DIR}/src/PlannerRegistry.cpp"
+)
+
+# Helper library.
+add_library(${PROJECT_NAME}
+    src/OMPLPlanner.cpp
+    "${CMAKE_BINARY_DIR}/src/PlannerRegistry.cpp"
+)
 target_link_libraries(${PROJECT_NAME}
     ${OpenRAVE_LIBRARIES} ${OMPL_LIBRARIES})
 set_target_properties(${PROJECT_NAME} PROPERTIES
     COMPILE_FLAGS "${OpenRAVE_CXX_FLAGS} ${OMPL_CXX_FLAGS}"
     LINK_FLAGS "${OpenRAVE_LINK_FLAGS} ${OMPL_LINK_FLAGS}")
 
+# OpenRAVE plugin.
 add_library(${PROJECT_NAME}_plugin SHARED
     src/OMPLMain.cpp)
 target_link_libraries(${PROJECT_NAME}_plugin
