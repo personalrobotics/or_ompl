@@ -13,6 +13,8 @@
   <license>BSD</license>
   <buildtool_depend>catkin</buildtool_depend>
   <buildtool_depend>pkg-config</buildtool_depend>
+  <buildtool_depend>python</buildtool_depend>
+  <buildtool_depend>semantic_version</buildtool_depend>
   <build_depend>openrave</build_depend>
   <build_depend>ompl</build_depend>
   <run_depend>openrave</run_depend>

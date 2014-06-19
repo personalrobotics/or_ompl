@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 from __future__ import print_function
-import argparse, yaml, sys
+import argparse, yaml, semantic_version, sys
 
 factory_frontmatter = """\
 #include <map>
@@ -71,19 +71,16 @@ def main():
 
     # Filter planners by version number.
     if args.version:
-        args.version = parse_version(args.version)
+        ompl_version = semantic_version.Version(args.version)
         supported_planners = []
 
         for planner in planners:
-            if 'version_ge' in planner:
-                if not (args.version >= parse_version(planner['version_ge'])):
-                    continue
-
-            if 'version_lt' in planner:
-                if not (args.version < parse_version(planner['version_lt'])):
-                    continue
-
-            supported_planners.append(planner)
+            if 'version' in planner:
+                acceptable_versions = semantic_version.Spec(planner['version'])
+                if acceptable_versions.match(ompl_version):
+                    supported_planners.append(planner)
+            else:
+                supported_planners.append(planner)
 
         planners = supported_planners
 
