@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 from __future__ import print_function
-import json, sys
+import yaml, sys
 
 factory_frontmatter = """\
 #include <map>
@@ -60,7 +60,7 @@ ompl::base::Planner *create(std::string const &name,
 """
 
 def main():
-    planners = json.load(sys.stdin)
+    planners = yaml.load(sys.stdin)
 
     headers = [ planner['header'] for planner in planners ]
     includes = [ '#include <{:s}>'.format(path) for path in headers ]
