@@ -11,10 +11,18 @@ set(ROS_BUILD_TYPE RelWithDebInfo)
 
 rosbuild_init()
 
-include_directories(${PROJECT_SOURCE_DIR}/include/or_ompl)
-
 set(EXECUTABLE_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/bin)
 set(LIBRARY_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/lib)
+
+include_directories(
+    ${PROJECT_SOURCE_DIR}/include/${PROJECT_NAME}
+    ${OMPL_INCLUDE_DIRS}
+    ${TinyXML_INCLUDE_DIRS}
+)
+
+find_package(PkgConfig)
+pkg_check_modules(OMPL QUIET ompl)
+pkg_check_modules(TinyXML QUIET tinyxml)
 
 # Generate the OMPL planner wrappers.
 file(MAKE_DIRECTORY "${CMAKE_BINARY_DIR}/src")
@@ -38,4 +46,4 @@ rosbuild_add_library(${PROJECT_NAME} SHARED
     src/OMPLPlanner.cpp
     "${CMAKE_BINARY_DIR}/src/PlannerRegistry.cpp"
 )
-target_link_libraries(${PROJECT_NAME} ompl)
+target_link_libraries(${PROJECT_NAME} ${OMPL_LIBRARIES} ${TinyXML_LIBRARIES})
