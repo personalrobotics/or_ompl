@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 from __future__ import print_function
-import yaml, sys
+import argparse, yaml, sys
 
 factory_frontmatter = """\
 #include <map>
@@ -59,9 +59,35 @@ ompl::base::Planner *create(std::string const &name,
 }\
 """
 
+def parse_version(version):
+    return tuple(int(x) for x in version.split('.'))
+
 def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--version', type=str, help='OMPL version number')
+    args = parser.parse_args()
+
     planners = yaml.load(sys.stdin)
 
+    # Filter planners by version number.
+    if args.version:
+        args.version = parse_version(args.version)
+        supported_planners = []
+
+        for planner in planners:
+            if 'version_ge' in planner:
+                if not (args.version >= parse_version(planner['version_ge'])):
+                    continue
+
+            if 'version_lt' in planner:
+                if not (args.version < parse_version(planner['version_lt'])):
+                    continue
+
+            supported_planners.append(planner)
+
+        planners = supported_planners
+
+    # Include the necessary OMPL 
     headers = [ planner['header'] for planner in planners ]
     includes = [ '#include <{:s}>'.format(path) for path in headers ]
     print(factory_frontmatter.format(includes='\n'.join(includes)))

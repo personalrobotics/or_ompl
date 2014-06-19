@@ -26,10 +26,17 @@ link_directories(
 
 # Generate the OMPL planner wrappers.
 file(MAKE_DIRECTORY "${CMAKE_BINARY_DIR}/src")
+
+execute_process(COMMAND pkg-config ompl --modversion
+    OUTPUT_VARIABLE OMPL_VERSION
+    OUTPUT_STRIP_TRAILING_WHITESPACE
+)
+
 add_custom_command(OUTPUT "${CMAKE_BINARY_DIR}/src/PlannerRegistry.cpp"
     MAIN_DEPENDENCY "${PROJECT_SOURCE_DIR}/planners.yaml"
     DEPENDS "${PROJECT_SOURCE_DIR}/scripts/wrap_planners.py"
     COMMAND "${PROJECT_SOURCE_DIR}/scripts/wrap_planners.py"
+            --version="${OMPL_VERSION}"
             < "${PROJECT_SOURCE_DIR}/planners.yaml"
             > "${CMAKE_BINARY_DIR}/src/PlannerRegistry.cpp"
 )

@@ -18,11 +18,18 @@ set(LIBRARY_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/lib)
 
 # Generate the OMPL planner wrappers.
 file(MAKE_DIRECTORY "${CMAKE_BINARY_DIR}/src")
+
+execute_process(COMMAND pkg-config ompl --modversion
+    OUTPUT_VARIABLE OMPL_VERSION
+    OUTPUT_STRIP_TRAILING_WHITESPACE
+)
+
 add_custom_command(OUTPUT "${CMAKE_BINARY_DIR}/src/PlannerRegistry.cpp"
-    MAIN_DEPENDENCY "${PROJECT_SOURCE_DIR}/planners.json"
+    MAIN_DEPENDENCY "${PROJECT_SOURCE_DIR}/planners.yaml"
     DEPENDS "${PROJECT_SOURCE_DIR}/scripts/wrap_planners.py"
     COMMAND "${PROJECT_SOURCE_DIR}/scripts/wrap_planners.py"
-            < "${PROJECT_SOURCE_DIR}/planners.json"
+            --version="${OMPL_VERSION}"
+            < "${PROJECT_SOURCE_DIR}/planners.yaml"
             > "${CMAKE_BINARY_DIR}/src/PlannerRegistry.cpp"
 )
 

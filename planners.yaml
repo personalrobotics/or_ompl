@@ -11,12 +11,15 @@
   header: ompl/geometric/planners/kpiece/LBKPIECE1.h
 - name: ompl::geometric::PDST
   header: ompl/geometric/planners/pdst/PDST.h
+  version_ge: 0.13.0
 - name: ompl::geometric::PRM
   header: ompl/geometric/planners/prm/PRM.h
 - name: ompl::geometric::LazyPRM
   header: ompl/geometric/planners/prm/LazyPRM.h
+  version_ge: 0.13.0
 - name: ompl::geometric::PRMstar
   header: ompl/geometric/planners/prm/PRMstar.h
+  version_ge: 0.13.0
 - name: ompl::geometric::pRRT
   header: ompl/geometric/planners/rrt/pRRT.h
 - name: ompl::geometric::pSBL
@@ -27,11 +30,23 @@
   header: ompl/geometric/planners/rrt/RRTConnect.h
 - name: ompl::geometric::RRTstar
   header: ompl/geometric/planners/rrt/RRTstar.h
+  version_ge: 0.13.0
+- name: ompl::geometric::RRTstar
+  header: ompl/contrib/rrt_star/RRTstar.h
+  version_ge: 0.10.0
+  version_lt: 0.13.0
+- name: ompl::geometric::BallTreeRRTstar
+  header: ompl/contrib/rrt_star/BallTreeRRTstar.h
+  version_ge: 0.10.0
+  version_lt: 0.13.0
 - name: ompl::geometric::SBL
   header: ompl/geometric/planners/sbl/SBL.h
 - name: ompl::geometric::SPARS
   header: ompl/geometric/planners/prm/SPARS.h
+  version_ge: 0.14.0
 - name: ompl::geometric::SPARStwo
   header: ompl/geometric/planners/prm/SPARStwo.h
+  version_ge: 0.14.0
 - name: ompl::geometric::TRRT
   header: ompl/geometric/planners/rrt/TRRT.h
+  version_ge: 0.12.0
