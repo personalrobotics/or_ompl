@@ -43,20 +43,12 @@ public:
         , m_timeLimit(10)
         , m_plannerType("RRTConnect")
         , m_isProcessing(false)
-        , m_rrtRange(0.0) /* 0.0 means dont set */
-        , m_rrtGoalBias(0.0) /* 0.0 means dont set */
-        , m_rrtStarBallRadiusConstant(0.0) /* 0.0 means dont set */
-        , m_rrtStarMaxBallRadius(0.0) /* 0.0 means dont set */
         , m_dat_filename("")
         , m_trajs_fileformat("")
     {
         _vXMLParameters.push_back("seed");
         _vXMLParameters.push_back("time_limit");
         _vXMLParameters.push_back("planner_type");
-        _vXMLParameters.push_back("rrt_range");
-        _vXMLParameters.push_back("rrt_goal_bias");
-        _vXMLParameters.push_back("rrtstar_ball_radius_constant");
-        _vXMLParameters.push_back("rrtstar_max_ball_radius");
         _vXMLParameters.push_back("dat_filename");
         _vXMLParameters.push_back("trajs_fileformat");
     }
@@ -65,10 +57,6 @@ public:
     double m_timeLimit;
     std::string m_plannerType;
     bool m_isProcessing;
-    double m_rrtRange;
-    double m_rrtGoalBias;
-    double m_rrtStarBallRadiusConstant;
-    double m_rrtStarMaxBallRadius;
     std::string m_dat_filename;
     std::string m_trajs_fileformat;
 
@@ -82,10 +70,6 @@ protected:
         O << "<seed>" << m_seed << "</seed>" << std::endl;
         O << "<time_limit>" << m_timeLimit << "</time_limit>" << std::endl;
         O << "<planner_type>" << m_plannerType << "</planner_type>" << std::endl;
-        O << "<rrt_range>" << m_rrtRange << "</rrt_range>" << std::endl;
-        O << "<rrt_goal_bias>" << m_rrtGoalBias << "</rrt_goal_bias>" << std::endl;
-        O << "<rrtstar_ball_radius_constant>" << m_rrtStarBallRadiusConstant << "</rrtstar_ball_radius_constant>" << std::endl;
-        O << "<rrtstar_max_ball_radius>" << m_rrtStarMaxBallRadius << "</rrtstar_max_ball_radius>" << std::endl;
         O << "<dat_filename>" << m_dat_filename << "</dat_filename>" << std::endl;
         O << "<trajs_fileformat>" << m_trajs_fileformat << "</trajs_fileformat>" << std::endl;
 
@@ -112,10 +96,6 @@ protected:
              name == "seed"
           || name == "time_limit"
           || name == "planner_type"
-          || name == "rrt_range"
-          || name == "rrt_goal_bias"
-          || name == "rrtstar_ball_radius_constant"
-          || name == "rrtstar_max_ball_radius"
           || name == "dat_filename"
           || name == "trajs_fileformat";
 
@@ -131,14 +111,6 @@ protected:
                 _ss >> m_timeLimit;
             } else if (name == "planner_type") {
                 _ss >> m_plannerType;
-            } else if (name == "rrt_range") {
-                _ss >> m_rrtRange;
-            } else if (name == "rrt_goal_bias") {
-                _ss >> m_rrtGoalBias;
-            } else if (name == "rrtstar_ball_radius_constant") {
-                _ss >> m_rrtStarBallRadiusConstant;
-            } else if (name == "rrtstar_max_ball_radius") {
-                _ss >> m_rrtStarMaxBallRadius;
             } else if (name == "dat_filename") {
                 _ss >> m_dat_filename; }
             else if (name == "trajs_fileformat") {

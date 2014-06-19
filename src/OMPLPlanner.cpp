@@ -32,15 +32,15 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <boost/foreach.hpp>
 #include <boost/make_shared.hpp>
 #include <ompl/config.h>
-#define OMPL_VERSION_COMP (  OMPL_MAJOR_VERSION * 1000000 \
-                           + OMPL_MINOR_VERSION * 1000 \
-                           + OMPL_PATCH_VERSION)
-
 #include <ompl/base/StateSpaceTypes.h>
 #include <ompl/base/StateSpace.h>
 #include <ompl/base/spaces/RealVectorStateSpace.h>
 #include "OMPLPlanner.h"
 #include "PlannerRegistry.h"
+
+#define OMPL_VERSION_COMP (  OMPL_MAJOR_VERSION * 1000000 \
+                           + OMPL_MINOR_VERSION * 1000 \
+                           + OMPL_PATCH_VERSION)
 
 #define CD_OS_TIMESPEC_SET_ZERO(t) do { (t)->tv_sec = 0; (t)->tv_nsec = 0; } while (0)
 #define CD_OS_TIMESPEC_ADD(dst, src) do { (dst)->tv_sec += (src)->tv_sec; (dst)->tv_nsec += (src)->tv_nsec; \
@@ -71,12 +71,23 @@ bool OMPLPlanner::InitPlan(OpenRAVE::RobotBasePtr robot, std::istream& input)
     OMPLPlannerParameters* params = new OMPLPlannerParameters();
     input >> (*params);
 
-    return InitPlan(robot, PlannerParametersConstPtr(params));
+    std::cout << ">>>before" << std::endl;
+    bool foo = InitPlan(robot, PlannerParametersConstPtr(params));
+    std::cout << "<<<after" << std::endl;
+    return foo;
 }
 
 bool OMPLPlanner::InitPlan(OpenRAVE::RobotBasePtr robot,
                            PlannerParametersConstPtr params)
 {
+    if (!robot) {
+        RAVELOG_ERROR("Robot must not be NULL.\n");
+        return false;
+    } else if (!params) {
+        RAVELOG_ERROR("Params must not be NULL.\n");
+        return false;
+    }
+
     RAVELOG_DEBUG("Initializing plan\n");
     if (m_simpleSetup) {
         m_simpleSetup.reset();
@@ -146,8 +157,8 @@ bool OMPLPlanner::InitPlan(OpenRAVE::RobotBasePtr robot,
 
     if (has_weights) {
         RAVELOG_WARN("Robot specifies DOF weights. Only unit weights are"
-                     "supported by OMPL; planning will commence as if there are no"
-                     "weights.\n");
+                     " supported by OMPL; planning will commence as if"
+                     " there are no weights.\n");
     }
     
     RAVELOG_DEBUG("Setting up simplesetup class.\n");
@@ -162,6 +173,13 @@ bool OMPLPlanner::InitPlan(OpenRAVE::RobotBasePtr robot,
     m_simpleSetup->setPlanner(m_planner);
 
     RAVELOG_DEBUG("Creating the start pose.\n");
+    if (m_parameters->vinitialconfig.size() != m_robot->GetActiveDOF()) {
+        RAVELOG_ERROR("Start point has incorrect DOF; expected %d, got %d.\n",
+                      m_robot->GetActiveDOF(),
+                      m_parameters->vinitialconfig.size());
+        return false;
+    }
+
     ompl::base::ScopedState<ompl::base::RealVectorStateSpace> startPose(m_stateSpace);
     for (int i = 0; i < m_robot->GetActiveDOF(); i++) {
         startPose->values[i] = m_parameters->vinitialconfig[i];
@@ -175,6 +193,13 @@ bool OMPLPlanner::InitPlan(OpenRAVE::RobotBasePtr robot,
 
     RAVELOG_DEBUG("Setting the end pose.\n");
     ompl::base::ScopedState<ompl::base::RealVectorStateSpace> endPose(m_stateSpace);
+    if (m_parameters->vgoalconfig.size() != m_robot->GetActiveDOF()) {
+        RAVELOG_ERROR("End point has incorrect DOF; expected %d, got %d.\n",
+                      m_robot->GetActiveDOF(),
+                      m_parameters->vgoalconfig.size());
+        return false;
+    }
+    
     for (int i = 0; i < m_robot->GetActiveDOF(); i++) {
         endPose->values[i] = params->vgoalconfig[i];
     }
@@ -246,7 +271,6 @@ bool OMPLPlanner::InitializePlanner()
         }
         std::string const value = text->Value();
 
-        RAVELOG_INFO("Found param: %s => %s\n", key.c_str(), value.c_str());
         params_map.insert(std::make_pair(key, value));
     }
 
