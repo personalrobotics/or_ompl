@@ -71,10 +71,7 @@ bool OMPLPlanner::InitPlan(OpenRAVE::RobotBasePtr robot, std::istream& input)
     OMPLPlannerParameters* params = new OMPLPlannerParameters();
     input >> (*params);
 
-    std::cout << ">>>before" << std::endl;
-    bool foo = InitPlan(robot, PlannerParametersConstPtr(params));
-    std::cout << "<<<after" << std::endl;
-    return foo;
+    return InitPlan(robot, PlannerParametersConstPtr(params));
 }
 
 bool OMPLPlanner::InitPlan(OpenRAVE::RobotBasePtr robot,
