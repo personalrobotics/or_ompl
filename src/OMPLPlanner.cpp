@@ -28,8 +28,9 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 *************************************************************************/
 #include <time.h>
+#include <tinyxml.h>
+#include <boost/foreach.hpp>
 #include <boost/make_shared.hpp>
-
 #include <ompl/config.h>
 #define OMPL_VERSION_COMP (  OMPL_MAJOR_VERSION * 1000000 \
                            + OMPL_MINOR_VERSION * 1000 \
@@ -196,9 +197,78 @@ bool OMPLPlanner::InitPlan(OpenRAVE::RobotBasePtr robot,
 
 bool OMPLPlanner::InitializePlanner()
 {
+    // Create the planner.
     std::string const plannerName = m_parameters->m_plannerType;
-    ompl::base::SpaceInformationPtr spaceInformation = m_simpleSetup->getSpaceInformation();
+    ompl::base::SpaceInformationPtr const spaceInformation
+            = m_simpleSetup->getSpaceInformation();
+
     m_planner.reset(registry::create(plannerName, spaceInformation));
+    if (!m_planner) {
+        RAVELOG_ERROR("Failed creating planner '%s'.\n", plannerName.c_str());
+        return false;
+    }
+
+    // Populate planner parameters from the PlannerParameters.
+    std::string const params_str = "<ExtraParams>"
+                                   + m_parameters->_sExtraParameters
+                                   + "</ExtraParams>";
+    TiXmlDocument doc_xml;
+    doc_xml.Parse(params_str.c_str());
+    if (doc_xml.Error()) {
+        RAVELOG_ERROR("Failed parsing XML parameters: %s\n",
+                      doc_xml.ErrorDesc());
+        return false;
+    }
+
+    TiXmlElement const *root_xml = doc_xml.RootElement();
+    std::map<std::string, std::string> params_map;
+
+    for (TiXmlElement const *it_ele = root_xml->FirstChildElement();
+         it_ele;
+         it_ele = it_ele->NextSiblingElement()) {
+        // Extract the property name.
+        std::string const key = it_ele->ValueStr();
+
+        // Extract the property value.
+        TiXmlNode const *node = it_ele->FirstChild();
+        if (!node) {
+            RAVELOG_ERROR("Failed parsing planner parameters:"
+                          " Element '%s' does not contain a value.\n",
+                          key.c_str());
+            return false;
+        }
+        TiXmlText const *text = node->ToText();
+        TiXmlNode const *next_node = node->NextSibling();
+        if (!text || next_node) {
+            RAVELOG_ERROR("Failed parsing planner parameters:"
+                          " Element '%s' contains complex data.\n",
+                          key.c_str());
+        }
+        std::string const value = text->Value();
+
+        RAVELOG_INFO("Found param: %s => %s\n", key.c_str(), value.c_str());
+        params_map.insert(std::make_pair(key, value));
+    }
+
+    ompl::base::ParamSet &param_set = m_planner->params();
+    bool const is_success = param_set.setParams(params_map, false);
+
+    // Print out the list of valid parameters.
+    if (!is_success) {
+        std::vector<std::string> param_names;
+        param_set.getParamNames(param_names);
+
+        std::stringstream param_stream; 
+        BOOST_FOREACH (std::string const &param_name, param_names) {
+            param_stream << " " << param_name;
+        }
+        std::string const param_str = param_stream.str();
+
+        RAVELOG_ERROR("Invalid planner parameters."
+                      " The following parameters are supported:%s\n",
+                      param_str.c_str());
+        return false;
+    }
     return true;
 }
 

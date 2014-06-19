@@ -13,7 +13,7 @@ namespace or_ompl {{
 namespace registry {{
 
 struct BasePlannerFactory {{
-    virtual ~BasePlannerFactory();
+    virtual ~BasePlannerFactory() {{ }}
     virtual ompl::base::Planner *create(ompl::base::SpaceInformationPtr space) = 0;
 }};
 
