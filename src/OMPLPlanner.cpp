@@ -230,15 +230,15 @@ OpenRAVE::PlannerStatus OMPLPlanner::PlanPath(OpenRAVE::TrajectoryBasePtr ptraj)
         RAVELOG_ERROR("Unable to plan. Did you call InitPlan?");
         return OpenRAVE::PS_Failed;
     }
-    /* also, set something max path length so it continues after finding a solution! */
+
+    // TODO: Configure anytime algorithms to keep planning.
     //m_simpleSetup->getGoal()->setMaximumPathLength(0.0);
    
     // TODO: What is all of this? Should this really be in the planner?
     struct timespec tic;
     clock_gettime(CLOCK_THREAD_CPUTIME_ID, &tic);
 
-    bool success;
-    success = m_simple_setup->solve(m_parameters->m_timeLimit);
+    bool const success = m_simple_setup->solve(m_parameters->m_timeLimit);
 
     struct timespec toc;
     clock_gettime(CLOCK_THREAD_CPUTIME_ID, &toc);
@@ -258,10 +258,10 @@ bool OMPLPlanner::IsInOrCollision(std::vector<double> values)
     struct timespec tic;
     clock_gettime(CLOCK_THREAD_CPUTIME_ID, &tic);
 #endif
-    OpenRAVE::EnvironmentMutex::scoped_lock lockenv(GetEnv()->GetMutex());
-    m_robot->SetActiveDOFValues(values, false);
-    bool collided = (GetEnv()->CheckCollision(m_robot, m_collisionReport))
-                 || (m_robot->CheckSelfCollision(m_collisionReport));
+
+    m_robot->SetActiveDOFValues(values, OpenRAVE::KinBody::CLA_Nothing);
+    bool const collided = GetEnv()->CheckCollision(m_robot)
+                       || m_robot->CheckSelfCollision();
     m_numCollisionChecks++;
 
 #ifdef TIME_COLLISION_CHECKS
@@ -275,17 +275,18 @@ bool OMPLPlanner::IsInOrCollision(std::vector<double> values)
 
 bool OMPLPlanner::IsStateValid(ompl::base::State const *state)
 {
-    ompl::base::RealVectorStateSpace::StateType const* realVectorState = state->as<ompl::base::RealVectorStateSpace::StateType>();
+    typedef ompl::base::RealVectorStateSpace::StateType StateType;
+    StateType const *realVectorState = state->as<StateType>();
+    size_t const num_dof = m_robot->GetActiveDOF();
 
-    if (!realVectorState) {
-        RAVELOG_ERROR("State type requested was invalid!");
-        return false;
-    } else {
-        std::vector<double> values;
-        for (int i = 0; i < m_robot->GetActiveDOF(); i++) {
-            values.push_back(realVectorState->values[i]);
+    if (realVectorState) {
+        std::vector<OpenRAVE::dReal> values(num_dof);
+        for (int i = 0; i < num_dof; i++) {
+            values[i] = realVectorState->values[i];
         }
         return !IsInOrCollision(values);
+    } else {
+        RAVELOG_ERROR("Invalid StateType. This should never happen.\n");
     }
 }
 
