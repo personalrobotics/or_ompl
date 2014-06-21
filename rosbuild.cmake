@@ -44,6 +44,7 @@ add_custom_command(OUTPUT "${CMAKE_BINARY_DIR}/src/PlannerRegistry.cpp"
 rosbuild_add_library(${PROJECT_NAME} SHARED
     src/OMPLMain.cpp
     src/OMPLPlanner.cpp
+    src/OMPLConversions.cpp
     "${CMAKE_BINARY_DIR}/src/PlannerRegistry.cpp"
 )
 target_link_libraries(${PROJECT_NAME} ${OMPL_LIBRARIES} ${TinyXML_LIBRARIES})

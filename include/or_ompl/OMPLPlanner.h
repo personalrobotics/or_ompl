@@ -36,8 +36,8 @@ namespace or_ompl
 
         private:
             OMPLPlannerParametersPtr m_parameters;
-            ompl::geometric::SimpleSetup* m_simpleSetup;
-            ompl::base::StateSpacePtr m_stateSpace;
+            ompl::geometric::SimpleSetup* m_simple_setup;
+            ompl::base::StateSpacePtr m_state_space;
             ompl::base::PlannerPtr m_planner;
             OpenRAVE::RobotBasePtr m_robot;
             OpenRAVE::CollisionReportPtr m_collisionReport;
