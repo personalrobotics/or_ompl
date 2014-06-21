@@ -47,4 +47,7 @@ rosbuild_add_library(${PROJECT_NAME} SHARED
     src/OMPLConversions.cpp
     "${CMAKE_BINARY_DIR}/src/PlannerRegistry.cpp"
 )
-target_link_libraries(${PROJECT_NAME} ${OMPL_LIBRARIES} ${TinyXML_LIBRARIES})
+target_link_libraries(${PROJECT_NAME}
+    ${OMPL_LIBRARIES}
+    ${TinyXML_LIBRARIES}
+)

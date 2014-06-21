@@ -57,7 +57,7 @@ RealVectorSpacePtr CreateStateSpace(OpenRAVE::RobotBasePtr const robot,
     double conservative_fraction = std::numeric_limits<double>::max();
     for (size_t i = 0; i < num_dof; ++i) {
         if (upperLimits[i] > lowerLimits[i]) {
-            double const joint_extents = upperLimits[i] - upperLimits[i];
+            double const joint_extents = upperLimits[i] - lowerLimits[i];
             double const joint_fraction = dof_resolutions[i] / joint_extents;
             conservative_fraction = std::min(conservative_fraction, joint_fraction);
         }

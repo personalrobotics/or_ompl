@@ -66,83 +66,95 @@ OMPLPlanner::~OMPLPlanner()
 
 bool OMPLPlanner::InitPlan(OpenRAVE::RobotBasePtr robot, std::istream& input)
 {
-    m_totalCollisionTime = 0.0;
-    m_numCollisionChecks = 0;
+    OMPLPlannerParametersPtr params = boost::make_shared<OMPLPlannerParameters>();
+    input >> *params;
 
-    OMPLPlannerParameters* params = new OMPLPlannerParameters();
-    input >> (*params);
-
-    return InitPlan(robot, PlannerParametersConstPtr(params));
+    return InitPlan(robot, params);
 }
 
 bool OMPLPlanner::InitPlan(OpenRAVE::RobotBasePtr robot,
                            PlannerParametersConstPtr params_raw)
 {
-    typedef ompl::base::ScopedState<ompl::base::RealVectorStateSpace> ScopedState;
+    try {
+        typedef ompl::base::ScopedState<ompl::base::RealVectorStateSpace> ScopedState;
 
-    if (!robot) {
-        RAVELOG_ERROR("Robot must not be NULL.\n");
-        return false;
-    } else if (!params_raw) {
-        RAVELOG_ERROR("Parameters must not be NULL.\n");
+        if (!robot) {
+            RAVELOG_ERROR("Robot must not be NULL.\n");
+            return false;
+        } else if (!params_raw) {
+            RAVELOG_ERROR("Parameters must not be NULL.\n");
+            return false;
+        }
+
+        m_robot = robot;
+        m_totalCollisionTime = 0.0;
+        m_numCollisionChecks = 0;
+
+        size_t const num_dof = robot->GetActiveDOF();
+        m_parameters = boost::make_shared<OMPLPlannerParameters>();
+        m_parameters->copy(params_raw);
+
+        RAVELOG_DEBUG("Creating state space.\n");
+        m_state_space = CreateStateSpace(robot, *m_parameters);
+        if (!m_state_space) {
+            RAVELOG_ERROR("Failed creating state space.\n");
+            return false;
+        }
+
+        RAVELOG_DEBUG("Creating OMPL setup.\n");
+        m_simple_setup = boost::make_shared<ompl::geometric::SimpleSetup>(m_state_space);
+
+        RAVELOG_DEBUG("Setting initial configuration.\n");
+        if (m_parameters->vinitialconfig.size() != num_dof) {
+            RAVELOG_ERROR("Start configuration has incorrect DOF;"
+                          " expected %d, got %d.\n",
+                          num_dof, m_parameters->vinitialconfig.size());
+            return false;
+        } else if (IsInOrCollision(m_parameters->vinitialconfig)) {
+            RAVELOG_ERROR("Initial configuration in collision.\n");
+            return false;
+        }
+
+        ScopedState q_start(m_state_space);
+        for (size_t i = 0; i < num_dof; i++) {
+            q_start->values[i] = m_parameters->vinitialconfig[i];
+        }
+        m_simple_setup->setStartState(q_start);
+
+        RAVELOG_DEBUG("Setting goal configuration.\n");
+        if (m_parameters->vgoalconfig.size() != num_dof) {
+            RAVELOG_ERROR("End configuration has incorrect DOF;"
+                          "  expected %d, got %d.\n",
+                          num_dof, m_parameters->vgoalconfig.size());
+            return false;
+        } else if (IsInOrCollision(m_parameters->vgoalconfig)) {
+            RAVELOG_ERROR("Goal configuration is in collision.\n");
+            return false;
+        }
+
+        ScopedState q_end(m_state_space);
+        for (size_t i = 0; i < num_dof; i++) {
+            q_end->values[i] = m_parameters->vgoalconfig[i];
+        }
+        m_simple_setup->setGoalState(q_start);
+
+        RAVELOG_DEBUG("Creating planner.\n");
+        m_planner = CreatePlanner(*m_parameters);
+        if (!m_planner) {
+            RAVELOG_ERROR("Failed creating OMPL planner.\n");
+            return false;
+        }
+        m_simple_setup->setPlanner(m_planner);
+
+        RAVELOG_DEBUG("Setting state validity checker.\n");
+        m_simple_setup->setStateValidityChecker(
+            boost::bind(&or_ompl::OMPLPlanner::IsStateValid, this, _1));
+
+        return true;
+    } catch (std::runtime_error const &e) {
+        RAVELOG_ERROR("IntPlan failed: %s\n", e.what());
         return false;
     }
-
-    size_t const num_dof = robot->GetActiveDOF();
-    OMPLPlannerParametersPtr params = boost::make_shared<OMPLPlannerParameters>();
-    params->copy(params_raw);
-
-    RAVELOG_INFO("Creating state space.\n");
-    m_state_space = CreateStateSpace(robot, *params);
-    if (!m_state_space) {
-        RAVELOG_ERROR("Failed creating state space.\n");
-        return false;
-    }
-
-    RAVELOG_DEBUG("Creating OMPL setup.\n");
-    m_simple_setup = boost::make_shared<ompl::geometric::SimpleSetup>(m_state_space);
-
-    RAVELOG_DEBUG("Setting initial configuration.\n");
-    if (params->vinitialconfig.size() != num_dof) {
-        RAVELOG_ERROR("Start configuration has incorrect DOF;"
-                      " expected %d, got %d.\n",
-                      num_dof, params->vinitialconfig.size());
-        return false;
-    } else if (IsInOrCollision(params->vinitialconfig)) {
-        RAVELOG_ERROR("Initial configuration in collision.\n");
-        return false;
-    }
-
-    ScopedState q_start(m_state_space);
-    for (size_t i = 0; i < num_dof; i++) {
-        q_start->values[i] = params->vinitialconfig[i];
-    }
-
-    RAVELOG_DEBUG("Setting goal configuration.\n");
-    if (params->vgoalconfig.size() != num_dof) {
-        RAVELOG_ERROR("End configuration has incorrect DOF;"
-                      "  expected %d, got %d.\n",
-                      num_dof, params->vgoalconfig.size());
-        return false;
-    } else if (IsInOrCollision(params->vgoalconfig)) {
-        RAVELOG_ERROR("Goal configuration is in collision.\n");
-        return false;
-    }
-
-    ScopedState q_end(m_state_space);
-    for (size_t i = 0; i < num_dof; i++) {
-        q_end->values[i] = params->vgoalconfig[i];
-    }
-
-    RAVELOG_INFO("Creating planner.\n");
-    m_planner = CreatePlanner(*params);
-    if (!m_planner) {
-        RAVELOG_ERROR("Failed creating OMPL planner.\n");
-        return false;
-    }
-    m_simple_setup->setPlanner(m_planner);
-
-    return true;
 }
 
 ompl::base::PlannerPtr OMPLPlanner::CreatePlanner(
@@ -201,7 +213,7 @@ ompl::base::PlannerPtr OMPLPlanner::CreatePlanner(
         params_map.insert(std::make_pair(key, value));
     }
 
-    ompl::base::ParamSet &param_set = m_planner->params();
+    ompl::base::ParamSet &param_set = planner->params();
     bool const is_success = param_set.setParams(params_map, false);
 
     // Print out the list of valid parameters.
@@ -225,30 +237,33 @@ ompl::base::PlannerPtr OMPLPlanner::CreatePlanner(
 
 OpenRAVE::PlannerStatus OMPLPlanner::PlanPath(OpenRAVE::TrajectoryBasePtr ptraj)
 {
-    OpenRAVE::EnvironmentMutex::scoped_lock lockenv(GetEnv()->GetMutex());
-    if (!m_simple_setup) {
-        RAVELOG_ERROR("Unable to plan. Did you call InitPlan?");
-        return OpenRAVE::PS_Failed;
-    }
+    try {
+        if (!m_simple_setup) {
+            RAVELOG_ERROR("Unable to plan. Did you call InitPlan?\n");
+            return OpenRAVE::PS_Failed;
+        }
 
-    // TODO: Configure anytime algorithms to keep planning.
-    //m_simpleSetup->getGoal()->setMaximumPathLength(0.0);
-   
-    // TODO: What is all of this? Should this really be in the planner?
-    struct timespec tic;
-    clock_gettime(CLOCK_THREAD_CPUTIME_ID, &tic);
+        // TODO: Configure anytime algorithms to keep planning.
+        //m_simpleSetup->getGoal()->setMaximumPathLength(0.0);
+       
+        // TODO: What is all of this? Should this really be in the planner?
+        struct timespec tic;
+        clock_gettime(CLOCK_THREAD_CPUTIME_ID, &tic);
 
-    bool const success = m_simple_setup->solve(m_parameters->m_timeLimit);
+        bool const success = m_simple_setup->solve(m_parameters->m_timeLimit);
 
-    struct timespec toc;
-    clock_gettime(CLOCK_THREAD_CPUTIME_ID, &toc);
-    CD_OS_TIMESPEC_SUB(&toc, &tic);
-    printf("cputime seconds: %f\n", CD_OS_TIMESPEC_DOUBLE(&toc));
+        struct timespec toc;
+        clock_gettime(CLOCK_THREAD_CPUTIME_ID, &toc);
+        CD_OS_TIMESPEC_SUB(&toc, &tic);
+        printf("cputime seconds: %f\n", CD_OS_TIMESPEC_DOUBLE(&toc));
 
-    if (success) { 
-        return ToORTrajectory(m_simple_setup->getSolutionPath(), ptraj);
-    } else {
-        return OpenRAVE::PS_Failed;
+        if (success) { 
+            return ToORTrajectory(m_simple_setup->getSolutionPath(), ptraj);
+        } else {
+            return OpenRAVE::PS_Failed;
+        }
+    } catch (std::runtime_error const &e) {
+        RAVELOG_ERROR("Planning failed: %s\n", e.what());
     }
 }
 
