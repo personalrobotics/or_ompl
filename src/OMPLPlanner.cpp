@@ -274,7 +274,7 @@ OpenRAVE::PlannerStatus OMPLPlanner::PlanPath(OpenRAVE::TrajectoryBasePtr ptraj)
     }
 }
 
-bool OMPLPlanner::IsInOrCollision(std::vector<double> values)
+bool OMPLPlanner::IsInOrCollision(std::vector<double> const &values)
 {
 #ifdef TIME_COLLISION_CHECKS
     struct timespec tic;

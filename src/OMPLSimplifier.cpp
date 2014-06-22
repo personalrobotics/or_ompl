@@ -38,9 +38,9 @@ bool OMPLSimplifier::InitPlan(OpenRAVE::RobotBasePtr robot,
 
         m_state_space = CreateStateSpace(robot, *m_parameters);
         m_space_info = boost::make_shared<SpaceInformation>(m_state_space);
+        m_space_info->setStateValidityChecker(
+                boost::bind(&OMPLSimplifier::IsStateValid, this, _1));
         m_simplifier = boost::make_shared<PathSimplifier>(m_space_info);
-        // TODO: Where do I set the stateValidityChecker?
-
         return true;
     } catch (std::runtime_error const &e) {
         RAVELOG_ERROR("IntPlan failed: %s\n", e.what());
@@ -80,7 +80,9 @@ OpenRAVE::PlannerStatus OMPLSimplifier::PlanPath(OpenRAVE::TrajectoryBasePtr ptr
     ompl::geometric::PathGeometric path(m_space_info);
     size_t const num_dof = m_cspec.GetDOF();
 
-    RAVELOG_INFO("Creating path\n");
+    RAVELOG_DEBUG("Create OMPL path with %d DOF and %d waypoints.\n",
+                  num_dof, ptraj->GetNumWaypoints());
+
     for (size_t iwaypoint = 0; iwaypoint < ptraj->GetNumWaypoints(); ++iwaypoint) {
         // Extract the OpenRAVE waypoint. Default to the current configuration
         // for any missing DOFs.
@@ -98,11 +100,14 @@ OpenRAVE::PlannerStatus OMPLSimplifier::PlanPath(OpenRAVE::TrajectoryBasePtr ptr
 
     // Run path simplification.
     // TODO: Why does this SEGFAULT? Something must be wrong with the OMPL path
-    // I construct from the OpenRAVE trajectory.
+    RAVELOG_DEBUG("Running path simplification for %f seconds.\n",
+                  m_parameters->m_timeLimit);
     BOOST_ASSERT(m_parameters);
     m_simplifier->simplify(path, m_parameters->m_timeLimit);
 
     // Store the result in the OpenRAVE trajectory.
+    RAVELOG_DEBUG("Reconstructing OpenRAVE trajectory with %d waypoints.\n",
+                  path.getStateCount());
     BOOST_ASSERT(ptraj);
     ptraj->Remove(0, ptraj->GetNumWaypoints());
 
@@ -117,6 +122,30 @@ OpenRAVE::PlannerStatus OMPLSimplifier::PlanPath(OpenRAVE::TrajectoryBasePtr ptr
         ptraj->Insert(iwaypoint, waypoint_openrave, m_cspec);
     }
     return OpenRAVE::PS_HasSolution;
+}
+
+bool OMPLSimplifier::IsInOrCollision(std::vector<double> const &values)
+{
+    m_robot->SetActiveDOFValues(values, OpenRAVE::KinBody::CLA_Nothing);
+    return GetEnv()->CheckCollision(m_robot) || m_robot->CheckSelfCollision();
+}
+
+bool OMPLSimplifier::IsStateValid(ompl::base::State const *state)
+{
+    typedef ompl::base::RealVectorStateSpace::StateType StateType;
+    StateType const *realVectorState = state->as<StateType>();
+    size_t const num_dof = m_robot->GetActiveDOF();
+
+    if (realVectorState) {
+        std::vector<OpenRAVE::dReal> values(num_dof);
+        for (size_t i = 0; i < num_dof; i++) {
+            values[i] = realVectorState->values[i];
+        }
+        return !IsInOrCollision(values);
+    } else {
+        RAVELOG_ERROR("Invalid StateType. This should never happen.\n");
+        return false;
+    }
 }
 
 }

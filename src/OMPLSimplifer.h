@@ -58,8 +58,8 @@ private:
     ompl::geometric::PathSimplifierPtr m_simplifier;
     OpenRAVE::ConfigurationSpecification m_cspec;
 
-    bool IsStateValid(const ompl::base::State* state);
-    bool IsInOrCollision(std::vector<double> jointValues);
+    bool IsInOrCollision(std::vector<double> const &values);
+    bool IsStateValid(ompl::base::State const *state);
 };
 
 typedef boost::shared_ptr<OMPLSimplifier> OMPLSimplifierPtr;
