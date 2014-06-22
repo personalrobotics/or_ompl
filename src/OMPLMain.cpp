@@ -30,6 +30,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <boost/make_shared.hpp>
 #include <openrave/plugin.h>
 #include "OMPLPlanner.h"
+#include "OMPLConversions.h"
 
 using namespace OpenRAVE;
 
@@ -47,6 +48,10 @@ InterfaceBasePtr CreateInterfaceValidated(
 void GetPluginAttributesValidated(PLUGININFO &info)
 {
     info.interfacenames[PT_Planner].push_back("ompl");
+
+    // Forward OMPL log messages to OpenRAVE.
+    ompl::msg::setLogLevel(ompl::msg::LOG_DEBUG);
+    ompl::msg::useOutputHandler(new or_ompl::OpenRAVEHandler);
 }
 
 RAVE_PLUGIN_API void DestroyPlugin()
