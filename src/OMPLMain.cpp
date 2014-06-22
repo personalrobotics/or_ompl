@@ -30,6 +30,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <boost/make_shared.hpp>
 #include <openrave/plugin.h>
 #include "OMPLPlanner.h"
+#include "OMPLSimplifer.h"
 
 using namespace OpenRAVE;
 
@@ -39,6 +40,8 @@ InterfaceBasePtr CreateInterfaceValidated(
 {
     if (type == PT_Planner && interfacename == "ompl") {
         return boost::make_shared<or_ompl::OMPLPlanner>(penv);
+    } else if (type == PT_Planner && interfacename == "omplsimplifier") {
+        return boost::make_shared<or_ompl::OMPLSimplifier>(penv);
     } else {
         return InterfaceBasePtr();
     }
@@ -46,7 +49,8 @@ InterfaceBasePtr CreateInterfaceValidated(
 
 void GetPluginAttributesValidated(PLUGININFO &info)
 {
-    info.interfacenames[PT_Planner].push_back("ompl");
+    info.interfacenames[PT_Planner].push_back("OMPL");
+    info.interfacenames[PT_Planner].push_back("OMPLSimplifier");
 }
 
 RAVE_PLUGIN_API void DestroyPlugin()
