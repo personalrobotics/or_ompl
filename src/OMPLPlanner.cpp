@@ -57,6 +57,7 @@ namespace or_ompl
 
 OMPLPlanner::OMPLPlanner(OpenRAVE::EnvironmentBasePtr penv)
     : OpenRAVE::PlannerBase(penv)
+    , m_initialized(false)
 {
 }
 
@@ -68,13 +69,14 @@ bool OMPLPlanner::InitPlan(OpenRAVE::RobotBasePtr robot, std::istream& input)
 {
     OMPLPlannerParametersPtr params = boost::make_shared<OMPLPlannerParameters>();
     input >> *params;
-
     return InitPlan(robot, params);
 }
 
 bool OMPLPlanner::InitPlan(OpenRAVE::RobotBasePtr robot,
                            PlannerParametersConstPtr params_raw)
 {
+    m_initialized = false;
+
     try {
         typedef ompl::base::ScopedState<ompl::base::RealVectorStateSpace> ScopedState;
 
@@ -150,6 +152,7 @@ bool OMPLPlanner::InitPlan(OpenRAVE::RobotBasePtr robot,
         m_simple_setup->setStateValidityChecker(
             boost::bind(&or_ompl::OMPLPlanner::IsStateValid, this, _1));
 
+        m_initialized = true;
         return true;
     } catch (std::runtime_error const &e) {
         RAVELOG_ERROR("IntPlan failed: %s\n", e.what());
@@ -238,7 +241,7 @@ ompl::base::PlannerPtr OMPLPlanner::CreatePlanner(
 OpenRAVE::PlannerStatus OMPLPlanner::PlanPath(OpenRAVE::TrajectoryBasePtr ptraj)
 {
     try {
-        if (!m_simple_setup) {
+        if (!m_initialized) {
             RAVELOG_ERROR("Unable to plan. Did you call InitPlan?\n");
             return OpenRAVE::PS_Failed;
         }
@@ -264,6 +267,7 @@ OpenRAVE::PlannerStatus OMPLPlanner::PlanPath(OpenRAVE::TrajectoryBasePtr ptraj)
         }
     } catch (std::runtime_error const &e) {
         RAVELOG_ERROR("Planning failed: %s\n", e.what());
+        return OpenRAVE::PS_Failed;
     }
 }
 
@@ -296,12 +300,13 @@ bool OMPLPlanner::IsStateValid(ompl::base::State const *state)
 
     if (realVectorState) {
         std::vector<OpenRAVE::dReal> values(num_dof);
-        for (int i = 0; i < num_dof; i++) {
+        for (size_t i = 0; i < num_dof; i++) {
             values[i] = realVectorState->values[i];
         }
         return !IsInOrCollision(values);
     } else {
         RAVELOG_ERROR("Invalid StateType. This should never happen.\n");
+        return false;
     }
 }
 
@@ -336,4 +341,4 @@ OpenRAVE::PlannerStatus OMPLPlanner::ToORTrajectory(
     return OpenRAVE::PS_HasSolution;
 }
 
-} /* namespace or_ompl */
+}

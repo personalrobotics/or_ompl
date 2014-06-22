@@ -57,6 +57,7 @@ public:
     }
 
 private:
+    bool m_initialized;
     OMPLPlannerParametersPtr m_parameters;
     ompl::geometric::SimpleSetupPtr m_simple_setup;
     ompl::base::StateSpacePtr m_state_space;

@@ -55,11 +55,13 @@ RealVectorSpacePtr CreateStateSpace(OpenRAVE::RobotBasePtr const robot,
     BOOST_ASSERT(dof_resolutions.size() == num_dof);
 
     double conservative_fraction = std::numeric_limits<double>::max();
+    double longest_extent = 0;
     for (size_t i = 0; i < num_dof; ++i) {
         if (upperLimits[i] > lowerLimits[i]) {
             double const joint_extents = upperLimits[i] - lowerLimits[i];
             double const joint_fraction = dof_resolutions[i] / joint_extents;
             conservative_fraction = std::min(conservative_fraction, joint_fraction);
+            longest_extent = std::max(longest_extent, joint_extents);
         }
     }
 
@@ -68,11 +70,12 @@ RealVectorSpacePtr CreateStateSpace(OpenRAVE::RobotBasePtr const robot,
         return RealVectorSpacePtr();
     }
     state_space->setLongestValidSegmentFraction(conservative_fraction);
+    RAVELOG_DEBUG("Computed resolution of %f (%f fraction of extents).\n",
+                  conservative_fraction * longest_extent, conservative_fraction);
 
     // Per-DOF weights are not supported by OMPL.
-    // TODO: Emulate this by scaling the joint values.
+    // TODO: Emulate this by scaling joint values.
     RAVELOG_DEBUG("Setting joint weights.\n");
-
     std::vector<OpenRAVE::dReal> dof_weights;
     robot->GetActiveDOFWeights(dof_weights);
     BOOST_ASSERT(dof_weights.size() == num_dof);
@@ -89,62 +92,5 @@ RealVectorSpacePtr CreateStateSpace(OpenRAVE::RobotBasePtr const robot,
     }
     return state_space;
 }
-
-#if 0
-bool CreateSimpleSetup(OpenRAVE::RobotBasePtr robot,
-                       OMPLPlannerParameters const &params)
-{
-    ompl::geometric::SimpleSetupPtr simple_setup
-        = boost::make_shared<ompl::geometric::SimpleSetup>(state_space);
-
-    RAVELOG_DEBUG("Setting start configuration.\n");
-    if (params.vinitialconfig.size() != num_dof) {
-        RAVELOG_ERROR("Start configuration has incorrect DOF;"
-                      " expected %d, got %d.\n",
-                      num_dof, params.vinitialconfig.size());
-        return false;
-    }
-
-    ompl::base::ScopedState<ompl::base::RealVectorStateSpace> q_start(state_space);
-    for (size_t i = 0; i < num_dof; i++) {
-        q_start->values[i] = params.vinitialconfig[i];
-    }
-
-#if 0
-    RAVELOG_DEBUG("Checking start configuration for collision.\n");
-    if (IsInOrCollision(ompl_params->vinitialconfig)) {
-        RAVELOG_ERROR("Can't plan. Initial configuration in collision!\n");
-        return false;
-    }
-#endif
-
-    RAVELOG_DEBUG("Setting end configuration.\n");
-    ompl::base::ScopedState<ompl::base::RealVectorStateSpace> q_end(state_space);
-    if (params.vgoalconfig.size() != num_dof) {
-        RAVELOG_ERROR("End configuration has incorrect DOF;"
-                      "  expected %d, got %d.\n",
-                      num_dof, params.vgoalconfig.size());
-        return false;
-    }
-    
-    for (size_t i = 0; i < num_dof; i++) {
-        q_end->values[i] = params.vgoalconfig[i];
-    }
-
-#if 0
-    RAVELOG_DEBUG("Checking collisions\n");
-    if (IsInOrCollision(params->vgoalconfig)) {
-        RAVELOG_ERROR("Can't plan. Final configuration is in collision!");
-        return false;
-    }
-
-    RAVELOG_DEBUG("Setting state validity checker.\n");
-    m_simpleSetup->setStateValidityChecker(
-            boost::bind(&or_ompl::OMPLPlanner::IsStateValid, this, _1));
-    m_simpleSetup->setStartState(startPose);
-    m_simpleSetup->setGoalState(endPose);
-#endif
-}
-#endif
 
 }

@@ -41,7 +41,7 @@ public:
     OMPLPlannerParameters()
         : m_seed(0)
         , m_timeLimit(10)
-        , m_plannerType("RRTConnect")
+        , m_plannerType("")
         , m_isProcessing(false)
         , m_dat_filename("")
         , m_trajs_fileformat("")
