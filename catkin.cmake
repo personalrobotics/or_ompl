@@ -44,6 +44,7 @@ add_custom_command(OUTPUT "${CMAKE_BINARY_DIR}/src/PlannerRegistry.cpp"
 # Helper library.
 add_library(${PROJECT_NAME}
     src/OMPLPlanner.cpp
+    src/OMPLSimplifier.cpp
     src/OMPLConversions.cpp
     "${CMAKE_BINARY_DIR}/src/PlannerRegistry.cpp"
 )
