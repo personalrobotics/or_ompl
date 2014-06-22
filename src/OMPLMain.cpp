@@ -1,5 +1,4 @@
-/***********************************************************************
-
+/*********************************************************************** 
 Copyright (c) 2014, Carnegie Mellon University
 All rights reserved.
 
@@ -31,6 +30,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <openrave/plugin.h>
 #include "OMPLPlanner.h"
 #include "OMPLSimplifer.h"
+#include "OMPLConversions.h"
 
 using namespace OpenRAVE;
 
@@ -51,6 +51,10 @@ void GetPluginAttributesValidated(PLUGININFO &info)
 {
     info.interfacenames[PT_Planner].push_back("OMPL");
     info.interfacenames[PT_Planner].push_back("OMPLSimplifier");
+
+    // Forward OMPL log messages to OpenRAVE.
+    ompl::msg::setLogLevel(ompl::msg::LOG_DEBUG);
+    ompl::msg::useOutputHandler(new or_ompl::OpenRAVEHandler);
 }
 
 RAVE_PLUGIN_API void DestroyPlugin()

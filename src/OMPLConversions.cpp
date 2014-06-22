@@ -3,6 +3,51 @@
 
 namespace or_ompl {
 
+void OpenRAVEHandler::log(std::string const &text, ompl::msg::LogLevel level,
+                          char const *filename, int line)
+{
+    int const openrave_level = (OpenRAVE::RaveGetDebugLevel()
+                              & OpenRAVE::Level_OutputMask);
+
+    switch (level) {
+    case ompl::msg::LOG_DEBUG:
+        if (openrave_level >= (int) OpenRAVE::Level_Debug) {
+            OpenRAVE::RavePrintfA_DEBUGLEVEL("[%s:%d] %s\n",
+                OpenRAVE::RaveGetSourceFilename(filename), line,
+                text.c_str());
+        }
+        break;
+
+    case ompl::msg::LOG_INFO:
+        if (openrave_level >= (int) OpenRAVE::Level_Info) {
+            OpenRAVE::RavePrintfA_INFOLEVEL("[%s:%d] %s\n",
+                OpenRAVE::RaveGetSourceFilename(filename), line,
+                text.c_str());
+        }
+        break;
+
+    case ompl::msg::LOG_WARN:
+        if (openrave_level >= (int) OpenRAVE::Level_Warn) {
+            OpenRAVE::RavePrintfA_WARNLEVEL("[%s:%d] %s\n",
+                OpenRAVE::RaveGetSourceFilename(filename), line,
+                text.c_str());
+        }
+        break;
+
+    case ompl::msg::LOG_ERROR:
+        if (openrave_level >= (int) OpenRAVE::Level_Error) {
+            OpenRAVE::RavePrintfA_ERRORLEVEL("[%s:%d] %s\n",
+                OpenRAVE::RaveGetSourceFilename(filename), line,
+                text.c_str());
+        }
+        break;
+
+    case ompl::msg::LOG_NONE:
+    default:
+        RAVELOG_ERROR("Unknown OMPL log level %d.\n", level);
+    }
+}
+
 RealVectorSpacePtr CreateStateSpace(OpenRAVE::RobotBasePtr const robot,
                                     OMPLPlannerParameters const &params)
 {
