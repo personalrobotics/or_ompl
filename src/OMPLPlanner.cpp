@@ -134,11 +134,11 @@ bool OMPLPlanner::InitPlan(OpenRAVE::RobotBasePtr robot,
             return false;
         }
 
-        ScopedState q_end(m_state_space);
+        ScopedState q_goal(m_state_space);
         for (size_t i = 0; i < num_dof; i++) {
-            q_end->values[i] = m_parameters->vgoalconfig[i];
+            q_goal->values[i] = m_parameters->vgoalconfig[i];
         }
-        m_simple_setup->setGoalState(q_start);
+        m_simple_setup->setGoalState(q_goal);
 
         RAVELOG_DEBUG("Creating planner.\n");
         m_planner = CreatePlanner(*m_parameters);
@@ -253,18 +253,21 @@ OpenRAVE::PlannerStatus OMPLPlanner::PlanPath(OpenRAVE::TrajectoryBasePtr ptraj)
         struct timespec tic;
         clock_gettime(CLOCK_THREAD_CPUTIME_ID, &tic);
 
+        // Call the planner.
         bool const success = m_simple_setup->solve(m_parameters->m_timeLimit);
 
         struct timespec toc;
         clock_gettime(CLOCK_THREAD_CPUTIME_ID, &toc);
         CD_OS_TIMESPEC_SUB(&toc, &tic);
-        printf("cputime seconds: %f\n", CD_OS_TIMESPEC_DOUBLE(&toc));
+        RAVELOG_DEBUG("cputime seconds: %f\n", CD_OS_TIMESPEC_DOUBLE(&toc));
 
-        if (success) { 
-            return ToORTrajectory(m_simple_setup->getSolutionPath(), ptraj);
+        if (success) {
+            ToORTrajectory(m_simple_setup->getSolutionPath(), ptraj);
+            return OpenRAVE::PS_HasSolution;
         } else {
             return OpenRAVE::PS_Failed;
         }
+
     } catch (std::runtime_error const &e) {
         RAVELOG_ERROR("Planning failed: %s\n", e.what());
         return OpenRAVE::PS_Failed;
