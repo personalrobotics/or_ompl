@@ -37,6 +37,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <ompl/base/spaces/RealVectorStateSpace.h>
 #include "OMPLConversions.h"
 #include "OMPLPlanner.h"
+#include "TSRGoal.h"
 #include "PlannerRegistry.h"
 
 #define OMPL_VERSION_COMP (  OMPL_MAJOR_VERSION * 1000000 \
@@ -134,11 +135,19 @@ bool OMPLPlanner::InitPlan(OpenRAVE::RobotBasePtr robot,
             return false;
         }
 
-        ScopedState q_goal(m_state_space);
-        for (size_t i = 0; i < num_dof; i++) {
-            q_goal->values[i] = m_parameters->vgoalconfig[i];
-        }
-        m_simple_setup->setGoalState(q_goal);
+		if(m_parameters->m_goaltsr){
+			TSRGoal::Ptr goaltsr = boost::make_shared<TSRGoal>(m_simple_setup->getSpaceInformation(),
+															   m_parameters->m_goaltsr,
+															   robot);
+			m_simple_setup->setGoal(goaltsr);
+
+		}else{
+			ScopedState q_goal(m_state_space);
+			for (size_t i = 0; i < num_dof; i++) {
+				q_goal->values[i] = m_parameters->vgoalconfig[i];
+			}
+			m_simple_setup->setGoalState(q_goal);
+		}
 
         RAVELOG_DEBUG("Creating planner.\n");
         m_planner = CreatePlanner(*m_parameters);

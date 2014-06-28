@@ -3,6 +3,7 @@
 
 #include <openrave-core.h>
 #include <openrave/planner.h>
+#include <TSR.h>
 
 namespace or_ompl
 {
@@ -20,7 +21,8 @@ namespace or_ompl
                 m_rrtStarBallRadiusConstant(0.0), /* 0.0 means dont set */
                 m_rrtStarMaxBallRadius(0.0), /* 0.0 means dont set */
                 m_dat_filename(""),
-                m_trajs_fileformat("")
+				m_trajs_fileformat("")
+					
             {
                 _vXMLParameters.push_back("seed");
                 _vXMLParameters.push_back("time_limit");
@@ -31,6 +33,7 @@ namespace or_ompl
                 _vXMLParameters.push_back("rrtstar_max_ball_radius");
                 _vXMLParameters.push_back("dat_filename");
                 _vXMLParameters.push_back("trajs_fileformat");
+				_vXMLParameters.push_back("goal_tsr");
             }
 
             unsigned int m_seed;
@@ -43,6 +46,7 @@ namespace or_ompl
             double m_rrtStarMaxBallRadius;
             std::string m_dat_filename;
             std::string m_trajs_fileformat;
+			TSR::Ptr m_goaltsr;
 
         protected:
             virtual bool serialize(std::ostream& O) const
@@ -61,6 +65,7 @@ namespace or_ompl
                 O << "<rrtstar_max_ball_radius>" << m_rrtStarMaxBallRadius << "</rrtstar_max_ball_radius>" << std::endl;
                 O << "<dat_filename>" << m_dat_filename << "</dat_filename>" << std::endl;
                 O << "<trajs_fileformat>" << m_trajs_fileformat << "</trajs_fileformat>" << std::endl;
+				O << "<goal_tsr>" << m_goaltsr << "</goal_tsr>" << std::endl;
 
                 return !!O;
             }
@@ -90,7 +95,8 @@ namespace or_ompl
                   || name == "rrtstar_ball_radius_constant"
                   || name == "rrtstar_max_ball_radius"
                   || name == "dat_filename"
-                  || name == "trajs_fileformat";
+                  || name == "trajs_fileformat"
+				  || name == "goal_tsr";
 
                 return m_isProcessing ? PE_Support : PE_Pass;
             }
@@ -135,6 +141,15 @@ namespace or_ompl
                     {
                         _ss >> m_trajs_fileformat;
                     }
+					else if(name == "goal_tsr")
+					{
+						m_goaltsr = boost::make_shared<TSR>();
+						bool success = m_goaltsr->deserialize(_ss);
+						if(!success){
+							RAVELOG_ERROR("failed to deserialize TSR");
+							//m_goaltsr = TSR::Ptr();
+						}
+					}
                     else
                     {
                         RAVELOG_WARN(str(boost::format("unknown tag %s\n") % name));

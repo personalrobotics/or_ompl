@@ -20,6 +20,10 @@ include_directories(
     ${TinyXML_INCLUDE_DIRS}
 )
 
+find_package(Eigen REQUIRED)
+include_directories(${EIGEN_INCLUDE_DIRS})
+add_definitions(${EIGEN_DEFINITIONS})
+
 find_package(PkgConfig)
 pkg_check_modules(OMPL QUIET ompl)
 pkg_check_modules(TinyXML QUIET tinyxml)
@@ -46,6 +50,8 @@ rosbuild_add_library(${PROJECT_NAME} SHARED
     src/OMPLPlanner.cpp
     src/OMPLSimplifier.cpp
     src/OMPLConversions.cpp
+	src/TSR.cpp
+	src/TSRGoal.cpp
     "${CMAKE_BINARY_DIR}/src/PlannerRegistry.cpp"
 )
 target_link_libraries(${PROJECT_NAME}
