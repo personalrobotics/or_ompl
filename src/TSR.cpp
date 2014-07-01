@@ -32,62 +32,45 @@ bool TSR::deserialize(std::stringstream &ss) {
         ss >> relativelinkname_ignored;  
     }  
     
-	// Read in the T0_w matrix - serialized as OpenRAVE
-	//   q.x, q.y, q.z, q.w - switch it the the
-	//   Eigen convention
-	double or_x, or_y, or_z, or_w;
-	ss >> or_x;
-	ss >> or_y;
-	ss >> or_z;
-	ss >> or_w;
-	Eigen::Quaterniond T0_w_quat(or_w, or_x, or_y, or_z);
-	std::cout << "Quat: " << T0_w_quat.matrix() << std::endl;
-    ss >> or_x;
-    ss >> or_y;
-    ss >> or_z;
-	Eigen::Vector3d T0_w_trans(or_x, or_y, or_z);
-	std::cout << "Trans: " << T0_w_trans << std::endl;
-	_T0_w = Eigen::Translation<double,3>(T0_w_trans) * T0_w_quat;
+	// Read in the T0_w matrix 
+	double tmp;
+	for(unsigned int c=0; c < 3; c++){
+		for(unsigned int r=0; r < 3; r++){
+			ss >> tmp;
+			_T0_w.matrix()(r,c) = tmp;
+		}
+	}
 
-	ss >> or_x;
-	ss >> or_y;
-	ss >> or_z;
-	ss >> or_w;
-	Eigen::Quaterniond Tw_e_quat(or_w, or_x, or_y, or_z);
-	
-    ss >> or_x;
-    ss >> or_y;
-    ss >> or_z;
-	Eigen::Vector3d Tw_e_trans(or_x, or_y, or_z);
-	_T0_w = Eigen::Translation<double,3>(Tw_e_trans) * Tw_e_quat;
+	for(unsigned int idx=0; idx < 3; idx++){
+		ss >> tmp;
+		_T0_w.translation()(idx) = tmp;
+	}	
 
-    ss >> _Bw(0,0);
-    ss >> _Bw(0,1);
-	
-	ss >> _Bw(1,0);
-	ss >> _Bw(1,1);
+	// Read in the Tw_e matrix 
+	for(unsigned int c=0; c < 3; c++){
+		for(unsigned int r=0; r < 3; r++){
+			ss >> tmp;
+			_Tw_e.matrix()(r,c) = tmp;
+		}
+	}
 
-	ss >> _Bw(2,0);
-	ss >> _Bw(2,1);
+	for(unsigned int idx=0; idx < 3; idx++){
+		ss >> tmp;
+		_Tw_e.translation()(idx) = tmp;
+	}
 
-	ss >> _Bw(3,0);
-	ss >> _Bw(3,1);
-
-	ss >> _Bw(4,0);
-	ss >> _Bw(4,1);
-
-	ss >> _Bw(5,0);
-	ss >> _Bw(5,1);
+	// Read in the Bw matrix 
+	for(unsigned int r=0; r < 6; r++){
+		for(unsigned int c=0; c < 2; c++){
+			ss >> tmp;
+			_Bw(r,c) = tmp;
+		}
+	}
 
 	_T0_w_inv = _T0_w.inverse();
 	_Tw_e_inv = _Tw_e.inverse();
 
 	_initialized = true;
-
-	std::cout << "T0_w: " << _T0_w.matrix() << std::endl;
-	std::cout << "Tw_e: " << _Tw_e.matrix() << std::endl;
-	std::cout << "Bw: " << _Bw.matrix() << std::endl;
-
 
     return _initialized;
 }
