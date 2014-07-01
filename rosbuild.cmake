@@ -51,6 +51,7 @@ rosbuild_add_library(${PROJECT_NAME} SHARED
     src/OMPLSimplifier.cpp
     src/OMPLConversions.cpp
 	src/TSR.cpp
+	src/TSRChain.cpp
 	src/TSRGoal.cpp
     "${CMAKE_BINARY_DIR}/src/PlannerRegistry.cpp"
 )

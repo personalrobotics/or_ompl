@@ -41,11 +41,12 @@ bool TSR::deserialize(std::stringstream &ss) {
 	ss >> or_z;
 	ss >> or_w;
 	Eigen::Quaterniond T0_w_quat(or_w, or_x, or_y, or_z);
-	
+	std::cout << "Quat: " << T0_w_quat.matrix() << std::endl;
     ss >> or_x;
     ss >> or_y;
     ss >> or_z;
 	Eigen::Vector3d T0_w_trans(or_x, or_y, or_z);
+	std::cout << "Trans: " << T0_w_trans << std::endl;
 	_T0_w = Eigen::Translation<double,3>(T0_w_trans) * T0_w_quat;
 
 	ss >> or_x;
@@ -82,6 +83,11 @@ bool TSR::deserialize(std::stringstream &ss) {
 	_Tw_e_inv = _Tw_e.inverse();
 
 	_initialized = true;
+
+	std::cout << "T0_w: " << _T0_w.matrix() << std::endl;
+	std::cout << "Tw_e: " << _Tw_e.matrix() << std::endl;
+	std::cout << "Bw: " << _Bw.matrix() << std::endl;
+
 
     return _initialized;
 }
@@ -131,7 +137,9 @@ Eigen::Affine3d TSR::sample(void) const {
 	
 	ompl::RNG rng;
 	for(unsigned int idx=0; idx < d_sample.size(); idx++){
-		d_sample[idx] = rng.uniformReal(_Bw(idx,0), _Bw(idx,1)); 		
+		if(_Bw(idx,1) > _Bw(idx,0)){
+			d_sample[idx] = rng.uniformReal(_Bw(idx,0), _Bw(idx,1)); 		
+		}
 	}
 
 	Eigen::Affine3d return_tf;

@@ -3,7 +3,8 @@
 
 #include <openrave-core.h>
 #include <openrave/planner.h>
-#include <TSR.h>
+#include <TSRChain.h>
+#include <boost/foreach.hpp>
 
 namespace or_ompl
 {
@@ -33,7 +34,7 @@ namespace or_ompl
                 _vXMLParameters.push_back("rrtstar_max_ball_radius");
                 _vXMLParameters.push_back("dat_filename");
                 _vXMLParameters.push_back("trajs_fileformat");
-				_vXMLParameters.push_back("goal_tsr");
+				_vXMLParameters.push_back("tsr_chain");
             }
 
             unsigned int m_seed;
@@ -46,7 +47,7 @@ namespace or_ompl
             double m_rrtStarMaxBallRadius;
             std::string m_dat_filename;
             std::string m_trajs_fileformat;
-			TSR::Ptr m_goaltsr;
+			std::vector<TSRChain::Ptr> m_tsrchains;
 
         protected:
             virtual bool serialize(std::ostream& O) const
@@ -65,7 +66,9 @@ namespace or_ompl
                 O << "<rrtstar_max_ball_radius>" << m_rrtStarMaxBallRadius << "</rrtstar_max_ball_radius>" << std::endl;
                 O << "<dat_filename>" << m_dat_filename << "</dat_filename>" << std::endl;
                 O << "<trajs_fileformat>" << m_trajs_fileformat << "</trajs_fileformat>" << std::endl;
-				O << "<goal_tsr>" << m_goaltsr << "</goal_tsr>" << std::endl;
+				BOOST_FOREACH(TSRChain::Ptr chain, m_tsrchains){
+					O << "<tsr_chain>" << chain << "</goal_tsr>" << std::endl;
+				}
 
                 return !!O;
             }
@@ -83,6 +86,7 @@ namespace or_ompl
                     case PE_Support:
                         return PE_Support;
                     case PE_Ignore:
+						std::cout << "ignore" << std::endl;
                         return PE_Ignore;
                 }
 
@@ -96,7 +100,7 @@ namespace or_ompl
                   || name == "rrtstar_max_ball_radius"
                   || name == "dat_filename"
                   || name == "trajs_fileformat"
-				  || name == "goal_tsr";
+				  || name == "tsr_chain";
 
                 return m_isProcessing ? PE_Support : PE_Pass;
             }
@@ -141,13 +145,14 @@ namespace or_ompl
                     {
                         _ss >> m_trajs_fileformat;
                     }
-					else if(name == "goal_tsr")
+					else if(name == "tsr_chain")
 					{
-						m_goaltsr = boost::make_shared<TSR>();
-						bool success = m_goaltsr->deserialize(_ss);
+						TSRChain::Ptr chain = boost::make_shared<TSRChain>();
+						bool success = chain->deserialize(_ss);
 						if(!success){
-							RAVELOG_ERROR("failed to deserialize TSR");
-							//m_goaltsr = TSR::Ptr();
+							RAVELOG_ERROR("failed to deserialize TSRChain");
+						}else{
+							m_tsrchains.push_back(chain);
 						}
 					}
                     else

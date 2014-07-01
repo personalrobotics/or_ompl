@@ -125,23 +125,31 @@ bool OMPLPlanner::InitPlan(OpenRAVE::RobotBasePtr robot,
         m_simple_setup->setStartState(q_start);
 
         RAVELOG_DEBUG("Setting goal configuration.\n");
-        if (m_parameters->vgoalconfig.size() != num_dof) {
-            RAVELOG_ERROR("End configuration has incorrect DOF;"
-                          "  expected %d, got %d.\n",
-                          num_dof, m_parameters->vgoalconfig.size());
-            return false;
-        } else if (IsInOrCollision(m_parameters->vgoalconfig)) {
-            RAVELOG_ERROR("Goal configuration is in collision.\n");
-            return false;
-        }
+		bool found_goal_tsr = false;
+		BOOST_FOREACH(TSRChain::Ptr tsr_chain, m_parameters->m_tsrchains){
+			if(tsr_chain->sampleGoal()){
+				std::cout << "Creating tsr goal." << std::endl;
+				TSRGoal::Ptr goaltsr = boost::make_shared<TSRGoal>(m_simple_setup->getSpaceInformation(),
+																   tsr_chain->getTSRs().front(),
+																   robot);
+				std::cout << "Done" << std::endl;
+				m_simple_setup->setGoal(goaltsr);
+				found_goal_tsr = true;
+				break;
+			}
+		}
 
-		if(m_parameters->m_goaltsr){
-			TSRGoal::Ptr goaltsr = boost::make_shared<TSRGoal>(m_simple_setup->getSpaceInformation(),
-															   m_parameters->m_goaltsr,
-															   robot);
-			m_simple_setup->setGoal(goaltsr);
+		if(!found_goal_tsr){
+			if (m_parameters->vgoalconfig.size() != num_dof) {
+				RAVELOG_ERROR("End configuration has incorrect DOF;"
+							  "  expected %d, got %d.\n",
+							  num_dof, m_parameters->vgoalconfig.size());
+				return false;
+			} else if (IsInOrCollision(m_parameters->vgoalconfig)) {
+				RAVELOG_ERROR("Goal configuration is in collision.\n");
+				return false;
+			}
 
-		}else{
 			ScopedState q_goal(m_state_space);
 			for (size_t i = 0; i < num_dof; i++) {
 				q_goal->values[i] = m_parameters->vgoalconfig[i];
