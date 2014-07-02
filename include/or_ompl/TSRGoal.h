@@ -2,10 +2,14 @@
 #define TSR_GOAL_H_
 
 #include <or_ompl/TSR.h>
+#include <or_ompl/TSRChain.h>
 #include <openrave-core.h>
 #include <ompl/base/goals/GoalSampleableRegion.h>
 #include <ompl/base/SpaceInformation.h>
 #include <ompl/base/State.h>
+
+
+#include <boost/make_shared.hpp>
 
 namespace or_ompl {
 	/**
@@ -20,11 +24,33 @@ namespace or_ompl {
 		 * Constructor
 		 *
 		 * @param si The space information object describing the space where the algorithm will be used
-		 * @param goal The goal
-		 * @param tolerance The radius of the goal region
+		 * @param tsr The TSR chain describe the goal region
+		 * @param robot The robot to sample a pose for
 		 */
 		TSRGoal(const ompl::base::SpaceInformationPtr &si,
 				const TSR::Ptr &tsr,
+				OpenRAVE::RobotBasePtr robot);
+
+		/**
+		 * Constructor
+		 *
+		 * @param si The space information object describing the space where the algorithm will be used
+		 * @param tsrchain The TSR chain describe the goal region
+		 * @param robot The robot to sample a pose for
+		 */
+		TSRGoal(const ompl::base::SpaceInformationPtr &si,
+				const TSRChain::Ptr &tsrchain,
+				OpenRAVE::RobotBasePtr robot);
+
+		/**
+		 * Constructor
+		 *
+		 * @param si The space information object describing the space where the algorithm will be used
+		 * @param tsrchains The list of TSR chain describe the goal region
+		 * @param robot The robot to sample a pose for
+		 */
+		TSRGoal(const ompl::base::SpaceInformationPtr &si,
+				const std::vector<TSRChain::Ptr> &tsrchains,
 				OpenRAVE::RobotBasePtr robot);
 
 		/**
@@ -61,7 +87,7 @@ namespace or_ompl {
 		virtual unsigned int maxSampleCount() const;
             
 	private:
-		TSR::Ptr _tsr;
+		std::vector<TSRChain::Ptr> _tsr_chains;
 		OpenRAVE::RobotBasePtr _robot;
 	};
       

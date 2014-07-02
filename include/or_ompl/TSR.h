@@ -55,7 +55,27 @@ namespace or_ompl {
 		 */
 		Eigen::Affine3d sample(void) const;
 			
+		/**
+		 * Sample a displacement transform from the TSR
+		 * @return The sampled transform
+		 */
+		Eigen::Affine3d sampleDisplacementTransform(void) const;
 
+		/**
+		 * @return The transform for the frame of the TSR (T0_w)
+		 */
+		Eigen::Affine3d getOriginTransform(void) const { return _T0_w; }
+
+		/**
+		 * @return The end-effector offset transform (Tw_e)
+		 */
+		Eigen::Affine3d getEndEffectorOffsetTransform(void) const { return _Tw_e; }
+
+		/**
+		 * @return The bounds specified for the TSR (Bw)
+		 */
+		Eigen::Matrix<double, 6, 2> getBounds(void) const { return _Bw; }
+		
 		/**
 		 * Output operator
 		 */

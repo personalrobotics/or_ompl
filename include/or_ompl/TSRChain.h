@@ -57,6 +57,19 @@ namespace or_ompl {
 		 * @return The list of TSRs that make up this chain
 		 */
 		std::vector<TSR::Ptr> getTSRs() const { return _tsrs; }
+
+		/**
+		 * @return A sample from the TSR chain
+		 */
+		Eigen::Affine3d sample(void) const;
+
+		/**
+		 * Compute the distance to the TSR
+		 *
+		 * @param ee_pose The pose of the end-effector in world frame
+		 */
+		Eigen::Matrix<double, 6, 1> distance(const Eigen::Affine3d &ee_pose) const;
+
 	private:
 		bool _initialized;
 		bool _sample_start;

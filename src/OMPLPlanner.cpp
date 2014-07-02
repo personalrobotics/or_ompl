@@ -125,21 +125,19 @@ bool OMPLPlanner::InitPlan(OpenRAVE::RobotBasePtr robot,
         m_simple_setup->setStartState(q_start);
 
         RAVELOG_DEBUG("Setting goal configuration.\n");
-		bool found_goal_tsr = false;
+		std::vector<TSRChain::Ptr> goal_chains;
 		BOOST_FOREACH(TSRChain::Ptr tsr_chain, m_parameters->m_tsrchains){
 			if(tsr_chain->sampleGoal()){
-				std::cout << "Creating tsr goal." << std::endl;
-				TSRGoal::Ptr goaltsr = boost::make_shared<TSRGoal>(m_simple_setup->getSpaceInformation(),
-																   tsr_chain->getTSRs().front(),
-																   robot);
-				std::cout << "Done" << std::endl;
-				m_simple_setup->setGoal(goaltsr);
-				found_goal_tsr = true;
-				break;
+				goal_chains.push_back(tsr_chain);
 			}
 		}
 
-		if(!found_goal_tsr){
+		if(goal_chains.size() > 0) {
+			TSRGoal::Ptr goaltsr = boost::make_shared<TSRGoal>(m_simple_setup->getSpaceInformation(),
+															   goal_chains,
+															   robot);
+			m_simple_setup->setGoal(goaltsr);
+		}else{
 			if (m_parameters->vgoalconfig.size() != num_dof) {
 				RAVELOG_ERROR("End configuration has incorrect DOF;"
 							  "  expected %d, got %d.\n",

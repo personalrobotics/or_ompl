@@ -1,5 +1,8 @@
 #include <TSRGoal.h>
+
+#include <boost/foreach.hpp>
 #include <ompl/base/spaces/RealVectorStateSpace.h>
+#include <ompl/util/RandomNumbers.h>
 
 using namespace or_ompl;
 namespace ob = ompl::base;
@@ -7,7 +10,26 @@ namespace ob = ompl::base;
 TSRGoal::TSRGoal(const ob::SpaceInformationPtr &si,
 				 const TSR::Ptr &tsr, 
 				 OpenRAVE::RobotBasePtr robot)
-    : ob::GoalSampleableRegion(si), _tsr(tsr), _robot(robot){
+    : ob::GoalSampleableRegion(si),  _robot(robot){
+    
+	std::vector<TSR::Ptr> tsrs(1);
+	tsrs.push_back(tsr);
+	TSRChain::Ptr tsrchain = boost::make_shared<TSRChain>(true, false, false, tsrs);
+	_tsr_chains.push_back(tsrchain);
+}
+
+TSRGoal::TSRGoal(const ob::SpaceInformationPtr &si,
+				 const TSRChain::Ptr &tsrchain, 
+				 OpenRAVE::RobotBasePtr robot)
+    : ob::GoalSampleableRegion(si), _robot(robot){
+
+	_tsr_chains.push_back(tsrchain);
+}
+
+TSRGoal::TSRGoal(const ob::SpaceInformationPtr &si,
+				 const std::vector<TSRChain::Ptr> &tsrchains, 
+				 OpenRAVE::RobotBasePtr robot)
+    : ob::GoalSampleableRegion(si), _tsr_chains(tsrchains), _robot(robot){
     
 }
 
@@ -47,8 +69,14 @@ double TSRGoal::distanceGoal(const ompl::base::State *state) const {
     ee_pose.translation() << or_matrix.trans.x, or_matrix.trans.y, or_matrix.trans.z;
 
 	// Get distance to TSR
-	Eigen::Matrix<double, 6, 1> ee_distance = _tsr->distance(ee_pose);
-	double distance = ee_distance.norm();
+	double distance = std::numeric_limits<double>::infinity();
+	BOOST_FOREACH(TSRChain::Ptr tsrchain, _tsr_chains){
+		Eigen::Matrix<double, 6, 1> ee_distance = tsrchain->distance(ee_pose);
+		double tdistance = ee_distance.norm();
+		if(tdistance < distance){
+			distance = tdistance;
+		}
+	}
 
 	// Reset the state of the robot
 	rsaver.Restore();
@@ -62,8 +90,15 @@ void TSRGoal::sampleGoal(ompl::base::State *state) const {
 
 	// TODO: Figure out how to bail correctly if an IK isn't found
 	for(unsigned int count=0; count < 20 && !success; count++){
+		// Pick a TSR to sample
+		int idx = 0;
+		if(_tsr_chains.size() > 1){
+			ompl::RNG rng;
+			idx = rng.uniformInt(0, _tsr_chains.size()-1);
+		}
+
 		// Sample the TSR
-		Eigen::Affine3d ee_pose = _tsr->sample();
+		Eigen::Affine3d ee_pose = _tsr_chains[idx]->sample();
 
 		// Find an associated IK
 		OpenRAVE::TransformMatrix or_matrix;

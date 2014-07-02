@@ -113,7 +113,7 @@ Eigen::Matrix<double, 6, 1> TSR::displacement(const Eigen::Affine3d &ee_pose) co
 	return disp;
 }
 
-Eigen::Affine3d TSR::sample(void) const {
+Eigen::Affine3d TSR::sampleDisplacementTransform(void) const {
 
 	// First sample uniformly betwee each of the bounds of Bw
 	std::vector<double> d_sample(6);
@@ -143,6 +143,12 @@ Eigen::Affine3d TSR::sample(void) const {
 		B*C, A*E + B*D*F, B*D*E - A*F,
 		-D, C*F, C*E;
 
+	return return_tf;
+}
+
+Eigen::Affine3d TSR::sample() const {
+
+	Eigen::Affine3d tf = sampleDisplacementTransform(); 
 	
-	return _T0_w * return_tf * _Tw_e;
+	return _T0_w * tf * _Tw_e;
 }
