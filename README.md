@@ -4,8 +4,8 @@ or_ompl
 [OpenRAVE](http://openrave.org/) bindings for the [OMPL](http://ompl.kavrakilab.org/) suite of motion planning algorithms. This
 package provides an "OMPL" plugin that implements the `OpenRAVE::PlannerBase`
 interface and delegates planning requests to an OMPL planner. It also includes
-the "OMPLSimplifier" plugin that exposes the OMPL's `PathSimplifier` to
-OpenRAVE through the same interface.
+the "OMPLSimplifier" plugin that exposes OMPL's `PathSimplifier` to OpenRAVE
+through the same interface.
 
 This is implemented by initializing OMPL with a state space that matches the
 joint limits and resolutions of the robot's active DOFs. Collision checking
@@ -65,7 +65,7 @@ Usage
 
 The following Python code will plan using OMPL's implementation of RRT-Connect,
 then shortcut the trajectory using OMPL's path simplifier.  We assume that the
-variables `robot` is an OpenRAVE robot that is configured with an appropriate
+variable `robot` is an OpenRAVE robot that is configured with an appropriate
 set of active DOFs:
 
     from openravepy import *
