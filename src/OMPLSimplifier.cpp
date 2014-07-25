@@ -40,6 +40,7 @@ bool OMPLSimplifier::InitPlan(OpenRAVE::RobotBasePtr robot,
         m_space_info = boost::make_shared<SpaceInformation>(m_state_space);
         m_space_info->setStateValidityChecker(
                 boost::bind(&OMPLSimplifier::IsStateValid, this, _1));
+        m_space_info->setup();
         m_simplifier = boost::make_shared<PathSimplifier>(m_space_info);
         return true;
     } catch (std::runtime_error const &e) {
