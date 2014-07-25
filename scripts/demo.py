@@ -1,12 +1,22 @@
 import herbpy, openravepy, numpy, prpy
 
+def simplify_path(robot, traj):
+    with robot:
+        openravepy.RaveSetDebugLevel(openravepy.DebugLevel.Debug);
+        params = openravepy.Planner.PlannerParameters()
+        simplifier = openravepy.RaveCreatePlanner(env, 'OMPLSimplifier')
+        simplifier.InitPlan(robot, params)
+        result = simplifier.PlanPath(traj)
+        openravepy.RaveSetDebugLevel(openravepy.DebugLevel.Info);
+        assert result == openravepy.PlannerStatus.HasSolution
+
 CheckEnvCollisions = openravepy.IkFilterOptions.CheckEnvCollisions
 
 book_uri = '/opt/pr/librarian_ordata/ordata/objects/dracula.kinbody.xml'
 book_pose =  numpy.array(
     [[ 1.0, 0.0, 0.0,  0.89931095 ],
      [ 0.0, 1.0, 0.0, -0.32686412 ],
-     [ 0.0, 0.0, 1.0,  1.28060484 ],
+     [ 0.0, 0.0, 1.0,  1.30060484 ],
      [ 0.0, 0.0, 0.0,  1.         ]]
 )
 
@@ -27,38 +37,32 @@ grasp_pose = numpy.array(
 
 env, robot = herbpy.initialize(sim=True, attach_viewer='interactivemarker')
 manipulator = robot.right_arm
-robot.planner = robot.ompl_planner
+robot.planner = prpy.planning.Sequence(robot.named_planner, robot.ompl_planner)
 dof_indices, dof_values = robot.configurations.get_configuration('relaxed_home')
 
 with env:
+    manipulator.SetActive()
+    robot.SetDOFValues(dof_values, dof_indices)
+
     book = prpy.rave.add_object(env, 'book', book_uri)
     book.SetTransform(book_pose)
-    book.Enable(False)
+    prpy.rave.disable_padding(book)
 
     bookshelf = prpy.rave.add_object(env, 'bookshelf', bookshelf_uri)
     bookshelf.SetTransform(bookshelf_pose)
+    prpy.rave.disable_padding(bookshelf)
 
-# Plan the nominal trajectory.
+# Transit
 ik = manipulator.FindIKSolution(grasp_pose, CheckEnvCollisions)
+transfer_traj = manipulator.PlanToConfiguration(ik, execute=False)
+simplify_path(robot, transfer_traj)
+robot.ExecuteTrajectory(transfer_traj)
 
-with prpy.rave.AllDisabled(env, [ book, bookshelf ], padding_only=True):
-    robot.SetDOFValues(dof_values, dof_indices)
-    traj = manipulator.PlanToConfiguration(ik, execute=False)
+# Grasp
+manipulator.hand.CloseHand()
+robot.Grab(book)
 
-    x = raw_input('Simplify? <Y/N> ')
-    if x == 'Y':
-        with robot:
-            params = openravepy.Planner.PlannerParameters()
-            simplifier = openravepy.RaveCreatePlanner(env, 'OMPLSimplifier')
-            simplifier.InitPlan(robot, params)
-            result = simplifier.PlanPath(traj)
-            assert result == openravepy.PlannerStatus.HasSolution
-
-    book.Enable(True)
-
-    raw_input('Press <ENTER> to execute raw trajectory.')
-    robot.ExecuteTrajectory(traj)
-    with prpy.rave.Disabled(book, padding_only=True):
-        manipulator.hand.CloseHand()
-
-    raw_input('Press <ENTER> to quit.')
+# Transfer
+transit_traj = manipulator.PlanToNamedConfiguration('relaxed_home', execute=False)
+simplify_path(robot, transit_traj)
+robot.ExecuteTrajectory(transit_traj)
