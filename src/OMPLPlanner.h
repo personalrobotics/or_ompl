@@ -67,6 +67,8 @@ private:
     int m_numCollisionChecks;
     double m_totalCollisionTime;
 
+    bool benchmark(std::ostream& sout, std::istream& sinput);
+
     ompl::base::PlannerPtr CreatePlanner(OMPLPlannerParameters const &params);
     bool IsStateValid(const ompl::base::State* state);
     bool IsInOrCollision(std::vector<double> const &jointValues);
