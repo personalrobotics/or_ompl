@@ -253,8 +253,16 @@ OpenRAVE::PlannerStatus OMPLPlanner::PlanPath(OpenRAVE::TrajectoryBasePtr ptraj)
         struct timespec tic;
         clock_gettime(CLOCK_THREAD_CPUTIME_ID, &tic);
 
-        // Call the planner.
-        m_simple_setup->solve(m_parameters->m_timeLimit);
+        {
+            // Don't check collision with inactive links.
+            OpenRAVE::CollisionCheckerBasePtr const collision_checker
+                = GetEnv()->GetCollisionChecker();
+            OpenRAVE::CollisionOptionsStateSaver const collision_saver(
+                collision_checker, OpenRAVE::CO_ActiveDOFs, false);
+
+            // Call the planner.
+            m_simple_setup->solve(m_parameters->m_timeLimit);
+        }
 
         struct timespec toc;
         clock_gettime(CLOCK_THREAD_CPUTIME_ID, &toc);
