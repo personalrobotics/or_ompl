@@ -254,14 +254,20 @@ OpenRAVE::PlannerStatus OMPLPlanner::PlanPath(OpenRAVE::TrajectoryBasePtr ptraj)
         clock_gettime(CLOCK_THREAD_CPUTIME_ID, &tic);
 
         // Call the planner.
-        m_simple_setup->solve(m_parameters->m_timeLimit);
+        ompl::base::PlannerStatus::StatusType status = m_simple_setup->solve(m_parameters->m_timeLimit);
 
         struct timespec toc;
         clock_gettime(CLOCK_THREAD_CPUTIME_ID, &toc);
         CD_OS_TIMESPEC_SUB(&toc, &tic);
         RAVELOG_DEBUG("cputime seconds: %f\n", CD_OS_TIMESPEC_DOUBLE(&toc));
 
-        if (m_simple_setup->haveSolutionPath()) {
+        if (
+            status != ompl::base::PlannerStatus::EXACT_SOLUTION &&
+            status != ompl::base::PlannerStatus::APPROXIMATE_SOLUTION
+        ){
+            RAVELOG_ERROR("Planning failed with OMPL PlannerStatus::StatusType %d\n", status);
+            return OpenRAVE::PS_Failed;
+        } else if (m_simple_setup->haveSolutionPath()) {
             ToORTrajectory(m_simple_setup->getSolutionPath(), ptraj);
             return OpenRAVE::PS_HasSolution;
         } else {
