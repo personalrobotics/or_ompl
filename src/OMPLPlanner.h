@@ -67,11 +67,17 @@ private:
     int m_numCollisionChecks;
     double m_totalCollisionTime;
 
+    OpenRAVE::TrajectoryBasePtr m_ptraj;
+    std::vector<ompl::geometric::PathGeometric> m_anytimeOMPLTrajs;
+
     ompl::base::PlannerPtr CreatePlanner(OMPLPlannerParameters const &params);
     bool IsStateValid(const ompl::base::State* state);
     bool IsInOrCollision(std::vector<double> const &jointValues);
     OpenRAVE::PlannerStatus ToORTrajectory(ompl::geometric::PathGeometric &ompl_traj,
                                            OpenRAVE::TrajectoryBasePtr or_traj) const;
+
+    bool getNumberOfTrajectories(std::ostream& soutput, std::istream& sinput);
+    bool getTrajectory(std::ostream& soutput, std::istream& sinput);
 };
 
 typedef boost::shared_ptr<OMPLPlanner> OMPLPlannerPtr;

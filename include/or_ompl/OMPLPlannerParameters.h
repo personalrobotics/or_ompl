@@ -13,6 +13,8 @@ namespace or_ompl
             OMPLPlannerParameters() :
                 m_seed(0),
                 m_timeLimit(10),
+                m_anytimeTimeLimit(.1),
+                m_isAnytime(false),
                 m_plannerType("RRTConnect"),
                 m_isProcessing(false),
                 m_rrtRange(0.0), /* 0.0 means dont set */
@@ -24,6 +26,8 @@ namespace or_ompl
             {
                 _vXMLParameters.push_back("seed");
                 _vXMLParameters.push_back("time_limit");
+                _vXMLParameters.push_back("anytime_time_limit");
+                _vXMLParameters.push_back("is_anytime");
                 _vXMLParameters.push_back("planner_type");
                 _vXMLParameters.push_back("rrt_range");
                 _vXMLParameters.push_back("rrt_goal_bias");
@@ -35,6 +39,8 @@ namespace or_ompl
 
             unsigned int m_seed;
             double m_timeLimit;
+            double m_anytimeTimeLimit;
+            bool m_isAnytime;
             std::string m_plannerType;
             bool m_isProcessing;
             double m_rrtRange;
@@ -54,6 +60,8 @@ namespace or_ompl
 
                 O << "<seed>" << m_seed << "</seed>" << std::endl;
                 O << "<time_limit>" << m_timeLimit << "</time_limit>" << std::endl;
+                O << "<anytime_time_limit>" << m_anytimeTimeLimit << "</anytime_time_limit>" << std::endl;
+                O << "<is_anytime>" << m_isAnytime << "</is_anytime>" << std::endl;
                 O << "<planner_type>" << m_plannerType << "</planner_type>" << std::endl;
                 O << "<rrt_range>" << m_rrtRange << "</rrt_range>" << std::endl;
                 O << "<rrt_goal_bias>" << m_rrtGoalBias << "</rrt_goal_bias>" << std::endl;
@@ -84,6 +92,8 @@ namespace or_ompl
                 m_isProcessing =
                      name == "seed"
                   || name == "time_limit"
+                  || name == "anytime_time_limit"
+                  || name == "is_anytime"
                   || name == "planner_type"
                   || name == "rrt_range"
                   || name == "rrt_goal_bias"
@@ -106,6 +116,14 @@ namespace or_ompl
                     else if (name == "time_limit")
                     {
                         _ss >> m_timeLimit;
+                    }
+                    else if (name == "anytime_time_limit")
+                    {
+                        _ss >> m_anytimeTimeLimit;
+                    }
+                    else if (name == "is_anytime")
+                    {
+                        _ss >> m_isAnytime;
                     }
                     else if(name == "planner_type")
                     {

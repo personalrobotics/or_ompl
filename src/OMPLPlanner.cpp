@@ -59,6 +59,8 @@ OMPLPlanner::OMPLPlanner(OpenRAVE::EnvironmentBasePtr penv)
     : OpenRAVE::PlannerBase(penv)
     , m_initialized(false)
 {
+    RegisterCommand("getNumberOfTrajectories", boost::bind(&OMPLPlanner::getNumberOfTrajectories, this, _1, _2), "gets the number of trajectories found by anytime planning");
+    RegisterCommand("getTrajectory", boost::bind(&OMPLPlanner::getTrajectory, this, _1, _2), "gets the ith trajectory found by anytime planning");
 }
 
 OMPLPlanner::~OMPLPlanner()
@@ -246,32 +248,73 @@ OpenRAVE::PlannerStatus OMPLPlanner::PlanPath(OpenRAVE::TrajectoryBasePtr ptraj)
             return OpenRAVE::PS_Failed;
         }
 
-        // TODO: Configure anytime algorithms to keep planning.
-        //m_simpleSetup->getGoal()->setMaximumPathLength(0.0);
-       
-        // TODO: What is all of this? Should this really be in the planner?
-        struct timespec tic;
-        clock_gettime(CLOCK_THREAD_CPUTIME_ID, &tic);
+        m_ptraj = ptraj;
+        OpenRAVE::PlannerBase::PlannerProgress progress;
 
-        // Call the planner.
-        m_simple_setup->solve(m_parameters->m_timeLimit);
+        bool requestedReturnWithAnySolution = true;
+        if (m_parameters->m_isAnytime)
+            requestedReturnWithAnySolution = false;
 
-        struct timespec toc;
-        clock_gettime(CLOCK_THREAD_CPUTIME_ID, &toc);
-        CD_OS_TIMESPEC_SUB(&toc, &tic);
-        RAVELOG_DEBUG("cputime seconds: %f\n", CD_OS_TIMESPEC_DOUBLE(&toc));
+        struct timespec startTime;
+        struct timespec currTime;
 
-        if (m_simple_setup->haveSolutionPath()) {
-            ToORTrajectory(m_simple_setup->getSolutionPath(), ptraj);
-            return OpenRAVE::PS_HasSolution;
-        } else {
-            return OpenRAVE::PS_Failed;
+        clock_gettime(CLOCK_THREAD_CPUTIME_ID, &startTime);
+
+        while (true){
+            m_simple_setup->solve(m_parameters->m_anytimeTimeLimit);
+
+            bool haveSolution = m_simple_setup->haveExactSolutionPath();
+
+            clock_gettime(CLOCK_THREAD_CPUTIME_ID, &currTime);
+            CD_OS_TIMESPEC_SUB(&currTime, &startTime);
+
+            if (
+                (requestedReturnWithAnySolution && haveSolution) || 
+                (CD_OS_TIMESPEC_DOUBLE(&currTime) > m_parameters->m_timeLimit && m_parameters->m_timeLimit != -1)
+            ){
+                RAVELOG_DEBUG("cputime seconds: %f\n", CD_OS_TIMESPEC_DOUBLE(&currTime));
+                if (haveSolution){
+                    m_anytimeOMPLTrajs.push_back(m_simple_setup->getSolutionPath());
+                    ToORTrajectory(m_anytimeOMPLTrajs[0], ptraj);
+                    if (requestedReturnWithAnySolution && m_parameters->m_isAnytime)
+                        return OpenRAVE::PS_InterruptedWithSolution;
+                    else
+                        return OpenRAVE::PS_HasSolution;
+                }
+                else {
+                    return OpenRAVE::PS_Failed;
+                }
+            }
+
+            progress._iteration++;
+            OpenRAVE::PlannerAction action = _CallCallbacks(progress);
+            if (action == OpenRAVE::PA_Interrupt){
+                return OpenRAVE::PS_Interrupted;
+            }
+            else if (action == OpenRAVE::PA_ReturnWithAnySolution){
+                requestedReturnWithAnySolution = true;
+                if (m_anytimeOMPLTrajs.size() > 0){
+                    ToORTrajectory(m_anytimeOMPLTrajs[0], ptraj);
+                    return OpenRAVE::PS_InterruptedWithSolution;
+                }
+            }
         }
-
     } catch (std::runtime_error const &e) {
         RAVELOG_ERROR("Planning failed: %s\n", e.what());
         return OpenRAVE::PS_Failed;
     }
+}
+
+bool OMPLPlanner::getNumberOfTrajectories(std::ostream& soutput, std::istream& sinput){
+    soutput << m_anytimeOMPLTrajs.size();
+    return true;
+}
+
+bool OMPLPlanner::getTrajectory(std::ostream& soutput, std::istream& sinput){
+    int i;
+    sinput >> i;
+    ToORTrajectory(m_anytimeOMPLTrajs[i], m_ptraj);
+    return true;
 }
 
 bool OMPLPlanner::IsInOrCollision(std::vector<double> const &values)
