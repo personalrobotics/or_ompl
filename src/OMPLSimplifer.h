@@ -28,7 +28,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 *************************************************************************/
 #ifndef OMPLSIMPLIFIER_H
-#define OMPLPIMPLIFIER_H
+#define OMPLSIMPLIFIER_H
 
 #include <openrave-core.h>
 #include <openrave/planner.h>

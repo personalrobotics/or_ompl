@@ -248,18 +248,9 @@ OpenRAVE::PlannerStatus OMPLPlanner::PlanPath(OpenRAVE::TrajectoryBasePtr ptraj)
 
         // TODO: Configure anytime algorithms to keep planning.
         //m_simpleSetup->getGoal()->setMaximumPathLength(0.0);
-       
-        // TODO: What is all of this? Should this really be in the planner?
-        struct timespec tic;
-        clock_gettime(CLOCK_THREAD_CPUTIME_ID, &tic);
 
         // Call the planner.
         m_simple_setup->solve(m_parameters->m_timeLimit);
-
-        struct timespec toc;
-        clock_gettime(CLOCK_THREAD_CPUTIME_ID, &toc);
-        CD_OS_TIMESPEC_SUB(&toc, &tic);
-        RAVELOG_DEBUG("cputime seconds: %f\n", CD_OS_TIMESPEC_DOUBLE(&toc));
 
         if (m_simple_setup->haveSolutionPath()) {
             ToORTrajectory(m_simple_setup->getSolutionPath(), ptraj);
@@ -276,22 +267,10 @@ OpenRAVE::PlannerStatus OMPLPlanner::PlanPath(OpenRAVE::TrajectoryBasePtr ptraj)
 
 bool OMPLPlanner::IsInOrCollision(std::vector<double> const &values)
 {
-#ifdef TIME_COLLISION_CHECKS
-    struct timespec tic;
-    clock_gettime(CLOCK_THREAD_CPUTIME_ID, &tic);
-#endif
-
     m_robot->SetActiveDOFValues(values, OpenRAVE::KinBody::CLA_Nothing);
     bool const collided = GetEnv()->CheckCollision(m_robot)
                        || m_robot->CheckSelfCollision();
     m_numCollisionChecks++;
-
-#ifdef TIME_COLLISION_CHECKS
-    struct timespec toc;
-    clock_gettime(CLOCK_THREAD_CPUTIME_ID, &toc);
-    CD_OS_TIMESPEC_SUB(&toc, &tic);
-    m_totalCollisionTime += CD_OS_TIMESPEC_DOUBLE(&toc);
-#endif
     return collided;
 }
 

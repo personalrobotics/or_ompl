@@ -1,23 +1,22 @@
 cmake_minimum_required(VERSION 2.8.3)
 
-find_package(catkin REQUIRED)
+find_package(catkin REQUIRED cmake_modules)
 catkin_package(
     INCLUDE_DIRS include/
     LIBRARIES ${PROJECT_NAME}
     DEPENDS ompl openrave
 )
 
+find_package(Boost REQUIRED COMPONENTS system)
 find_package(OpenRAVE REQUIRED)
 find_package(OMPL REQUIRED)
-
-find_package(PkgConfig REQUIRED)
-pkg_check_modules(TINYXML QUIET tinyxml)
+find_package(TinyXML REQUIRED)
 
 include_directories(
     include/${PROJECT_NAME}
     ${OpenRAVE_INCLUDE_DIRS}
     ${OMPL_INCLUDE_DIRS}
-    ${TINYXML_INCLUDE_DIRS}
+    ${TinyXML_INCLUDE_DIRS}
 )
 link_directories(
     ${OpenRAVE_LIBRARY_DIRS}
@@ -51,7 +50,8 @@ add_library(${PROJECT_NAME}
 target_link_libraries(${PROJECT_NAME}
     ${OpenRAVE_LIBRARIES}
     ${OMPL_LIBRARIES}
-    ${TINYXML_LIBRARIES}
+    ${Boost_LIBRARIES}
+    ${TinyXML_LIBRARIES}
 )
 set_target_properties(${PROJECT_NAME} PROPERTIES
     COMPILE_FLAGS "${OpenRAVE_CXX_FLAGS} ${OMPL_CXX_FLAGS}"
@@ -62,7 +62,10 @@ set_target_properties(${PROJECT_NAME} PROPERTIES
 add_library(${PROJECT_NAME}_plugin SHARED
     src/OMPLMain.cpp)
 target_link_libraries(${PROJECT_NAME}_plugin
-    ${PROJECT_NAME} ${OpenRAVE_LIBRARIES})
+    ${PROJECT_NAME}
+    ${OpenRAVE_LIBRARIES}
+    ${Boost_LIBRARIES}
+)
 set_target_properties(${PROJECT_NAME}_plugin PROPERTIES
     PREFIX ""
     COMPILE_FLAGS "${OpenRAVE_CXX_FLAGS}"
