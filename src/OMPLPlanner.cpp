@@ -260,7 +260,7 @@ OpenRAVE::PlannerStatus OMPLPlanner::PlanPath(OpenRAVE::TrajectoryBasePtr ptraj)
             m_simple_setup->solve(m_parameters->m_timeLimit);
         }
 
-        if (m_simple_setup->haveSolutionPath()) {
+        if (m_simple_setup->haveExactSolutionPath()) {
             ToORTrajectory(m_simple_setup->getSolutionPath(), ptraj);
             return OpenRAVE::PS_HasSolution;
         } else {
