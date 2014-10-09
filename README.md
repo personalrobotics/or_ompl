@@ -100,13 +100,9 @@ set of active DOFs:
 website](http://openrave.org/docs/latest_stable/tutorials/openravepy_examples/#directly-launching-planners)
 for more information about how to invoke an OpenRAVE planner.
 
-Contributers
+Contributors
 ------------
 
-or_ompl was developed by the [Personal Robotics
-Lab](https://personalrobotics.ri.cmu.edu) in the [Robotics
-Institute](http://ri.cmu.edu) at [Carnegie Mellon
-University](http://www.cmu.edu). This plugin was written by [Michael
-Koval](http://mkoval.org) and grew out of earlier plugin written by [Chrisopher
-Dellin](http://www.ri.cmu.edu/person.html?person_id=2267) and [Matthew
-Klinginsmith](http://www.ri.cmu.edu/person.html?person_id=2744).
+or_ompl was developed by the [Personal Robotics Lab](https://personalrobotics.ri.cmu.edu) in the [Robotics
+Institute](http://ri.cmu.edu) at [Carnegie Mellon University](http://www.cmu.edu). This plugin was written by [Michael
+Koval](http://mkoval.org) and grew out of earlier plugin written by [Christopher Dellin](http://www.ri.cmu.edu/person.html?person_id=2267) and [Matthew Klingensmith](http://www.ri.cmu.edu/person.html?person_id=2744).
