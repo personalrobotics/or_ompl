@@ -34,7 +34,7 @@ add_custom_command(OUTPUT "${CMAKE_BINARY_DIR}/src/PlannerRegistry.cpp"
     MAIN_DEPENDENCY "${PROJECT_SOURCE_DIR}/planners.yaml"
     DEPENDS "${PROJECT_SOURCE_DIR}/scripts/wrap_planners.py"
     COMMAND "${PROJECT_SOURCE_DIR}/scripts/wrap_planners.py"
-            --version="${OMPL_VERSION}"
+            --include-dirs="${OMPL_INCLUDE_DIRS}"
             < "${PROJECT_SOURCE_DIR}/planners.yaml"
             > "${CMAKE_BINARY_DIR}/src/PlannerRegistry.cpp"
 )

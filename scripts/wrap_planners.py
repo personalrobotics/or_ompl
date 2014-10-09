@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 from __future__ import print_function
-import argparse, yaml, semantic_version, sys
+import argparse, yaml, os.path, semantic_version, sys
 
 factory_frontmatter = """\
 #include <map>
@@ -64,25 +64,24 @@ def parse_version(version):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--version', type=str, help='OMPL version number')
+    parser.add_argument('--include-dirs', type=str,
+                        help='OMPL include directories')
     args = parser.parse_args()
 
-    planners = yaml.load(sys.stdin)
+    include_dirs = args.include_dirs.split(os.path.pathsep)
 
     # Filter planners by version number.
-    if args.version:
-        ompl_version = semantic_version.Version(args.version)
-        supported_planners = []
+    planners = yaml.load(sys.stdin)
+    supported_planners = []
 
-        for planner in planners:
-            if 'version' in planner:
-                acceptable_versions = semantic_version.Spec(planner['version'])
-                if acceptable_versions.match(ompl_version):
-                    supported_planners.append(planner)
-            else:
+    for planner in planners:
+        for include_dir in include_dirs:
+            header_path = os.path.join(include_dir, planner['header'])
+            if os.path.exists(header_path):
                 supported_planners.append(planner)
+                break
 
-        planners = supported_planners
+    planners = supported_planners
 
     # Include the necessary OMPL 
     headers = [ planner['header'] for planner in planners ]
