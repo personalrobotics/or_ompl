@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 from __future__ import print_function
-import argparse, yaml, os.path, semantic_version, sys
+import argparse, yaml, os.path, sys
 
 factory_frontmatter = """\
 #include <map>
