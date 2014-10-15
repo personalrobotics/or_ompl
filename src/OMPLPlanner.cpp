@@ -174,6 +174,7 @@ ompl::base::PlannerPtr OMPLPlanner::CreatePlanner(
         RAVELOG_ERROR("Failed creating planner '%s'.\n", plannerName.c_str());
         return ompl::base::PlannerPtr();
     }
+    RAVELOG_DEBUG("Created OMPL planner of type '%s'\n", plannerName.c_str());
 
     // Populate planner parameters from the PlannerParameters.
     std::string const params_str = "<ExtraParams>"

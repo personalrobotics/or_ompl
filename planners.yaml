@@ -48,3 +48,5 @@
 - name: ompl::geometric::TRRT
   header: ompl/geometric/planners/rrt/TRRT.h
   version: '>=0.12.0'
+- name: ompl::geometric::BITstar
+  header: ompl/geometric/planners/bitstar/BITstar.h

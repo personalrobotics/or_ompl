@@ -11,8 +11,19 @@ find_package(Boost REQUIRED COMPONENTS system)
 find_package(OMPL REQUIRED)
 find_package(TinyXML REQUIRED)
 
+set(OMPL_INCLUDE_DIRS "/opt/ompl/include")
+set(OMPL_LIBRARY_DIRS "/opt/ompl/lib")
+set(OMPL_LIBRARIES "/opt/ompl/lib/libompl.so")
+
+find_package(Eigen REQUIRED)
+message(STATUS "OMPL_PREFIX = ${OMPL_PREFIX}")
+message(STATUS "OMPL_INCLUDE_DIRS = ${OMPL_INCLUDE_DIRS}")
+message(STATUS "OMPL_LIBRARIES = ${OMPL_LIBRARIES}")
+
 include_directories(
     include/${PROJECT_NAME}
+    ${OpenRAVE_INCLUDE_DIRS}
+    ${Eigen_INCLUDE_DIRS}
     ${OMPL_INCLUDE_DIRS}
     ${TinyXML_INCLUDE_DIRS}
     ${catkin_INCLUDE_DIRS}

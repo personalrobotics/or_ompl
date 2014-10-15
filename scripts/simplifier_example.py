@@ -25,7 +25,7 @@ GHOST_COLOR = numpy.array([ 0xFF, 0x99, 0x33, 0x77 ], dtype=float) / 0xFF
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--timeout', type=float, default=60.0)
-parser.add_argument('--window-id', type=str, default=0x4800011)
+parser.add_argument('--window-id', type=str, default=None)
 parser.add_argument('--output-dir', type=str, default='')
 parser.add_argument('planner_name', type=str)
 args = parser.parse_args()
@@ -258,10 +258,12 @@ openravepy.planningutils.RetimeTrajectory(simplified_traj)
 
 raw_input('Press <ENTER> to record.')
 
-proc = start_recording(args.window_id, 'or_ompl_simplifier')
-time.sleep(1.0)
+if args.window_id is not None:
+    proc = start_recording(args.window_id, 'or_ompl_simplifier')
+    time.sleep(1.0)
 
 visualize_trajectories(robot, simplified_traj, [ raw_traj ], color=GHOST_COLOR)
 
-time.sleep(1.0)
-proc = stop_recording(proc)
+if args.window_id is not None:
+    time.sleep(1.0)
+    proc = stop_recording(proc)

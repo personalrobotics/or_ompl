@@ -21,11 +21,13 @@ GRASP_POSE = numpy.array([
     [ 0.,  1.,  0.,  0.85162171 ],
     [ 0.,  0.,  0.,  1.         ],
 ])
-GHOST_COLOR = numpy.array([ 0xFF, 0x99, 0x33, 0x77 ], dtype=float) / 0xFF
+GHOST_COLOR_GOOD = numpy.array([ 0x00, 0xFF, 0x00, 0x77 ], dtype=float) / 0xFF
+GHOST_COLOR_BAD = numpy.array([ 0xFF, 0x00, 0x00, 0x77 ], dtype=float) / 0xFF
 
 parser = argparse.ArgumentParser()
-parser.add_argument('--timeout', type=float, default=10.0)
-parser.add_argument('--window-id', type=str, default=0x4800011)
+parser.add_argument('--iterations', type=int, default=5)
+parser.add_argument('--timeout', type=float, default=20.0)
+parser.add_argument('--window-id', type=str, default=None)
 parser.add_argument('--output-dir', type=str, default='')
 parser.add_argument('planner_name', type=str)
 args = parser.parse_args()
@@ -42,7 +44,7 @@ params.SetExtraParameters(
 
 simplifier = openravepy.RaveCreatePlanner(env, 'OMPLSimplifier')
 simplifier_params = openravepy.Planner.PlannerParameters()
-simplifier_params.SetExtraParameters('<time_limit>60.0</time_limit>')
+simplifier_params.SetExtraParameters('<time_limit>10.0</time_limit>')
 
 with env:
     dof_indices, dof_values = robot.configurations.get_configuration('relaxed_home')
@@ -53,11 +55,8 @@ with env:
     manipulator.SetActive()
     home_dof_values = robot.GetActiveDOFValues()
 
-    prpy.rave.add_object(env, 'table', TABLE_PATH, TABLE_POSE).Enable(False)
+    prpy.rave.add_object(env, 'table', TABLE_PATH, TABLE_POSE)
     prpy.rave.add_object(env, 'object', OBJECT_PATH, OBJECT_POSE)
-
-    env.UpdatePublishedBodies()
-    env.GetViewer().EnvironmentSync()
 
 def plan_to_configuration(config):
     params.SetRobotActiveJoints(robot)
@@ -184,12 +183,18 @@ class GhostKinBody(object):
         else:
             return None
 
-def visualize_trajectories(robot, traj, ghost_trajs, color=None):
+def visualize_trajectories(robot, traj, ghost_trajs, color=None, colors=None):
     all_trajs = [ traj ] + list(ghost_trajs)
     duration = max(traj.GetDuration() for traj in all_trajs)
 
+    assert color is None or colors is None
+    assert colors is None or len(colors) == len(ghost_trajs)
+
+    if color is not None:
+        colors = [ color ] * len(ghost_trajs)
+
     with env:
-        ghost_robots = [ GhostKinBody(robot, visual=True, color=color) for _ in ghost_trajs ]
+        ghost_robots = [ GhostKinBody(robot, visual=True, color=color) for color in colors ]
 
         # Infer which DOF(s) are in each ghost trajectory:
         for ghost_traj, ghost_robot in zip(ghost_trajs, ghost_robots):
@@ -242,29 +247,50 @@ def stop_recording(proc):
     proc.send_signal(signal.SIGINT)
     proc.wait()
 
-# Find the first solution.
-first_traj = plan_to_ik(robot.right_arm, GRASP_POSE)
-trajectories = [ first_traj ]
-print('Found initial solution.')
 
-# Keep planning
+ik_options = openravepy.IkFilterOptions.CheckEnvCollisions
+config = manipulator.FindIKSolutions(GRASP_POSE, ik_options)[0, :]
+
+params.SetRobotActiveJoints(robot)
+params.SetGoalConfig(config)
+
+trajectories = []
+colors = []
+    
 with env:
-    for _ in xrange(5):
-        print('Refining solution.')
-        next_traj = openravepy.RaveCreateTrajectory(env, '')
-        planner.PlanPath(next_traj)
+    with robot:
+        planner.InitPlan(robot, params)
 
-        openravepy.planningutils.RetimeTrajectory(next_traj)
-        print 'duration =', next_traj.GetDuration()
+        for num_iteration in xrange(args.iterations):
+            traj = openravepy.RaveCreateTrajectory(env, '')
 
-        trajectories.append(next_traj)
+            print('Planning trajectory {:d} of {:d} using {:s}'.format(
+                num_iteration + 1, args.iterations, args.planner_name))
+            result = planner.PlanPath(traj)
+            assert result == openravepy.PlannerStatus.HasSolution
+
+            # Color trajectory by iteration number.
+            if args.iterations > 1:
+                r = num_iteration / (args.iterations - 1.0)
+            else:
+                r = 1.0
+
+            assert 0.0 <= r <= 1.0
+            color = (1 - r) * GHOST_COLOR_BAD + (r) * GHOST_COLOR_GOOD
+
+            # Render the trajectory.
+            openravepy.planningutils.RetimeTrajectory(traj)
+            trajectories.append(traj)
+            colors.append(color)
 
 raw_input('Press <ENTER> to record.')
 
-#proc = start_recording(args.window_id, 'or_ompl_simplifier')
-#time.sleep(1.0)
+if args.window_id is not None:
+    proc = start_recording(args.window_id, 'or_ompl_simplifier')
+    time.sleep(1.0)
 
-visualize_trajectories(robot, trajectories[-1], trajectories[0:-1], color=GHOST_COLOR)
+visualize_trajectories(robot, trajectories[-1], trajectories[0:-1], colors=colors[0:-1])# color=GHOST_COLOR)
 
-#time.sleep(1.0)
-#proc = stop_recording(proc)
+if args.window_id is not None:
+    time.sleep(1.0)
+    proc = stop_recording(proc)
