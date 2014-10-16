@@ -23,13 +23,14 @@ GRASP_POSE = numpy.array([
 ])
 GHOST_COLOR_GOOD = numpy.array([ 0x00, 0xFF, 0x00, 0x77 ], dtype=float) / 0xFF
 GHOST_COLOR_BAD = numpy.array([ 0xFF, 0x00, 0x00, 0x77 ], dtype=float) / 0xFF
+GHOST_COLOR = numpy.array([ 196, 196, 0xBB, 0x77 ], dtype=float) / 0xFF
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--iterations', type=int, default=5)
 parser.add_argument('--timeout', type=float, default=20.0)
 parser.add_argument('--window-id', type=str, default=None)
 parser.add_argument('--output-dir', type=str, default='')
-parser.add_argument('planner_name', type=str)
+parser.add_argument('planner_name', type=str, default='BITstar')
 args = parser.parse_args()
 
 env, robot = herbpy.initialize(sim=True, attach_viewer='interactivemarker')
@@ -38,7 +39,8 @@ planner = openravepy.RaveCreatePlanner(env, 'OMPL')
 params = openravepy.Planner.PlannerParameters()
 params.SetExtraParameters(
     '<planner_type>{planner:s}</planner_type>'\
-    '<time_limit>{timeout:f}</time_limit>'.format(
+    '<time_limit>{timeout:f}</time_limit>'\
+    '<stop_on_each_solution_improvement>1</stop_on_each_solution_improvement>'.format(
         planner=args.planner_name, timeout=args.timeout)
 )
 
@@ -140,7 +142,7 @@ class GhostKinBody(object):
         parameters = dict()
 
         for link in body.GetLinks():
-            if link.IsVisible():
+            if link.IsVisible() or True:
                 handle = self._CreateGhostLink(link, visual, scale)
                 if handle is not None:
                     parameters[link.GetName()] = handle
@@ -256,7 +258,28 @@ params.SetGoalConfig(config)
 
 trajectories = []
 colors = []
-    
+color = GHOST_COLOR
+
+arm_links = [
+    openravepy.RaveGetEnvironment(1).GetKinBody('herb').GetLink('/right/finger0_0'),
+    openravepy.RaveGetEnvironment(1).GetKinBody('herb').GetLink('/right/finger0_1'),
+    openravepy.RaveGetEnvironment(1).GetKinBody('herb').GetLink('/right/finger0_2'),
+    openravepy.RaveGetEnvironment(1).GetKinBody('herb').GetLink('/right/finger1_0'),
+    openravepy.RaveGetEnvironment(1).GetKinBody('herb').GetLink('/right/finger1_1'),
+    openravepy.RaveGetEnvironment(1).GetKinBody('herb').GetLink('/right/finger1_2'),
+    openravepy.RaveGetEnvironment(1).GetKinBody('herb').GetLink('/right/finger2_1'),
+    openravepy.RaveGetEnvironment(1).GetKinBody('herb').GetLink('/right/finger2_2'),
+    openravepy.RaveGetEnvironment(1).GetKinBody('herb').GetLink('/right/hand_base'),
+    openravepy.RaveGetEnvironment(1).GetKinBody('herb').GetLink('/right/wam1'),
+    openravepy.RaveGetEnvironment(1).GetKinBody('herb').GetLink('/right/wam2'),
+    openravepy.RaveGetEnvironment(1).GetKinBody('herb').GetLink('/right/wam3'),
+    openravepy.RaveGetEnvironment(1).GetKinBody('herb').GetLink('/right/wam4'),
+    openravepy.RaveGetEnvironment(1).GetKinBody('herb').GetLink('/right/wam5'),
+    openravepy.RaveGetEnvironment(1).GetKinBody('herb').GetLink('/right/wam6'),
+    openravepy.RaveGetEnvironment(1).GetKinBody('herb').GetLink('/right/wam7'),
+    openravepy.RaveGetEnvironment(1).GetKinBody('herb').GetLink('/right/wam_base'),
+]
+
 with env:
     with robot:
         planner.InitPlan(robot, params)
@@ -275,8 +298,10 @@ with env:
             else:
                 r = 1.0
 
+            """
             assert 0.0 <= r <= 1.0
             color = (1 - r) * GHOST_COLOR_BAD + (r) * GHOST_COLOR_GOOD
+            """
 
             # Render the trajectory.
             openravepy.planningutils.RetimeTrajectory(traj)
@@ -286,10 +311,16 @@ with env:
 raw_input('Press <ENTER> to record.')
 
 if args.window_id is not None:
-    proc = start_recording(args.window_id, 'or_ompl_simplifier')
+    proc = start_recording(args.window_id, 'or_ompl_bitstar')
     time.sleep(1.0)
 
-visualize_trajectories(robot, trajectories[-1], trajectories[0:-1], colors=colors[0:-1])# color=GHOST_COLOR)
+for link in arm_links:
+    link.SetVisible(False)
+
+handles = visualize_trajectories(robot, trajectories[-1], trajectories[0:-1], colors=colors[0:-1])# color=GHOST_COLOR)
+
+#for link in arm_links:
+#    link.SetVisible(True)
 
 if args.window_id is not None:
     time.sleep(1.0)
