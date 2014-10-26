@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 import argparse, herbpy, prpy.rave, openravepy, numpy, os, signal, subprocess, time
 
+#export OPENRAVE_DATA=/opt/pr/pr_ordata/ordata:/opt/pr/librarian_ordata/ordata:${OPENRAVE_DATA}
+
 TABLE_PATH = 'objects/table.kinbody.xml'
 TABLE_POSE = numpy.array([
     [  0.,  0.,  1., 0.668 ],
@@ -24,6 +26,7 @@ GRASP_POSE = numpy.array([
 GHOST_COLOR_GOOD = numpy.array([ 0x00, 0xFF, 0x00, 0x77 ], dtype=float) / 0xFF
 GHOST_COLOR_BAD = numpy.array([ 0xFF, 0x00, 0x00, 0x77 ], dtype=float) / 0xFF
 GHOST_COLOR = numpy.array([ 196, 196, 0xBB, 0x77 ], dtype=float) / 0xFF
+GHOST_HIGHLIGHT = numpy.array([ 0xFF, 0x99, 0x33, 0x77 ], dtype=float) / 0xFF
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--iterations', type=int, default=5)
@@ -34,6 +37,9 @@ parser.add_argument('planner_name', type=str, default='BITstar')
 args = parser.parse_args()
 
 env, robot = herbpy.initialize(sim=True, attach_viewer='interactivemarker')
+
+robot.SetDOFVelocityLimits(2.0 * numpy.ones(robot.GetDOF()))
+robot.SetDOFAccelerationLimits(50.0 * numpy.ones(robot.GetDOF()))
 
 planner = openravepy.RaveCreatePlanner(env, 'OMPL')
 params = openravepy.Planner.PlannerParameters()
@@ -257,9 +263,6 @@ params.SetRobotActiveJoints(robot)
 params.SetGoalConfig(config)
 
 trajectories = []
-colors = []
-color = GHOST_COLOR
-
 arm_links = [
     openravepy.RaveGetEnvironment(1).GetKinBody('herb').GetLink('/right/finger0_0'),
     openravepy.RaveGetEnvironment(1).GetKinBody('herb').GetLink('/right/finger0_1'),
@@ -280,6 +283,15 @@ arm_links = [
     openravepy.RaveGetEnvironment(1).GetKinBody('herb').GetLink('/right/wam_base'),
 ]
 
+import matplotlib.pyplot as plt
+import matplotlib.colors as colors
+import matplotlib.cm as cmx
+
+jet = cm = plt.get_cmap('hot') 
+cNorm  = colors.Normalize(vmin=-0.2, vmax=1.0)
+scalarMap = cmx.ScalarMappable(norm=cNorm, cmap=jet)
+colormap_colors = []
+
 with env:
     with robot:
         planner.InitPlan(robot, params)
@@ -298,29 +310,47 @@ with env:
             else:
                 r = 1.0
 
-            """
             assert 0.0 <= r <= 1.0
-            color = (1 - r) * GHOST_COLOR_BAD + (r) * GHOST_COLOR_GOOD
-            """
+            color = numpy.array(scalarMap.to_rgba(r))
+            color[3] = 0.5
 
             # Render the trajectory.
             openravepy.planningutils.RetimeTrajectory(traj)
             trajectories.append(traj)
-            colors.append(color)
+            colormap_colors.append(color)
 
 raw_input('Press <ENTER> to record.')
 
 if args.window_id is not None:
     proc = start_recording(args.window_id, 'or_ompl_bitstar')
-    time.sleep(1.0)
 
 for link in arm_links:
     link.SetVisible(False)
 
-handles = visualize_trajectories(robot, trajectories[-1], trajectories[0:-1], colors=colors[0:-1])# color=GHOST_COLOR)
+handles = []
 
-#for link in arm_links:
-#    link.SetVisible(True)
+for itraj in xrange(len(trajectories)):
+    print 'Executing Trajectory[{:d}]'.format(itraj + 1)
+
+    time.sleep(1.0)
+    colors = [ GHOST_COLOR for _ in xrange(itraj) ] + [ GHOST_HIGHLIGHT ]
+    handles = visualize_trajectories(robot, trajectories[0], trajectories[0:itraj + 1], colors=colors)
+
+    time.sleep(1.0)
+    del handles
+
+    with env:
+        robot.SetDOFValues(dof_values, dof_indices)
+
+#
+print 'Rendering all trajectories at once.'
+
+time.sleep(1.0)
+robot.SetDOFValues(dof_values, dof_indices)
+handles = visualize_trajectories(robot, trajectories[-1], trajectories[0:-1], colors=colormap_colors[0:-1])
+
+time.sleep(1.0)
+del handles
 
 if args.window_id is not None:
     time.sleep(1.0)
