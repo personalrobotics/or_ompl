@@ -5,7 +5,8 @@
 package provides an "OMPL" plugin that implements the `OpenRAVE::PlannerBase`
 interface and delegates planning requests to an OMPL planner. It also includes
 the "OMPLSimplifier" plugin that exposes OMPL's `PathSimplifier` to OpenRAVE
-through the same interface.
+through the same interface. See [this demo video](http://youtu.be/6qRRbvNzHG8)
+for a brief overview of or_ompl's features.
 
 This is implemented by initializing OMPL with a state space that matches the
 joint limits and resolutions of the robot's active DOFs. Collision checking
