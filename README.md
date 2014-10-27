@@ -1,5 +1,4 @@
-or_ompl
-=======
+# or_ompl
 
 [OpenRAVE](http://openrave.org/) bindings for the
 [OMPL](http://ompl.kavrakilab.org/) suite of motion planning algorithms. This
@@ -31,8 +30,7 @@ an updated 'planners.yaml' file. The presence or absence of each planner is
 determined by testing whether the corresponding header file exists in the OMPL
 include directory.
 
-Dependencies
-------------
+## Dependencies
 
 See the `package.xml` file for a full list of dependencies. These are the major
 dependencies:
@@ -41,8 +39,7 @@ dependencies:
  - [OMPL](http://ompl.kavrakilab.org/) 0.10 or above (primarily developed in 0.10 and 0.13)
  - [ROS](http://ros.org/) optional, see below
 
-Installation Instructions
--------------------------
+## Installation Instructions
 
 By default, using the `CMakeLists.txt` file in the root of this repository,
 or_ompl is built as a [ROS](http://ros.org/) package. This cmake file supports
@@ -52,8 +49,7 @@ a bare-bones `CMakeLists.txt` file that is ROS agnostic.
 
 See below for the installation instructions specific to your environment.
 
-rosbuild Instructions
-~~~~~~~~~~~~~~~~~~~~~
+### rosbuild Instructions
 
 You can build or_ompl just like any other ROS package. When using rosbuild, we
 assume that OMPL and OpenRAVE are both installed through wrapper ROS packages.
@@ -74,8 +70,7 @@ plugin in OpenRAVE:
 
     $ export OPENRAVE_PLUGINS="$(pwd)/or_ompl/lib:${OPENRAVE_PLUGINS}"
 
-Catkin Instructions
-~~~~~~~~~~~~~~~~~~~
+### Catkin Instructions
 
 This preferred way of building or_ompl. In this case, you should have OpenRAVE
 and OMPL installed as system dependencies. We use a helper package called
@@ -102,13 +97,11 @@ See the [documentation for
 openrave_catkin](https://github.com/personalrobotics/or_ompl/blob/master/README.md)
 for more information.
 
-Standalone Build Instructions
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+### Standalone Build Instructions
 
 TODO. This is not currently supported.
 
-Limitations
------------
+## Limitations
 
 Wherever possible we aim to fully support the full breadth of features in both
 OMPL and OpenRAVE. However, you should be aware of a few limitations:
@@ -126,8 +119,7 @@ shrink this list over time.  We would welcome [pull
 requests](https://github.com/personalrobotics/or_ompl/compare/) for any of
 these features.
 
-Usage
-------
+## Usage
 
 The following Python code will plan using OMPL's implementation of RRT-Connect,
 then shortcut the trajectory using OMPL's path simplifier.  We assume that the
@@ -166,13 +158,10 @@ set of active DOFs:
 website](http://openrave.org/docs/latest_stable/tutorials/openravepy_examples/#directly-launching-planners)
 for more information about how to invoke an OpenRAVE planner.
 
-License
--------
+## License
 or_ompl is licensed under a BSD license. See `LICENSE` for more information.
 
-Contributors
-------------
-
+## Contributors
 or_ompl was developed by the [Personal Robotics Lab](https://personalrobotics.ri.cmu.edu) in the [Robotics
 Institute](http://ri.cmu.edu) at [Carnegie Mellon University](http://www.cmu.edu). This plugin was written by [Michael
 Koval](http://mkoval.org) and grew out of earlier plugin written by [Christopher Dellin](http://www.ri.cmu.edu/person.html?person_id=2267) and [Matthew Klingensmith](http://www.ri.cmu.edu/person.html?person_id=2744).
