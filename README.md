@@ -41,13 +41,15 @@ dependencies:
 
 ## Installation Instructions
 
-By default, using the `CMakeLists.txt` file in the root of this repository,
-or_ompl is built as a [ROS](http://ros.org/) package. This cmake file supports
-both [rosbuild](http://wiki.ros.org/rosbuild) for legacy ROS distributions and
-[Catkin](http://wiki.ros.org/catkin) for ROS groovy and above. We also provide
-a bare-bones `CMakeLists.txt` file that is ROS agnostic.
+The `CMakeLists.txt` file in the root of this repository supports three
+different types of builds:
 
-See below for the installation instructions specific to your environment.
+1. [Catkin](http://wiki.ros.org/catkin): for ROS groovy and above (preferred)
+2. [rosbuild](http://wiki.ros.org/rosbuild): for ROS fuerte
+3. Pure CMake: no ROS dependency
+
+See the appropriate section below for installation instructions specific to
+your environment.
 
 ### Catkin Instructions
 
@@ -73,7 +75,7 @@ corresponding directory will be automatically added to your `OPENRAVE_PLUGINS`
 path using a [Catkin environment
 hook](http://docs.ros.org/fuerte/api/catkin/html/macros.html#catkin_add_env_hooks).
 See the [documentation for
-openrave_catkin](https://github.com/personalrobotics/or_ompl/blob/master/README.md)
+openrave_catkin](https://github.com/personalrobotics/openrave_catkin/blob/master/README.md)
 for more information.
 
 ### rosbuild Instructions
