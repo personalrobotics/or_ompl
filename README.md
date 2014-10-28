@@ -95,8 +95,8 @@ your `ROS_PACKAGE_PATH` and run `rosmake`:
     $ rosmake or_ompl
 
 The OpenRAVE plugins are built to the library `bin/libor_ompl.so`. You will
-need to manually add this directory to your `OPENRAVE_PLUGINS` path to load the
-plugin in OpenRAVE:
+need to manually add this directory to your `OPENRAVE_PLUGINS` path so that
+OpenRAVE can find it:
 
     $ export OPENRAVE_PLUGINS="$(pwd)/or_ompl/lib:${OPENRAVE_PLUGINS}"
 
@@ -112,7 +112,7 @@ You can build or_ompl entirely ROS-agnostic by setting the `NO_ROS` variable:
 
 Just as in the rosbuild case, this will build the plugin in the `lib/`
 directory. You will need to add this directory to your `OPENRAVE_PLUGINS` path
-before loading it into OpenRAVE.
+so that OpenRAVE can find it.
 
 ## Limitations
 
