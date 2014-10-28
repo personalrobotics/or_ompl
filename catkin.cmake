@@ -10,12 +10,14 @@ catkin_package(
 find_package(Boost REQUIRED COMPONENTS system)
 find_package(OMPL REQUIRED)
 find_package(TinyXML REQUIRED)
+find_package(OpenRAVE REQUIRED)
 
 include_directories(
     include/${PROJECT_NAME}
+    ${catkin_INCLUDE_DIRS}
     ${OMPL_INCLUDE_DIRS}
     ${TinyXML_INCLUDE_DIRS}
-    ${catkin_INCLUDE_DIRS}
+    ${OpenRAVE_INCLUDE_DIRS}
 )
 link_directories(
     ${OMPL_LIBRARY_DIRS}
