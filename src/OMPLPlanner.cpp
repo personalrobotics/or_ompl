@@ -39,6 +39,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <ompl/base/StateSpaceTypes.h>
 #include <ompl/base/StateSpace.h>
 #include <ompl/base/spaces/RealVectorStateSpace.h>
+#include "ompl/tools/benchmark/Benchmark.h"
 #include "OMPLConversions.h"
 #include "OMPLPlanner.h"
 #include "PlannerRegistry.h"
@@ -63,10 +64,26 @@ OMPLPlanner::OMPLPlanner(OpenRAVE::EnvironmentBasePtr penv)
     : OpenRAVE::PlannerBase(penv)
     , m_initialized(false)
 {
+    RegisterCommand("benchmark", boost::bind(&OMPLPlanner::benchmark, this, _1, _2), "sets the planner data");
 }
 
 OMPLPlanner::~OMPLPlanner()
 {
+}
+
+bool OMPLPlanner::benchmark(std::ostream& sout, std::istream& sinput){
+    // TODO: allow multiple planners to be passed in and then init and add them all
+    ompl::tools::Benchmark b(*m_simple_setup, "or_ompl experiment");
+    b.addPlanner(m_planner);
+    ompl::tools::Benchmark::Request req;
+    req.maxTime = 5.0;
+    req.maxMem = 100.0;
+    req.runCount = 50;
+    req.displayProgress = true;
+    b.benchmark(req);
+    // This will generate a file of the form ompl_host_time.log
+    b.saveResultsToFile();
+    return true;
 }
 
 bool OMPLPlanner::InitPlan(OpenRAVE::RobotBasePtr robot, std::istream& input)
