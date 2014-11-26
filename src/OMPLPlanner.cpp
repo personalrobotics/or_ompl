@@ -110,11 +110,11 @@ bool OMPLPlanner::InitPlan(OpenRAVE::RobotBasePtr robot,
 
         RAVELOG_DEBUG("Creating OMPL setup.\n");
         m_simple_setup = boost::make_shared<ompl::geometric::SimpleSetup>(m_state_space);
-        //std::cout << "***************1**********************";
+       // std::cout << "***************1**********************";
 
         RAVELOG_DEBUG("Setting initial configuration.\n");
 
-        //std::cout << "***************2**********************";
+       // std::cout << "***************2**********************";
 
 
         if (m_parameters->vinitialconfig.size() != num_dof) {
@@ -127,13 +127,23 @@ bool OMPLPlanner::InitPlan(OpenRAVE::RobotBasePtr robot,
             return false;
         }
 
-        //std::cout << "***************3**********************";
+       // std::cout << "***************3**********************";
 
  
         ScopedState q_start(m_state_space);
+        
+        //ompl::base::CompoundStateSpace *compoundStateSpace = 
+        //const ompl::base::CompoundStateSpace *T = 
+        ompl::base::CompoundStateSpace *compoundStateSpacePtr = q_start.getSpace()->as<ompl::base::CompoundStateSpace>();
+        //compoundStateSpacePtr->getSubspace(i);
         for (size_t i = 0; i < num_dof; i++) {
-            //std::cout << "***************3.5**********************";
-            q_start->values[i] = m_parameters->vinitialconfig[i];
+        //    std::cout << "***************3.5**********************";
+
+             // mpl::base::CompoundStateSpace *compoundStateSpace q_start.get();
+            //ompl::base::CompoundStateSpace *compoundStateSpace = q_start.get();
+            //boost::shared_ptr<ompl::base::SO2StateSpace> so2_state_space = q_start->getSubspace(i);
+            //q_start.getSpace()
+            //values[i] = m_parameters->vinitialconfig[i];
         }
         m_simple_setup->setStartState(q_start);
 
@@ -152,7 +162,7 @@ bool OMPLPlanner::InitPlan(OpenRAVE::RobotBasePtr robot,
 
         ScopedState q_goal(m_state_space);
         for (size_t i = 0; i < num_dof; i++) {
-            q_goal->values[i] = m_parameters->vgoalconfig[i];
+            //q_goal->values[i] = m_parameters->vgoalconfig[i];
         }
         m_simple_setup->setGoalState(q_goal);
 

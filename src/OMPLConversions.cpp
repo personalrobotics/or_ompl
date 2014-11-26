@@ -113,30 +113,8 @@ namespace or_ompl {
         size_t num_lim_dof = 0;
         size_t isContDofIndx[num_dof];
 
-        boost::shared_ptr<ompl::base::CompoundStateSpace> state_space = boost::make_shared<ompl::base::CompoundStateSpace>();
-
-        for(size_t dd = 0; dd < num_dof; dd++){
-            OpenRAVE::KinBody::JointPtr jointPtr = robot->GetJointFromDOFIndex(dd);
-            if(jointPtr->IsCircular(0)){
-            //if (0) {
-                isContDofIndx[dd] = 1;
-                boost::shared_ptr<ompl::base::SO2StateSpace> so2_state_space = boost::make_shared<ompl::base::SO2StateSpace>();
-                //ompl::base::SO2StateSpace so2_state_space = ompl::base::SO2StateSpace();
-                state_space->addSubspace(so2_state_space,1.0);
-            }
-            else{
-                isContDofIndx[dd] = 0;
-                        boost::shared_ptr<ompl::base::RealVectorStateSpace> real_vector_state_space
-            = boost::make_shared<ompl::base::RealVectorStateSpace>(1);       
-                state_space->addSubspace(so2_state_space,1.0);
-
-                num_lim_dof = num_lim_dof + 1;
-            }
-        }
-    //std::cout << "*********************** continuousDofs: " << continuousDofs << std::endl;
-    //ompl::base::StateSpacePtr realVectorStateSpace(new ompl::base::RealVectorStateSpace(limitDofs));
-        boost::shared_ptr<ompl::base::RealVectorStateSpace> real_vector_state_space
-        = boost::make_shared<ompl::base::RealVectorStateSpace>(num_lim_dof);       
+        boost::shared_ptr<ompl::base::CompoundStateSpace> 
+        state_space = boost::make_shared<ompl::base::CompoundStateSpace>();
 
 
         RAVELOG_DEBUG("Setting joint limits.\n");
@@ -145,66 +123,90 @@ namespace or_ompl {
         BOOST_ASSERT(lowerLimits.size() == num_dof);
         BOOST_ASSERT(upperLimits.size() == num_dof);
 
-        ompl::base::RealVectorBounds bounds(num_lim_dof);
-        size_t num_lim_dof_counter = 0;
+        RAVELOG_DEBUG("Setting resolution.\n");
+        std::vector<OpenRAVE::dReal> dof_resolutions;
+        robot->GetActiveDOFResolutions(dof_resolutions);
+        BOOST_ASSERT(dof_resolutions.size() == num_dof);
+
+        double conservative_fraction = std::numeric_limits<double>::max();
+        double longest_extent = 0;
         for (size_t i = 0; i < num_dof; ++i) {
-           if(isContDofIndx[i]==0){
-            BOOST_ASSERT(lowerLimits[i] <= upperLimits[i]);
-            bounds.setLow(num_lim_dof_counter, lowerLimits[i]);
-            bounds.setHigh(num_lim_dof_counter, upperLimits[i]);
-            num_lim_dof_counter = num_lim_dof_counter + 1;
+            if (upperLimits[i] > lowerLimits[i]) {
+                double const joint_extents = upperLimits[i] - lowerLimits[i];
+                double const joint_fraction = dof_resolutions[i] / joint_extents;
+                conservative_fraction = std::min(conservative_fraction, joint_fraction);
+                longest_extent = std::max(longest_extent, joint_extents);
+            }
         }
-    }
-    real_vector_state_space->setBounds(bounds);
+
+
+
+        if (std::isinf(conservative_fraction)) {
+            RAVELOG_ERROR("All joints have equal lower and upper limits.\n");
+            return CompoundSpacePtr();
+        }
+        RAVELOG_DEBUG("Computed resolution of %f (%f fraction of extents).\n",
+          conservative_fraction * longest_extent, conservative_fraction);
+
+        for(size_t dd = 0; dd < num_dof; dd++){
+            OpenRAVE::KinBody::JointPtr jointPtr = robot->GetJointFromDOFIndex(dd);
+            if(jointPtr->IsCircular(0)){
+            //if (0) {
+                boost::shared_ptr<ompl::base::SO2StateSpace> so2_state_space = boost::make_shared<ompl::base::SO2StateSpace>();
+                //ompl::base::SO2StateSpace so2_state_space = ompl::base::SO2StateSpace();
+                state_space->addSubspace(so2_state_space,1.0); 
+            }
+            else{
+                boost::shared_ptr<ompl::base::RealVectorStateSpace> real_vector_state_space
+                = boost::make_shared<ompl::base::RealVectorStateSpace>(1);       
+                ompl::base::RealVectorBounds bounds(1);
+                BOOST_ASSERT(lowerLimits[dd] <= upperLimits[dd]);
+                //std::cout<<bounds.high[0];
+                //std::cout<<bound.low[0];
+                bounds.setLow(0, lowerLimits[dd]);
+                bounds.setHigh(0, upperLimits[dd]);
+                real_vector_state_space->setBounds(bounds);
+                bounds.check();
+                real_vector_state_space->setLongestValidSegmentFraction(conservative_fraction);
+                state_space->addSubspace(real_vector_state_space,1.0);
+
+
+                //num_lim_dof = num_lim_dof + 1;
+            }
+        }
+    //std::cout << "*********************** continuousDofs: " << continuousDofs << std::endl;
+    //ompl::base::StateSpacePtr realVectorStateSpace(new ompl::base::RealVectorStateSpace(limitDofs));
+       // boost::shared_ptr<ompl::base::RealVectorStateSpace> real_vector_state_space
+       // = boost::make_shared<ompl::base::RealVectorStateSpace>(num_lim_dof);       
+
+
 
     // Set the resolution at which OMPL should discretize edges for collision
     // checking. OpenRAVE supports per-joint resolutions, so we compute one
     // conservative value for all joints. We then convert this to a fraction
     // of the workspace extents to call setLongestValidSegmentFraction.
-    RAVELOG_DEBUG("Setting resolution.\n");
-    std::vector<OpenRAVE::dReal> dof_resolutions;
-    robot->GetActiveDOFResolutions(dof_resolutions);
-    BOOST_ASSERT(dof_resolutions.size() == num_dof);
 
-    double conservative_fraction = std::numeric_limits<double>::max();
-    double longest_extent = 0;
-    for (size_t i = 0; i < num_dof; ++i) {
-        if ((upperLimits[i] > lowerLimits[i])&&(isContDofIndx[i]==0)) {
-            double const joint_extents = upperLimits[i] - lowerLimits[i];
-            double const joint_fraction = dof_resolutions[i] / joint_extents;
-            conservative_fraction = std::min(conservative_fraction, joint_fraction);
-            longest_extent = std::max(longest_extent, joint_extents);
-        }
-    }
-
-    if (std::isinf(conservative_fraction)) {
-        RAVELOG_ERROR("All joints have equal lower and upper limits.\n");
-        return CompoundSpacePtr();
-    }
-    real_vector_state_space->setLongestValidSegmentFraction(conservative_fraction);
-    RAVELOG_DEBUG("Computed resolution of %f (%f fraction of extents).\n",
-      conservative_fraction * longest_extent, conservative_fraction);
 
     // Per-DOF weights are not supported by OMPL.
     // TODO: Emulate this by scaling joint values.
-    RAVELOG_DEBUG("Setting joint weights.\n");
-    std::vector<OpenRAVE::dReal> dof_weights;
-    robot->GetActiveDOFWeights(dof_weights);
-    BOOST_ASSERT(dof_weights.size() == num_dof);
+        RAVELOG_DEBUG("Setting joint weights.\n");
+        std::vector<OpenRAVE::dReal> dof_weights;
+        robot->GetActiveDOFWeights(dof_weights);
+        BOOST_ASSERT(dof_weights.size() == num_dof);
 
-    bool has_weights = false;
-    for (size_t i = 0; !has_weights && i < num_dof; ++i) {
-        has_weights = dof_weights[i] != 1.0;
-    }
+        bool has_weights = false;
+        for (size_t i = 0; !has_weights && i < num_dof; ++i) {
+            has_weights = dof_weights[i] != 1.0;
+        }
 
-    if (has_weights) {
-        RAVELOG_WARN("Robot specifies DOF weights. Only unit weights are"
-           " supported by OMPL; planning will commence as if"
-           " there are no weights.\n");
+        if (has_weights) {
+            RAVELOG_WARN("Robot specifies DOF weights. Only unit weights are"
+             " supported by OMPL; planning will commence as if"
+             " there are no weights.\n");
+        }
+       // state_space->addSubspace(real_vector_state_space,1.0);
+        std::cout << state_space->getDimension();
+        return state_space;
     }
-    state_space->addSubspace(real_vector_state_space,1.0);
-    std::cout << state_space->getDimension();
-    return state_space;
-}
 
 }
