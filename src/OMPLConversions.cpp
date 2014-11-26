@@ -37,92 +37,125 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 namespace or_ompl {
 
-void OpenRAVEHandler::log(std::string const &text, ompl::msg::LogLevel level,
-                          char const *filename, int line)
-{
-    int const openrave_level = (OpenRAVE::RaveGetDebugLevel()
-                              & OpenRAVE::Level_OutputMask);
+    void OpenRAVEHandler::log(std::string const &text, ompl::msg::LogLevel level,
+      char const *filename, int line)
+    {
+        int const openrave_level = (OpenRAVE::RaveGetDebugLevel()
+          & OpenRAVE::Level_OutputMask);
 
-    switch (level) {
-    case ompl::msg::LOG_DEBUG:
-        if (openrave_level >= (int) OpenRAVE::Level_Debug) {
-            OpenRAVE::RavePrintfA_DEBUGLEVEL("[%s:%d] %s\n",
-                OpenRAVE::RaveGetSourceFilename(filename), line,
-                text.c_str());
+        switch (level) {
+            case ompl::msg::LOG_DEBUG:
+            if (openrave_level >= (int) OpenRAVE::Level_Debug) {
+                OpenRAVE::RavePrintfA_DEBUGLEVEL("[%s:%d] %s\n",
+                    OpenRAVE::RaveGetSourceFilename(filename), line,
+                    text.c_str());
+            }
+            break;
+
+            case ompl::msg::LOG_INFO:
+            if (openrave_level >= (int) OpenRAVE::Level_Info) {
+                OpenRAVE::RavePrintfA_INFOLEVEL("[%s:%d] %s\n",
+                    OpenRAVE::RaveGetSourceFilename(filename), line,
+                    text.c_str());
+            }
+            break;
+
+            case ompl::msg::LOG_WARN:
+            if (openrave_level >= (int) OpenRAVE::Level_Warn) {
+                OpenRAVE::RavePrintfA_WARNLEVEL("[%s:%d] %s\n",
+                    OpenRAVE::RaveGetSourceFilename(filename), line,
+                    text.c_str());
+            }
+            break;
+
+            case ompl::msg::LOG_ERROR:
+            if (openrave_level >= (int) OpenRAVE::Level_Error) {
+                OpenRAVE::RavePrintfA_ERRORLEVEL("[%s:%d] %s\n",
+                    OpenRAVE::RaveGetSourceFilename(filename), line,
+                    text.c_str());
+            }
+            break;
+
+            case ompl::msg::LOG_NONE:
+            default:
+            RAVELOG_ERROR("Unknown OMPL log level %d.\n", level);
         }
-        break;
-
-    case ompl::msg::LOG_INFO:
-        if (openrave_level >= (int) OpenRAVE::Level_Info) {
-            OpenRAVE::RavePrintfA_INFOLEVEL("[%s:%d] %s\n",
-                OpenRAVE::RaveGetSourceFilename(filename), line,
-                text.c_str());
-        }
-        break;
-
-    case ompl::msg::LOG_WARN:
-        if (openrave_level >= (int) OpenRAVE::Level_Warn) {
-            OpenRAVE::RavePrintfA_WARNLEVEL("[%s:%d] %s\n",
-                OpenRAVE::RaveGetSourceFilename(filename), line,
-                text.c_str());
-        }
-        break;
-
-    case ompl::msg::LOG_ERROR:
-        if (openrave_level >= (int) OpenRAVE::Level_Error) {
-            OpenRAVE::RavePrintfA_ERRORLEVEL("[%s:%d] %s\n",
-                OpenRAVE::RaveGetSourceFilename(filename), line,
-                text.c_str());
-        }
-        break;
-
-    case ompl::msg::LOG_NONE:
-    default:
-        RAVELOG_ERROR("Unknown OMPL log level %d.\n", level);
-    }
-}
-
-RealVectorSpacePtr CreateStateSpace(OpenRAVE::RobotBasePtr const robot,
-                                    OMPLPlannerParameters const &params)
-{
-    if (!robot) {
-        RAVELOG_ERROR("Robot must not be NULL.\n");
-        return RealVectorSpacePtr();
-    } else if (robot->GetActiveDOF() == 0) {
-        RAVELOG_ERROR("Zero DOFs are active.\n");
-        return RealVectorSpacePtr();
     }
 
-    if (params.m_seed) {
-        RAVELOG_DEBUG("Setting OMPL seed to %u.\n", params.m_seed);
-        ompl::RNG::setSeed(params.m_seed);
-        if (ompl::RNG::getSeed() != params.m_seed) {
-            RAVELOG_ERROR("Could not set OMPL seed. Was this the first or_ompl"
-                          "  plan attempted?\n");
-            return RealVectorSpacePtr();
+    CompoundSpacePtr CreateStateSpace(OpenRAVE::RobotBasePtr const robot,
+        OMPLPlannerParameters const &params)
+    {
+        if (!robot) {
+            RAVELOG_ERROR("Robot must not be NULL.\n");
+            return CompoundSpacePtr();
+        } else if (robot->GetActiveDOF() == 0) {
+            RAVELOG_ERROR("Zero DOFs are active.\n");
+            return CompoundSpacePtr();
         }
-    } else {
-        RAVELOG_DEBUG("Using default seed of %u for OMPL.\n",
-                      ompl::RNG::getSeed());
+
+        if (params.m_seed) {
+            RAVELOG_DEBUG("Setting OMPL seed to %u.\n", params.m_seed);
+            ompl::RNG::setSeed(params.m_seed);
+            if (ompl::RNG::getSeed() != params.m_seed) {
+                RAVELOG_ERROR("Could not set OMPL seed. Was this the first or_ompl"
+                  "  plan attempted?\n");
+                return CompoundSpacePtr();
+            }
+        } else {
+            RAVELOG_DEBUG("Using default seed of %u for OMPL.\n",
+              ompl::RNG::getSeed());
+        }
+
+        size_t const num_dof = robot->GetActiveDOF();
+    //boost::shared_ptr<ompl::base::RealVectorStateSpace> state_space
+    //        = boost::make_shared<ompl::base::RealVectorStateSpace>(num_dof);
+
+        size_t num_lim_dof = 0;
+        size_t isContDofIndx[num_dof];
+
+        boost::shared_ptr<ompl::base::CompoundStateSpace> state_space = boost::make_shared<ompl::base::CompoundStateSpace>();
+
+        for(size_t dd = 0; dd < num_dof; dd++){
+            OpenRAVE::KinBody::JointPtr jointPtr = robot->GetJointFromDOFIndex(dd);
+            if(jointPtr->IsCircular(0)){
+            //if (0) {
+                isContDofIndx[dd] = 1;
+                boost::shared_ptr<ompl::base::SO2StateSpace> so2_state_space = boost::make_shared<ompl::base::SO2StateSpace>();
+                //ompl::base::SO2StateSpace so2_state_space = ompl::base::SO2StateSpace();
+                state_space->addSubspace(so2_state_space,1.0);
+            }
+            else{
+                isContDofIndx[dd] = 0;
+                        boost::shared_ptr<ompl::base::RealVectorStateSpace> real_vector_state_space
+            = boost::make_shared<ompl::base::RealVectorStateSpace>(1);       
+                state_space->addSubspace(so2_state_space,1.0);
+
+                num_lim_dof = num_lim_dof + 1;
+            }
+        }
+    //std::cout << "*********************** continuousDofs: " << continuousDofs << std::endl;
+    //ompl::base::StateSpacePtr realVectorStateSpace(new ompl::base::RealVectorStateSpace(limitDofs));
+        boost::shared_ptr<ompl::base::RealVectorStateSpace> real_vector_state_space
+        = boost::make_shared<ompl::base::RealVectorStateSpace>(num_lim_dof);       
+
+
+        RAVELOG_DEBUG("Setting joint limits.\n");
+        std::vector<OpenRAVE::dReal> lowerLimits, upperLimits;
+        robot->GetActiveDOFLimits(lowerLimits, upperLimits);
+        BOOST_ASSERT(lowerLimits.size() == num_dof);
+        BOOST_ASSERT(upperLimits.size() == num_dof);
+
+        ompl::base::RealVectorBounds bounds(num_lim_dof);
+        size_t num_lim_dof_counter = 0;
+        for (size_t i = 0; i < num_dof; ++i) {
+           if(isContDofIndx[i]==0){
+            BOOST_ASSERT(lowerLimits[i] <= upperLimits[i]);
+            bounds.setLow(num_lim_dof_counter, lowerLimits[i]);
+            bounds.setHigh(num_lim_dof_counter, upperLimits[i]);
+            num_lim_dof_counter = num_lim_dof_counter + 1;
+        }
     }
-
-    size_t const num_dof = robot->GetActiveDOF();
-    boost::shared_ptr<ompl::base::RealVectorStateSpace> state_space
-            = boost::make_shared<ompl::base::RealVectorStateSpace>(num_dof);
-
-    RAVELOG_DEBUG("Setting joint limits.\n");
-    std::vector<OpenRAVE::dReal> lowerLimits, upperLimits;
-    robot->GetActiveDOFLimits(lowerLimits, upperLimits);
-    BOOST_ASSERT(lowerLimits.size() == num_dof);
-    BOOST_ASSERT(upperLimits.size() == num_dof);
-
-    ompl::base::RealVectorBounds bounds(num_dof);
-    for (size_t i = 0; i < num_dof; ++i) {
-        BOOST_ASSERT(lowerLimits[i] <= upperLimits[i]);
-        bounds.setLow(i, lowerLimits[i]);
-        bounds.setHigh(i, upperLimits[i]);
-    }
-    state_space->setBounds(bounds);
+    real_vector_state_space->setBounds(bounds);
 
     // Set the resolution at which OMPL should discretize edges for collision
     // checking. OpenRAVE supports per-joint resolutions, so we compute one
@@ -136,7 +169,7 @@ RealVectorSpacePtr CreateStateSpace(OpenRAVE::RobotBasePtr const robot,
     double conservative_fraction = std::numeric_limits<double>::max();
     double longest_extent = 0;
     for (size_t i = 0; i < num_dof; ++i) {
-        if (upperLimits[i] > lowerLimits[i]) {
+        if ((upperLimits[i] > lowerLimits[i])&&(isContDofIndx[i]==0)) {
             double const joint_extents = upperLimits[i] - lowerLimits[i];
             double const joint_fraction = dof_resolutions[i] / joint_extents;
             conservative_fraction = std::min(conservative_fraction, joint_fraction);
@@ -146,11 +179,11 @@ RealVectorSpacePtr CreateStateSpace(OpenRAVE::RobotBasePtr const robot,
 
     if (std::isinf(conservative_fraction)) {
         RAVELOG_ERROR("All joints have equal lower and upper limits.\n");
-        return RealVectorSpacePtr();
+        return CompoundSpacePtr();
     }
-    state_space->setLongestValidSegmentFraction(conservative_fraction);
+    real_vector_state_space->setLongestValidSegmentFraction(conservative_fraction);
     RAVELOG_DEBUG("Computed resolution of %f (%f fraction of extents).\n",
-                  conservative_fraction * longest_extent, conservative_fraction);
+      conservative_fraction * longest_extent, conservative_fraction);
 
     // Per-DOF weights are not supported by OMPL.
     // TODO: Emulate this by scaling joint values.
@@ -166,9 +199,11 @@ RealVectorSpacePtr CreateStateSpace(OpenRAVE::RobotBasePtr const robot,
 
     if (has_weights) {
         RAVELOG_WARN("Robot specifies DOF weights. Only unit weights are"
-                     " supported by OMPL; planning will commence as if"
-                     " there are no weights.\n");
+           " supported by OMPL; planning will commence as if"
+           " there are no weights.\n");
     }
+    state_space->addSubspace(real_vector_state_space,1.0);
+    std::cout << state_space->getDimension();
     return state_space;
 }
 

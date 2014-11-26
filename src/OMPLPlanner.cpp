@@ -82,7 +82,7 @@ bool OMPLPlanner::InitPlan(OpenRAVE::RobotBasePtr robot,
     m_initialized = false;
 
     try {
-        typedef ompl::base::ScopedState<ompl::base::RealVectorStateSpace> ScopedState;
+        typedef ompl::base::ScopedState<ompl::base::CompoundStateSpace> ScopedState;
 
         if (!robot) {
             RAVELOG_ERROR("Robot must not be NULL.\n");
@@ -100,6 +100,7 @@ bool OMPLPlanner::InitPlan(OpenRAVE::RobotBasePtr robot,
         m_parameters = boost::make_shared<OMPLPlannerParameters>();
         m_parameters->copy(params_raw);
 
+
         RAVELOG_DEBUG("Creating state space.\n");
         m_state_space = CreateStateSpace(robot, *m_parameters);
         if (!m_state_space) {
@@ -109,8 +110,13 @@ bool OMPLPlanner::InitPlan(OpenRAVE::RobotBasePtr robot,
 
         RAVELOG_DEBUG("Creating OMPL setup.\n");
         m_simple_setup = boost::make_shared<ompl::geometric::SimpleSetup>(m_state_space);
+        //std::cout << "***************1**********************";
 
         RAVELOG_DEBUG("Setting initial configuration.\n");
+
+        //std::cout << "***************2**********************";
+
+
         if (m_parameters->vinitialconfig.size() != num_dof) {
             RAVELOG_ERROR("Start configuration has incorrect DOF;"
                           " expected %d, got %d.\n",
@@ -121,11 +127,17 @@ bool OMPLPlanner::InitPlan(OpenRAVE::RobotBasePtr robot,
             return false;
         }
 
+        //std::cout << "***************3**********************";
+
+ 
         ScopedState q_start(m_state_space);
         for (size_t i = 0; i < num_dof; i++) {
+            //std::cout << "***************3.5**********************";
             q_start->values[i] = m_parameters->vinitialconfig[i];
         }
         m_simple_setup->setStartState(q_start);
+
+        //std::cout << "***************4**********************";
 
         RAVELOG_DEBUG("Setting goal configuration.\n");
         if (m_parameters->vgoalconfig.size() != num_dof) {
