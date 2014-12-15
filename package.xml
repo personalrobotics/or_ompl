@@ -17,8 +17,12 @@
   <buildtool_depend>python-argparse</buildtool_depend>
   <buildtool_depend>python-yaml</buildtool_depend>
   <buildtool_depend>python-semanticversion</buildtool_depend>
+  <build_depend>cmake_modules</build_depend>
+  <build_depend>eigen</build_depend>
   <build_depend>openrave</build_depend>
   <build_depend>ompl</build_depend>
+  <build_depend>tinyxml</build_depend>
   <run_depend>openrave</run_depend>
   <run_depend>ompl</run_depend>
+  <run_depend>tinyxml</run_depend>
 </package>
