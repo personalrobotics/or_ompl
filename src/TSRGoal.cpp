@@ -49,16 +49,20 @@ double TSRGoal::distanceGoal(const ompl::base::State *state) const {
 	OpenRAVE::EnvironmentMutex::scoped_lock lockenv(_robot->GetEnv()->GetMutex());
 	OpenRAVE::KinBody::KinBodyStateSaver rsaver(_robot);
 
+    OpenRAVE::RobotBase::ManipulatorPtr active_manip = _robot->GetActiveManipulator();
+
 	// Put the robot in the pose that is represented in the state
 	const ompl::base::RealVectorStateSpace::StateType* mstate = state->as<ompl::base::RealVectorStateSpace::StateType>();
-	std::vector<double> dof_values(_robot->GetActiveDOF());
-	for(unsigned int idx=0; idx < _robot->GetActiveDOF(); idx++){
-		dof_values[idx] = mstate->values[idx];
-	}
-	_robot->SetActiveDOFValues(dof_values, false);
+    std::vector<int> arm_indices = active_manip->GetArmIndices();
+	std::vector<double> dof_values(arm_indices.size());
+	for(unsigned int idx=0; idx < dof_values.size(); idx++){
+        dof_values[idx] = mstate->values[idx];
+    }
+    unsigned int check_limits = 1; //TODO: should we do this?
+    _robot->SetDOFValues(dof_values, check_limits, arm_indices); 
 
 	// Get the end effector transform
-	OpenRAVE::Transform or_tf = _robot->GetActiveManipulator()->GetEndEffectorTransform();
+	OpenRAVE::Transform or_tf = active_manip->GetEndEffectorTransform();
     OpenRAVE::TransformMatrix or_matrix(or_tf);
 	
 	// Convert to Eigen
