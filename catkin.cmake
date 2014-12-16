@@ -47,6 +47,10 @@ add_library(${PROJECT_NAME}
     src/OMPLPlanner.cpp
     src/OMPLSimplifier.cpp
     src/OMPLConversions.cpp
+    src/TSR.cpp
+    src/TSRChain.cpp
+#    src/TSRRobot.cpp
+    src/TSRGoal.cpp
     "${CMAKE_BINARY_DIR}/src/PlannerRegistry.cpp"
 )
 target_link_libraries(${PROJECT_NAME}
