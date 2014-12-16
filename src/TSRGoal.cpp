@@ -58,8 +58,7 @@ double TSRGoal::distanceGoal(const ompl::base::State *state) const {
 	for(unsigned int idx=0; idx < dof_values.size(); idx++){
         dof_values[idx] = mstate->values[idx];
     }
-    unsigned int check_limits = 1; //TODO: should we do this?
-    _robot->SetDOFValues(dof_values, check_limits, arm_indices); 
+    _robot->SetActiveDOFValues(dof_values);
 
 	// Get the end effector transform
 	OpenRAVE::Transform or_tf = active_manip->GetEndEffectorTransform();
@@ -121,9 +120,10 @@ void TSRGoal::sampleGoal(ompl::base::State *state) const {
 
 		// Set the state
 		if(success){
+            std::vector<int> arm_indices = _robot->GetActiveManipulator()->GetArmIndices();
 			const ompl::base::RealVectorStateSpace::StateType* mstate = state->as<ompl::base::RealVectorStateSpace::StateType>();
 			for(unsigned int idx=0; idx < ik_solution.size(); idx++){
-				mstate->values[idx] = ik_solution[idx];
+				mstate->values[arm_indices[idx]] = ik_solution[idx];
 			}
 		}
 	}
