@@ -4,21 +4,25 @@
 
 using namespace or_ompl;
 
-TSRRobot::TSRRobot(const TSRChain::Ptr &chain, OpenRAVE::EnvironmentBasePtr &penv)
-    : _chain(chain), _penv(penv), _initialized(false) {
+TSRRobot::TSRRobot(const std::vector<TSR::Ptr> &tsrs, const OpenRAVE::EnvironmentBasePtr &penv)
+    : _tsrs(tsrs), _penv(penv), _initialized(false) {
 
-    construct();
-
+ 
 }
 
 bool TSRRobot::construct() {
+
+    if(_initialized){
+        RAVELOG_DEBUG("[TSRRobot] Already initialized. Skipping construct.");
+        return _initialized;
+    }
 
     _initialized = false;
 
     // Create an emtpy robot of the correct type
     _probot = RaveCreateRobot(_penv, "GenericRobot");
     if( _probot.get() == NULL ){
-        RAVELOG_INFO("Failed to create robot of type GenericRobot");
+        RAVELOG_INFO("[TSRRobot] Failed to create robot of type GenericRobot");
         return _initialized;
     }
 
@@ -33,11 +37,10 @@ bool TSRRobot::construct() {
     const std::string bodyprefix = "Body";
     int bodynumber = 1;
     Eigen::Affine3d Tw0_e = Eigen::Affine3d::Identity();
-    std::vector<TSR::Ptr> tsrs = _chain->getTSRs();
-    
-    for(unsigned int i=0; i < tsrs.size(); i++){
+       
+    for(unsigned int i=0; i < _tsrs.size(); i++){
 
-        TSR::Ptr tsr = tsrs[i];
+        TSR::Ptr tsr = _tsrs[i];
         Eigen::Matrix<double, 6, 2> Bw = tsr->getBounds();
         
         for(int j=0; j < 6; j++){
@@ -50,7 +53,7 @@ bool TSRRobot::construct() {
             // If the bounds are equal and non-zero, we should do something reasonable
             //  For now, this isn't supported
             if(Bw(j,0) == Bw(j,1)){
-                RAVELOG_FATAL("ERROR: TSR Chains are currently unable to deal with cases where two bounds are equal but non-zero, cannot robotize.\n");
+                RAVELOG_FATAL("[TSRRobot] ERROR: TSR Chains are currently unable to deal with cases where two bounds are equal but non-zero, cannot robotize.\n");
                 return _initialized;
             }
 
@@ -146,7 +149,7 @@ bool TSRRobot::construct() {
     _num_dof = bodynumber - 1;
 
     // now add a geometry to the last body with the offset of the last TSR, this will be the target for the manipulator 
-    TSR::Ptr last_tsr = tsrs.back();
+    TSR::Ptr last_tsr = _tsrs.back();
     Tw0_e = last_tsr->getEndEffectorOffsetTransform();
 
     OpenRAVE::KinBody::LinkInfoPtr link_info
@@ -175,13 +178,13 @@ bool TSRRobot::construct() {
         manip_infos.push_back(manip_info);
     }else{
         _point_tsr = true;
-        RAVELOG_INFO("This is a point TSR, no robotized TSR needed.");
+        RAVELOG_INFO("[TSRRobot] This is a point TSR, no robotized TSR needed.");
         _initialized = true;
         return _initialized;
     }
 
-    if(_point_tsr && tsrs.size() != 1){
-        RAVELOG_INFO("Can't yet handle case where the TSRChain has no freedom but multiple TSRs, try making it a chain of length 1.\n");
+    if(_point_tsr && _tsrs.size() != 1){
+        RAVELOG_INFO("[TSRRobot] Can't yet handle case where the TSRChain has no freedom but multiple TSRs, try making it a chain of length 1.\n");
         _initialized = false;
         return _initialized;
     }
@@ -198,12 +201,12 @@ bool TSRRobot::construct() {
 
     // Set the pose
     // TODO: mimic joint stuff
-    _probot->SetTransform(toOR<double>(tsrs[0]->getOriginTransform()));
+    _probot->SetTransform(toOR<double>(_tsrs[0]->getOriginTransform()));
 
     // Create an IK Solver
     _ik_solver = OpenRAVE::RaveCreateIkSolver(_penv, "GeneralIK");
     if(_ik_solver.get() == NULL){
-        RAVELOG_INFO("Cannot create IK solver, make sure you have the GeneralIK plugin loadable by OpenRAVE\n");
+        RAVELOG_INFO("[TSRRobot] Cannot create IK solver, make sure you have the GeneralIK plugin loadable by OpenRAVE\n");
         _initialized = false;
         return _initialized;
     }
@@ -227,3 +230,29 @@ bool TSRRobot::construct() {
     return _initialized;
 }
 
+Eigen::Affine3d TSRRobot::findNearestFeasibleTransform(const Eigen::Affine3d &Ttarget) {
+
+    OpenRAVE::Transform or_target = toOR<double>(Ttarget);
+
+    _ikparams[2] = or_target.rot.x;
+    _ikparams[3] = or_target.rot.y;
+    _ikparams[4] = or_target.rot.z;
+    _ikparams[5] = or_target.rot.w;
+    _ikparams[6] = or_target.trans.x;
+    _ikparams[7] = or_target.trans.y;
+    _ikparams[8] = or_target.trans.z;
+
+    std::vector<OpenRAVE::dReal> q0;
+    boost::shared_ptr<std::vector<OpenRAVE::dReal> > solution = boost::make_shared<std::vector<OpenRAVE::dReal> >();
+
+    // solve ik
+    _ik_solver->Solve(OpenRAVE::IkParameterization(), q0, _ikparams, false, solution);
+
+    // Set the dof values to the solution and grab the end-effector transform in world coordinates
+    _probot->SetDOFValues(*solution);
+    Eigen::Affine3d ee_pose = toEigen(_probot->GetActiveManipulator()->GetEndEffectorTransform());
+
+    // Convert to proper frame
+    Eigen::Affine3d closest = ee_pose * _tsrs.back()->getEndEffectorOffsetTransform();
+    return closest;
+}

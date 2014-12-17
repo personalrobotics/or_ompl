@@ -1,13 +1,13 @@
 #include <TSRChain.h>
 
+#include <limits>
 #include <vector>
 #include <boost/foreach.hpp>
 #include <boost/make_shared.hpp>
-#include <openrave-core.h>
 
 using namespace or_ompl;
 
-TSRChain::TSRChain() : _initialized(false), _sample_start(false), _sample_goal(false), _constrain(false) {
+TSRChain::TSRChain() : _initialized(false), _sample_start(false), _sample_goal(false), _constrain(false), _tsr_robot(TSRRobot::Ptr()) {
 
 }
 
@@ -16,8 +16,7 @@ TSRChain::TSRChain(const bool &sample_start,
 				   const bool &constrain,
 				   const std::vector<TSR::Ptr> &tsrs) :
 	_initialized(true), _sample_start(sample_start), _sample_goal(sample_goal),
-	_constrain(constrain), _tsrs(tsrs){
-
+	_constrain(constrain), _tsrs(tsrs), _tsr_robot(TSRRobot::Ptr()) {
 
 }
 
@@ -64,13 +63,40 @@ Eigen::Matrix<double, 6, 1> TSRChain::distance(const Eigen::Affine3d &ee_pose) c
 	if(_tsrs.size() == 1){
 		TSR::Ptr tsr = _tsrs.front();
 		return tsr->distance(ee_pose);
-	}else{
-		RAVELOG_DEBUG("[TSRChain] Solving IK to compute distance");
-
-		// Things get complicated here.
-
-        
-
 	}
+     
+    if(!_tsr_robot){
+        RAVELOG_ERROR("[TSRChain] Failed to compute distance to TSR chain. Did you set an OpenRAVE::Environment using the setEnv function?");
+        return std::numeric_limits<double>::infinity() * Eigen::Matrix<double, 6, 1>::Ones();
+    }
+    
+    if(!_tsr_robot->construct()){
+        RAVELOG_ERROR("[TSRChain] Failed to robotize TSR. Cannot compute distance.");
+        return std::numeric_limits<double>::infinity() * Eigen::Matrix<double, 6, 1>::Ones();
+    }
+    
+    RAVELOG_DEBUG("[TSRChain] Solving IK to compute distance");
+    // Compute the ideal pose of the end-effector
+    Eigen::Affine3d Ttarget = ee_pose * _tsrs.back()->getEndEffectorOffsetTransform().inverse();
+    
+    // Ask the robot to solve ik to find the closest possible end-effector transform
+    Eigen::Affine3d Tnear = _tsr_robot->findNearestFeasibleTransform(Ttarget);
 
+    // Compute the distance between the two
+    Eigen::Affine3d offset = Tnear.inverse() * Ttarget;
+    Eigen::Matrix<double, 6, 1> dist = Eigen::Matrix<double, 6, 1>::Zero();
+    dist(0,0) = offset.translation()(0);
+	dist(1,0) = offset.translation()(1);
+	dist(2,0) = offset.translation()(2);
+	dist(3,0) = atan2(offset.rotation()(2,1), offset.rotation()(2,2));
+	dist(4,0) = -asin(offset.rotation()(2,0));
+	dist(5,0) = atan2(offset.rotation()(1,0), offset.rotation()(0,0));
+
+    return dist;
+}
+
+void TSRChain::setEnv(const OpenRAVE::EnvironmentBasePtr &penv){
+
+    _tsr_robot = boost::make_shared<TSRRobot>(_tsrs, penv);
+    
 }

@@ -1,7 +1,7 @@
 #ifndef OMPL_TSR_ROBOT_H_
 #define OMPL_TSR_ROBOT_H_
 
-#include <or_ompl/TSRChain.h>
+#include <or_ompl/TSR.h>
 #include <openrave/openrave.h>
 #include <boost/shared_ptr.hpp>
 
@@ -23,7 +23,7 @@ namespace or_ompl {
         /**
          * Constructor
          */
-        TSRRobot(const TSRChain::Ptr &chain, OpenRAVE::EnvironmentBasePtr &penv);
+        TSRRobot(const std::vector<TSR::Ptr> &tsrs, const OpenRAVE::EnvironmentBasePtr &penv);
 
         /**
          * @return True if the construction was successful, false otherwise
@@ -31,13 +31,24 @@ namespace or_ompl {
         bool construct();
 
         /**
+         * Finds the nearest reachable end-effector transform to the given transform
+         * @param Ttarget - The target end-effector transform
+         */
+        Eigen::Affine3d findNearestFeasibleTransform(const Eigen::Affine3d &Ttarget);
+
+        /**
          * @return True if this is a point TSR chain - meaning no TSRs have any freedom in the Bw matrix
          */
         bool isPointRobot() const { return _point_tsr; }
 
+        /**
+         * @return True if robot has been properly initialized, false otherwise
+         */
+        bool isInitialized() const { return _initialized; }
+
     private:
 
-        TSRChain::Ptr _chain;
+        std::vector<TSR::Ptr> _tsrs;
         OpenRAVE::EnvironmentBasePtr  _penv;
         OpenRAVE::RobotBasePtr _probot;
         OpenRAVE::IkSolverBasePtr _ik_solver;

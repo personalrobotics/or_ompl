@@ -129,6 +129,7 @@ bool OMPLPlanner::InitPlan(OpenRAVE::RobotBasePtr robot,
 		std::vector<TSRChain::Ptr> goal_chains;
 		BOOST_FOREACH(TSRChain::Ptr tsr_chain, m_parameters->m_tsrchains){
 			if(tsr_chain->sampleGoal()){
+                tsr_chain->setEnv(robot->GetEnv()); // required to enable distance to TSR chains
 				goal_chains.push_back(tsr_chain);
 			}
 		}

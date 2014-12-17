@@ -1,10 +1,12 @@
 #ifndef OMPL_TSR_CHAIN_H_
 #define OMPL_TSR_CHAIN_H_
 
-#include <TSR.h>
+#include <or_ompl/TSR.h>
+#include <or_ompl/TSRRobot.h>
 
 #include <vector>
 #include <boost/shared_ptr.hpp>
+#include <openrave/openrave.h>
 
 namespace or_ompl {
 	class TSRChain {
@@ -70,12 +72,20 @@ namespace or_ompl {
 		 */
 		Eigen::Matrix<double, 6, 1> distance(const Eigen::Affine3d &ee_pose) const;
 
+        /**
+         * Set the planning environment. This is required to enable computing
+         * distance to a TSR.
+         * @param penv The OpenRAVE environment this TSRChain will be used in
+         */
+        void setEnv(const OpenRAVE::EnvironmentBasePtr &penv);
+
 	private:
 		bool _initialized;
 		bool _sample_start;
 		bool _sample_goal;
 		bool _constrain;
 		std::vector<TSR::Ptr> _tsrs;
+        TSRRobot::Ptr _tsr_robot;
 	};
 	   
 }
