@@ -3,6 +3,10 @@
 Copyright (c) 2014, Carnegie Mellon University
 All rights reserved.
 
+Authors: Michael Koval <mkoval@cs.cmu.edu>
+         Matthew Klingensmith <mklingen@cs.cmu.edu>
+         Christopher Dellin <cdellin@cs.cmu.edu>
+
 Redistribution and use in source and binary forms, with or without
 modification, are permitted provided that the following conditions are
 met:
@@ -79,7 +83,7 @@ bool OMPLPlanner::InitPlan(OpenRAVE::RobotBasePtr robot,
     m_initialized = false;
 
     try {
-        typedef ompl::base::ScopedState<RobotStateSpace> ScopedState;
+        typedef ompl::base::ScopedState<ompl::base::RealVectorStateSpace> ScopedState;
 
         if (!robot) {
             RAVELOG_ERROR("Robot must not be NULL.\n");
@@ -93,8 +97,7 @@ bool OMPLPlanner::InitPlan(OpenRAVE::RobotBasePtr robot,
         m_totalCollisionTime = 0.0;
         m_numCollisionChecks = 0;
 
-        std::vector<int> dof_indices = robot->GetActiveDOFIndices();
-        const unsigned int num_dof = dof_indices.size();
+        size_t const num_dof = robot->GetActiveDOF();
         m_parameters = boost::make_shared<OMPLPlannerParameters>();
         m_parameters->copy(params_raw);
 
@@ -109,12 +112,12 @@ bool OMPLPlanner::InitPlan(OpenRAVE::RobotBasePtr robot,
         m_simple_setup = boost::make_shared<ompl::geometric::SimpleSetup>(m_state_space);
 
         RAVELOG_DEBUG("Setting initial configuration.\n");
-        if (m_parameters->vinitialconfig.size() != dof_indices.size()) {
+        if (m_parameters->vinitialconfig.size() != num_dof) {
             RAVELOG_ERROR("Start configuration has incorrect DOF;"
                           " expected %d, got %d.\n",
                           num_dof, m_parameters->vinitialconfig.size());
             return false;
-        } else if (IsInOrCollision(m_parameters->vinitialconfig, dof_indices)) {
+        } else if (IsInOrCollision(m_parameters->vinitialconfig)) {
             RAVELOG_ERROR("Initial configuration in collision.\n");
             return false;
         }
@@ -126,35 +129,21 @@ bool OMPLPlanner::InitPlan(OpenRAVE::RobotBasePtr robot,
         m_simple_setup->setStartState(q_start);
 
         RAVELOG_DEBUG("Setting goal configuration.\n");
-		std::vector<TSRChain::Ptr> goal_chains;
-		BOOST_FOREACH(TSRChain::Ptr tsr_chain, m_parameters->m_tsrchains){
-			if(tsr_chain->sampleGoal()){
-				goal_chains.push_back(tsr_chain);
-			}
-		}
+        if (m_parameters->vgoalconfig.size() != num_dof) {
+            RAVELOG_ERROR("End configuration has incorrect DOF;"
+                          "  expected %d, got %d.\n",
+                          num_dof, m_parameters->vgoalconfig.size());
+            return false;
+        } else if (IsInOrCollision(m_parameters->vgoalconfig)) {
+            RAVELOG_ERROR("Goal configuration is in collision.\n");
+            return false;
+        }
 
-		if(goal_chains.size() > 0) {
-			TSRGoal::Ptr goaltsr = boost::make_shared<TSRGoal>(m_simple_setup->getSpaceInformation(),
-															   goal_chains,
-															   robot);
-			m_simple_setup->setGoal(goaltsr);
-		}else{
-			if (m_parameters->vgoalconfig.size() != num_dof) {
-				RAVELOG_ERROR("End configuration has incorrect DOF;"
-							  "  expected %d, got %d.\n",
-							  num_dof, m_parameters->vgoalconfig.size());
-				return false;
-			} else if (IsInOrCollision(m_parameters->vgoalconfig, dof_indices)) {
-				RAVELOG_ERROR("Goal configuration is in collision.\n");
-				return false;
-			}
-
-			ScopedState q_goal(m_state_space);
-			for (size_t i = 0; i < num_dof; i++) {
-				q_goal->values[i] = m_parameters->vgoalconfig[i];
-			}
-			m_simple_setup->setGoalState(q_goal);
-		}
+        ScopedState q_goal(m_state_space);
+        for (size_t i = 0; i < num_dof; i++) {
+            q_goal->values[i] = m_parameters->vgoalconfig[i];
+        }
+        m_simple_setup->setGoalState(q_goal);
 
         RAVELOG_DEBUG("Creating planner.\n");
         m_planner = CreatePlanner(*m_parameters);
@@ -264,21 +253,21 @@ OpenRAVE::PlannerStatus OMPLPlanner::PlanPath(OpenRAVE::TrajectoryBasePtr ptraj)
 
         // TODO: Configure anytime algorithms to keep planning.
         //m_simpleSetup->getGoal()->setMaximumPathLength(0.0);
-       
-        // TODO: What is all of this? Should this really be in the planner?
-        struct timespec tic;
-        clock_gettime(CLOCK_THREAD_CPUTIME_ID, &tic);
 
-        // Call the planner.
-        bool const success = m_simple_setup->solve(m_parameters->m_timeLimit);
+        {
+            // Don't check collision with inactive links.
+            OpenRAVE::CollisionCheckerBasePtr const collision_checker
+                = GetEnv()->GetCollisionChecker();
+            OpenRAVE::CollisionOptionsStateSaver const collision_saver(
+                collision_checker, OpenRAVE::CO_ActiveDOFs, false);
 
-        struct timespec toc;
-        clock_gettime(CLOCK_THREAD_CPUTIME_ID, &toc);
-        CD_OS_TIMESPEC_SUB(&toc, &tic);
-        RAVELOG_DEBUG("cputime seconds: %f\n", CD_OS_TIMESPEC_DOUBLE(&toc));
+            // Call the planner.
+            m_simple_setup->solve(m_parameters->m_timeLimit);
+        }
 
-        if (success) {
-            return ToORTrajectory(m_simple_setup->getSolutionPath(), ptraj);
+        if (m_simple_setup->haveExactSolutionPath()) {
+            ToORTrajectory(m_simple_setup->getSolutionPath(), ptraj);
+            return OpenRAVE::PS_HasSolution;
         } else {
             return OpenRAVE::PS_Failed;
         }
@@ -289,34 +278,27 @@ OpenRAVE::PlannerStatus OMPLPlanner::PlanPath(OpenRAVE::TrajectoryBasePtr ptraj)
     }
 }
 
-bool OMPLPlanner::IsInOrCollision(std::vector<double> const &values, std::vector<int> const &indices)
+bool OMPLPlanner::IsInOrCollision(std::vector<double> const &values)
 {
-#ifdef TIME_COLLISION_CHECKS
-    struct timespec tic;
-    clock_gettime(CLOCK_THREAD_CPUTIME_ID, &tic);
-#endif
-
-    m_robot->SetDOFValues(values, OpenRAVE::KinBody::CLA_Nothing, indices);
+    m_robot->SetActiveDOFValues(values, OpenRAVE::KinBody::CLA_Nothing);
     bool const collided = GetEnv()->CheckCollision(m_robot)
                        || m_robot->CheckSelfCollision();
     m_numCollisionChecks++;
-
-#ifdef TIME_COLLISION_CHECKS
-    struct timespec toc;
-    clock_gettime(CLOCK_THREAD_CPUTIME_ID, &toc);
-    CD_OS_TIMESPEC_SUB(&toc, &tic);
-    m_totalCollisionTime += CD_OS_TIMESPEC_DOUBLE(&toc);
-#endif
     return collided;
 }
 
 bool OMPLPlanner::IsStateValid(ompl::base::State const *state)
 {
-
-    RobotState const *realVectorState = state->as<RobotState>();
+    typedef ompl::base::RealVectorStateSpace::StateType StateType;
+    StateType const *realVectorState = state->as<StateType>();
+    size_t const num_dof = m_robot->GetActiveDOF();
 
     if (realVectorState) {
-        return !IsInOrCollision(realVectorState->getValues(), realVectorState->getIndices());
+        std::vector<OpenRAVE::dReal> values(num_dof);
+        for (size_t i = 0; i < num_dof; i++) {
+            values[i] = realVectorState->values[i];
+        }
+        return !IsInOrCollision(values);
     } else {
         RAVELOG_ERROR("Invalid StateType. This should never happen.\n");
         return false;
@@ -337,14 +319,19 @@ OpenRAVE::PlannerStatus OMPLPlanner::ToORTrajectory(
     or_traj->Init(m_robot->GetActiveConfigurationSpecification());
 
     for (size_t i = 0; i < states.size(); ++i){
-        RobotState const *state
-            = states[i]->as<RobotState>();
+        ompl::base::RealVectorStateSpace::StateType const *state
+            = states[i]->as<ompl::base::RealVectorStateSpace::StateType>();
         if (!state) {
             RAVELOG_ERROR("Unable to convert output trajectory."
                           "State is not a RealVectorStateSpace::StateType.");
             return OpenRAVE::PS_Failed;
         }
-        or_traj->Insert(i, state->getValues(), true);
+
+        std::vector<OpenRAVE::dReal> sample(num_dof);
+        for (size_t j = 0; j < num_dof; ++j) {
+            sample[j] = (*state)[j];
+        }
+        or_traj->Insert(i, sample, true);
     }
     return OpenRAVE::PS_HasSolution;
 }

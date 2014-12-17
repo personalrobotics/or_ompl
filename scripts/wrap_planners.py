@@ -1,6 +1,35 @@
 #!/usr/bin/env python
+
+# Copyright (c) 2014, Carnegie Mellon University
+# All rights reserved.
+# 
+# Authors: Michael Koval <mkoval@cs.cmu.edu>
+# 
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are
+# met:
+# 
+#   Redistributions of source code must retain the above copyright
+#   notice, this list of conditions and the following disclaimer.
+# 
+#   Redistributions in binary form must reproduce the above copyright
+#   notice, this list of conditions and the following disclaimer in the
+#   documentation and/or other materials provided with the distribution.
+# 
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+# "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+# LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+# A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+# HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+# SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+# LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+# DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+# THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+# (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+# OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
 from __future__ import print_function
-import argparse, yaml, semantic_version, sys
+import argparse, yaml, os.path, sys
 
 factory_frontmatter = """\
 #include <map>
@@ -64,25 +93,24 @@ def parse_version(version):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--version', type=str, help='OMPL version number')
+    parser.add_argument('--include-dirs', type=str,
+                        help='OMPL include directories')
     args = parser.parse_args()
 
-    planners = yaml.load(sys.stdin)
+    include_dirs = args.include_dirs.split(os.path.pathsep)
 
     # Filter planners by version number.
-    if args.version:
-        ompl_version = semantic_version.Version(args.version)
-        supported_planners = []
+    planners = yaml.load(sys.stdin)
+    supported_planners = []
 
-        for planner in planners:
-            if 'version' in planner:
-                acceptable_versions = semantic_version.Spec(planner['version'])
-                if acceptable_versions.match(ompl_version):
-                    supported_planners.append(planner)
-            else:
+    for planner in planners:
+        for include_dir in include_dirs:
+            header_path = os.path.join(include_dir, planner['header'])
+            if os.path.exists(header_path):
                 supported_planners.append(planner)
+                break
 
-        planners = supported_planners
+    planners = supported_planners
 
     # Include the necessary OMPL 
     headers = [ planner['header'] for planner in planners ]
