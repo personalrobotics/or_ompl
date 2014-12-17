@@ -1,7 +1,7 @@
 #include <boost/make_shared.hpp>
 #include <ompl/base/ScopedState.h>
 #include "OMPLConversions.h"
-#include "OMPLSimplifer.h"
+#include <or_ompl/OMPLSimplifier.h>
 
 namespace or_ompl
 {

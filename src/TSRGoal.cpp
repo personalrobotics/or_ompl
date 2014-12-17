@@ -1,4 +1,5 @@
-#include <TSRGoal.h>
+#include <or_ompl/TSRGoal.h>
+#include <or_ompl/RobotStateSpace.h>
 
 #include <boost/foreach.hpp>
 #include <ompl/base/spaces/RealVectorStateSpace.h>
@@ -52,13 +53,9 @@ double TSRGoal::distanceGoal(const ompl::base::State *state) const {
     OpenRAVE::RobotBase::ManipulatorPtr active_manip = _robot->GetActiveManipulator();
 
 	// Put the robot in the pose that is represented in the state
-	const ompl::base::RealVectorStateSpace::StateType* mstate = state->as<ompl::base::RealVectorStateSpace::StateType>();
-    std::vector<int> arm_indices = active_manip->GetArmIndices();
-	std::vector<double> dof_values(arm_indices.size());
-	for(unsigned int idx=0; idx < dof_values.size(); idx++){
-        dof_values[idx] = mstate->values[idx];
-    }
-    _robot->SetActiveDOFValues(dof_values);
+	const RobotState* mstate = state->as<RobotState>();
+    unsigned int check_limits = 0; // The planner does this
+    _robot->SetDOFValues(mstate->getValues(), check_limits, mstate->getIndices());
 
 	// Get the end effector transform
 	OpenRAVE::Transform or_tf = active_manip->GetEndEffectorTransform();
@@ -120,10 +117,18 @@ void TSRGoal::sampleGoal(ompl::base::State *state) const {
 
 		// Set the state
 		if(success){
+
+			const RobotState* mstate = state->as<RobotState>();
+
             std::vector<int> arm_indices = _robot->GetActiveManipulator()->GetArmIndices();
-			const ompl::base::RealVectorStateSpace::StateType* mstate = state->as<ompl::base::RealVectorStateSpace::StateType>();
+            std::vector<int> state_indices = mstate->getIndices();
 			for(unsigned int idx=0; idx < ik_solution.size(); idx++){
-				mstate->values[arm_indices[idx]] = ik_solution[idx];
+
+                unsigned int sidx = std::find(state_indices.begin(),
+                                              state_indices.end(),
+                                              arm_indices[idx]) - state_indices.begin();
+
+				mstate->values[sidx] = ik_solution[idx];
 			}
 		}
 	}

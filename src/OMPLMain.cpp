@@ -31,7 +31,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <openrave/plugin.h>
 #include "OMPLPlanner.h"
 #include "OMPLConversions.h"
-#include "OMPLSimplifer.h"
+#include "OMPLSimplifier.h"
 
 using namespace OpenRAVE;
 

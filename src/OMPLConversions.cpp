@@ -48,15 +48,15 @@ void OpenRAVEHandler::log(std::string const &text, ompl::msg::LogLevel level,
     }
 }
 
-RealVectorSpacePtr CreateStateSpace(OpenRAVE::RobotBasePtr const robot,
+RobotStateSpacePtr CreateStateSpace(OpenRAVE::RobotBasePtr const robot,
                                     OMPLPlannerParameters const &params)
 {
     if (!robot) {
         RAVELOG_ERROR("Robot must not be NULL.\n");
-        return RealVectorSpacePtr();
+        return RobotStateSpacePtr();
     } else if (robot->GetActiveDOF() == 0) {
         RAVELOG_ERROR("Zero DOFs are active.\n");
-        return RealVectorSpacePtr();
+        return RobotStateSpacePtr();
     }
 
     if (params.m_seed) {
@@ -65,16 +65,16 @@ RealVectorSpacePtr CreateStateSpace(OpenRAVE::RobotBasePtr const robot,
         if (ompl::RNG::getSeed() != params.m_seed) {
             RAVELOG_ERROR("Could not set OMPL seed. Was this the first or_ompl"
                           "  plan attempted?\n");
-            return RealVectorSpacePtr();
+            return RobotStateSpacePtr();
         }
     } else {
         RAVELOG_DEBUG("Using default seed of %u for OMPL.\n",
                       ompl::RNG::getSeed());
     }
 
-    size_t const num_dof = robot->GetActiveDOF();
-    boost::shared_ptr<ompl::base::RealVectorStateSpace> state_space
-            = boost::make_shared<ompl::base::RealVectorStateSpace>(num_dof);
+    std::vector<int> dof_indices = robot->GetActiveDOFIndices();
+    const unsigned int num_dof = dof_indices.size();
+    RobotStateSpacePtr state_space = boost::make_shared<RobotStateSpace>(dof_indices);
 
     RAVELOG_DEBUG("Setting joint limits.\n");
     std::vector<OpenRAVE::dReal> lowerLimits, upperLimits;
@@ -112,7 +112,7 @@ RealVectorSpacePtr CreateStateSpace(OpenRAVE::RobotBasePtr const robot,
 
     if (std::isinf(conservative_fraction)) {
         RAVELOG_ERROR("All joints have equal lower and upper limits.\n");
-        return RealVectorSpacePtr();
+        return RobotStateSpacePtr();
     }
     state_space->setLongestValidSegmentFraction(conservative_fraction);
     RAVELOG_DEBUG("Computed resolution of %f (%f fraction of extents).\n",

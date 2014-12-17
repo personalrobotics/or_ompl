@@ -1,7 +1,7 @@
 #ifndef OMPLCONVERSIONS_H_
 #define OMPLCONVERSIONS_H_
 #include <ompl/util/Console.h>
-#include <ompl/base/spaces/RealVectorStateSpace.h>
+#include <or_ompl/RobotStateSpace.h>
 #include <openrave/openrave.h>
 #include "OMPLPlannerParameters.h"
 
@@ -15,7 +15,7 @@ public:
                      char const *filename, int line);
 };
 
-RealVectorSpacePtr CreateStateSpace(OpenRAVE::RobotBasePtr const robot,
+RobotStateSpacePtr CreateStateSpace(OpenRAVE::RobotBasePtr const robot,
                                     OMPLPlannerParameters const &params);
 
 }
