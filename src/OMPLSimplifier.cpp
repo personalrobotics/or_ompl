@@ -32,7 +32,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <boost/make_shared.hpp>
 #include <ompl/base/ScopedState.h>
 #include "OMPLConversions.h"
-#include <or_ompl/OMPLSimplifier.h>
+#include "OMPLSimplifier.h"
 
 namespace or_ompl
 {

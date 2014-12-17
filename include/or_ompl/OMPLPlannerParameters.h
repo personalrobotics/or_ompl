@@ -36,8 +36,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include <openrave-core.h>
 #include <openrave/planner.h>
-#include <TSRChain.h>
 #include <boost/foreach.hpp>
+#include "TSRChain.h"
 
 namespace or_ompl
 {
@@ -119,7 +119,6 @@ namespace or_ompl
                     case PE_Support:
                         return PE_Support;
                     case PE_Ignore:
-						std::cout << "ignore" << std::endl;
                         return PE_Ignore;
                 }
 
@@ -182,9 +181,12 @@ namespace or_ompl
 					{
 						TSRChain::Ptr chain = boost::make_shared<TSRChain>();
 						bool success = chain->deserialize(_ss);
-						if(!success){
+						if(!success)
+                        {
 							RAVELOG_ERROR("failed to deserialize TSRChain");
-						}else{
+						}
+                        else
+                        {
 							m_tsrchains.push_back(chain);
 						}
 					}

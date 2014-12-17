@@ -1,7 +1,7 @@
 #ifndef OMPL_TSR_CHAIN_H_
 #define OMPL_TSR_CHAIN_H_
 
-#include <TSR.h>
+#include "TSR.h"
 
 #include <vector>
 #include <boost/shared_ptr.hpp>

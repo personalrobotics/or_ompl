@@ -57,7 +57,8 @@ namespace or_ompl
             inline ompl::geometric::SimpleSetup* GetSimpleSetup() { return m_simpleSetup; }
             inline ompl::base::StateSpacePtr GetStateSpace() { return m_stateSpace; }
             bool IsStateValid(const ompl::base::State* state);
-            bool IsInOrCollision(std::vector<double> jointValues);
+            bool IsInOrCollision(std::vector<double> const &jointValues,
+                                 std::vector<int> const &jointIndices);
             bool InitializePlanner();
 
         private:

@@ -8,6 +8,7 @@ catkin_package(
 )
 
 find_package(Boost REQUIRED COMPONENTS system)
+find_package(Eigen REQUIRED)
 find_package(OMPL REQUIRED)
 find_package(TinyXML REQUIRED)
 find_package(OpenRAVE REQUIRED)
@@ -15,6 +16,7 @@ find_package(OpenRAVE REQUIRED)
 include_directories(
     include/${PROJECT_NAME}
     ${catkin_INCLUDE_DIRS}
+    ${Eigen_INCLUDE_DIRS}
     ${OMPL_INCLUDE_DIRS}
     ${TinyXML_INCLUDE_DIRS}
     ${OpenRAVE_INCLUDE_DIRS}
@@ -22,6 +24,7 @@ include_directories(
 link_directories(
     ${OMPL_LIBRARY_DIRS}
     ${catkin_LIBRARY_DIRS}
+)
 add_definitions(
     ${EIGEN_DEFINITIONS}    
 )
@@ -46,11 +49,11 @@ add_library(${PROJECT_NAME}
     src/RobotStateSpace.cpp
     src/TSR.cpp
     src/TSRChain.cpp
-#    src/TSRRobot.cpp
     src/TSRGoal.cpp
     "${CMAKE_BINARY_DIR}/src/PlannerRegistry.cpp"
 )
 target_link_libraries(${PROJECT_NAME}
+    ${Eigen_LIBRARIES}
     ${OpenRAVE_LIBRARIES}
     ${OMPL_LIBRARIES}
     ${Boost_LIBRARIES}

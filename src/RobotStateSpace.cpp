@@ -1,4 +1,4 @@
-#include <or_ompl/RobotStateSpace.h>
+#include "RobotStateSpace.h"
 
 using namespace or_ompl;
 namespace ob = ompl::base;

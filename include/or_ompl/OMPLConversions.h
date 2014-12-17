@@ -34,9 +34,9 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef OMPLCONVERSIONS_H_
 #define OMPLCONVERSIONS_H_
 #include <ompl/util/Console.h>
-#include <or_ompl/RobotStateSpace.h>
 #include <openrave/openrave.h>
 #include "OMPLPlannerParameters.h"
+#include "RobotStateSpace.h"
 
 typedef boost::shared_ptr<ompl::base::RealVectorStateSpace> RealVectorSpacePtr;
 
