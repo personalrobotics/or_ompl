@@ -31,11 +31,14 @@ bool TSRChain::deserialize(std::stringstream &ss) {
 	ss >> num_tsrs;
 
 	_tsrs.resize(num_tsrs);
+    bool valid = true;
 	for(unsigned int idx = 0; idx < num_tsrs; idx++){
 		TSR::Ptr new_tsr = boost::make_shared<TSR>();
-		new_tsr->deserialize(ss);
+		valid &= new_tsr->deserialize(ss);
 		_tsrs[idx] = new_tsr;
 	}
+
+    return valid;
 
 	// TODO: Ignored are mmicbody name and mimicbodyjoints	
 }
@@ -63,7 +66,11 @@ Eigen::Matrix<double, 6, 1> TSRChain::distance(const Eigen::Affine3d &ee_pose) c
 		return tsr->distance(ee_pose);
 	}else{
 		RAVELOG_DEBUG("[TSRChain] Solving IK to compute distance");
+
 		// Things get complicated here.
+
+        
+
 	}
 
 }

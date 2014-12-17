@@ -50,7 +50,7 @@ add_library(${PROJECT_NAME}
     src/RobotStateSpace.cpp
     src/TSR.cpp
     src/TSRChain.cpp
-#    src/TSRRobot.cpp
+    src/TSRRobot.cpp
     src/TSRGoal.cpp
     "${CMAKE_BINARY_DIR}/src/PlannerRegistry.cpp"
 )
