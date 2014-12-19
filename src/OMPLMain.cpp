@@ -32,9 +32,11 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 *************************************************************************/
 #include <boost/algorithm/string/predicate.hpp>
+#include <boost/bind.hpp>
 #include <boost/lexical_cast.hpp>
 #include <boost/foreach.hpp>
 #include <boost/format.hpp>
+#include <boost/function.hpp>
 #include <boost/make_shared.hpp>
 #include <openrave/plugin.h>
 #include "OMPLPlanner.h"
@@ -65,8 +67,9 @@ InterfaceBasePtr CreateInterfaceValidated(
             boost::algorithm::to_lower(candidate_name_lower);
 
             if (candidate_name_lower == ompl_planner_name) {
-                return boost::make_shared<or_ompl::OMPLPlanner>(
-                    penv, candidate_name_lower);
+                or_ompl::PlannerFactory const factory = boost::bind(
+                    &or_ompl::registry::create, candidate_name, _1);
+                return boost::make_shared<or_ompl::OMPLPlanner>(penv, factory);
             }
         }
     }

@@ -60,10 +60,11 @@ namespace or_ompl
 {
 
 OMPLPlanner::OMPLPlanner(OpenRAVE::EnvironmentBasePtr penv,
-                         std::string const &planner_name)
+                         PlannerFactory const &planner_factory)
     : OpenRAVE::PlannerBase(penv)
     , m_initialized(false)
-    , m_planner_name(planner_name)
+    , m_planner_factory(planner_factory)
+
 {
 }
 
@@ -173,10 +174,9 @@ ompl::base::PlannerPtr OMPLPlanner::CreatePlanner(
     ompl::base::SpaceInformationPtr const spaceInformation
             = m_simple_setup->getSpaceInformation();
 
-    ompl::base::PlannerPtr planner(registry::create(
-            m_planner_name, spaceInformation));
+    ompl::base::PlannerPtr planner(m_planner_factory(spaceInformation));
     if (!planner) {
-        RAVELOG_ERROR("Failed creating planner '%s'.\n", m_planner_name.c_str());
+        RAVELOG_ERROR("Failed creating planner.");
         return ompl::base::PlannerPtr();
     }
 

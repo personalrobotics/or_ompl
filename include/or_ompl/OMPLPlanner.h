@@ -44,10 +44,12 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 namespace or_ompl
 {
 
+typedef boost::function<ompl::base::Planner *(ompl::base::SpaceInformationPtr)> PlannerFactory;
+
 class OMPLPlanner: public OpenRAVE::PlannerBase {
 public:
     OMPLPlanner(OpenRAVE::EnvironmentBasePtr penv,
-                std::string const &planner_name);
+                PlannerFactory const &planner_factory);
     virtual ~OMPLPlanner();
 
     virtual bool InitPlan(OpenRAVE::RobotBasePtr robot,
@@ -63,7 +65,7 @@ public:
 
 private:
     bool m_initialized;
-    std::string m_planner_name;
+    PlannerFactory m_planner_factory;
     OMPLPlannerParametersPtr m_parameters;
     ompl::geometric::SimpleSetupPtr m_simple_setup;
     ompl::base::StateSpacePtr m_state_space;
