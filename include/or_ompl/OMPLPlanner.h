@@ -46,7 +46,8 @@ namespace or_ompl
 
 class OMPLPlanner: public OpenRAVE::PlannerBase {
 public:
-    OMPLPlanner(OpenRAVE::EnvironmentBasePtr penv);
+    OMPLPlanner(OpenRAVE::EnvironmentBasePtr penv,
+                std::string const &planner_name);
     virtual ~OMPLPlanner();
 
     virtual bool InitPlan(OpenRAVE::RobotBasePtr robot,
@@ -62,6 +63,7 @@ public:
 
 private:
     bool m_initialized;
+    std::string m_planner_name;
     OMPLPlannerParametersPtr m_parameters;
     ompl::geometric::SimpleSetupPtr m_simple_setup;
     ompl::base::StateSpacePtr m_state_space;

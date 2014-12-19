@@ -65,8 +65,8 @@ InterfaceBasePtr CreateInterfaceValidated(
             boost::algorithm::to_lower(candidate_name_lower);
 
             if (candidate_name_lower == ompl_planner_name) {
-                // TODO: Set the planner type.
-                return boost::make_shared<or_ompl::OMPLPlanner>(penv);
+                return boost::make_shared<or_ompl::OMPLPlanner>(
+                    penv, candidate_name_lower);
             }
         }
     }

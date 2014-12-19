@@ -59,9 +59,11 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 namespace or_ompl
 {
 
-OMPLPlanner::OMPLPlanner(OpenRAVE::EnvironmentBasePtr penv)
+OMPLPlanner::OMPLPlanner(OpenRAVE::EnvironmentBasePtr penv,
+                         std::string const &planner_name)
     : OpenRAVE::PlannerBase(penv)
     , m_initialized(false)
+    , m_planner_name(planner_name)
 {
 }
 
@@ -168,14 +170,13 @@ ompl::base::PlannerPtr OMPLPlanner::CreatePlanner(
     OMPLPlannerParameters const &params)
 {
     // Create the planner.
-    std::string const plannerName = m_parameters->m_plannerType;
     ompl::base::SpaceInformationPtr const spaceInformation
             = m_simple_setup->getSpaceInformation();
 
     ompl::base::PlannerPtr planner(registry::create(
-            plannerName, spaceInformation));
+            m_planner_name, spaceInformation));
     if (!planner) {
-        RAVELOG_ERROR("Failed creating planner '%s'.\n", plannerName.c_str());
+        RAVELOG_ERROR("Failed creating planner '%s'.\n", m_planner_name.c_str());
         return ompl::base::PlannerPtr();
     }
 
