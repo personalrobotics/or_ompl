@@ -31,11 +31,16 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 *************************************************************************/
+#include <boost/algorithm/string/predicate.hpp>
+#include <boost/lexical_cast.hpp>
+#include <boost/foreach.hpp>
+#include <boost/format.hpp>
 #include <boost/make_shared.hpp>
 #include <openrave/plugin.h>
 #include "OMPLPlanner.h"
 #include "OMPLConversions.h"
 #include "OMPLSimplifer.h"
+#include "PlannerRegistry.h"
 
 using namespace OpenRAVE;
 
@@ -43,18 +48,42 @@ InterfaceBasePtr CreateInterfaceValidated(
         InterfaceType type, std::string const &interfacename,
         std::istream &sinput, EnvironmentBasePtr penv)
 {
-    if (type == PT_Planner && interfacename == "ompl") {
-        return boost::make_shared<or_ompl::OMPLPlanner>(penv); } else if (type == PT_Planner && interfacename == "omplsimplifier") {
-        return boost::make_shared<or_ompl::OMPLSimplifier>(penv);
-    } else {
-        return InterfaceBasePtr();
+    std::vector<std::string> const planner_names
+        = or_ompl::registry::get_planner_names();
+
+    if (type == PT_Planner && boost::starts_with(interfacename, "ompl_")) {
+        // Handle OMPLSimplifier as a special case. This doesn't implement the
+        // planning interface, so we can't auto-generate this.
+        if (interfacename == "ompl_simplifier") {
+            return boost::make_shared<or_ompl::OMPLSimplifier>(penv);
+        } 
+
+        // Check whether this is an automatically-wrapped planner.
+        std::string const ompl_planner_name = interfacename.substr(5);
+        BOOST_FOREACH (std::string const &candidate_name, planner_names) {
+            std::string candidate_name_lower = candidate_name;
+            boost::algorithm::to_lower(candidate_name_lower);
+
+            if (candidate_name_lower == ompl_planner_name) {
+                // TODO: Set the planner type.
+                return boost::make_shared<or_ompl::OMPLPlanner>(penv);
+            }
+        }
     }
+    return InterfaceBasePtr();
 }
 
 void GetPluginAttributesValidated(PLUGININFO &info)
 {
-    info.interfacenames[PT_Planner].push_back("OMPL");
-    info.interfacenames[PT_Planner].push_back("OMPLSimplifier");
+    std::vector<std::string> const planner_names
+        = or_ompl::registry::get_planner_names();
+
+    BOOST_FOREACH (std::string const &planner_name, planner_names) {
+        std::string const or_planner_name = "OMPL_" + planner_name;
+        info.interfacenames[PT_Planner].push_back(or_planner_name);
+    }
+
+    info.interfacenames[PT_Planner].push_back("OMPL_Simplifier");
 
     // Forward OMPL log messages to OpenRAVE.
     ompl::msg::setLogLevel(ompl::msg::LOG_DEBUG);
