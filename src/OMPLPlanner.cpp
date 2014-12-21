@@ -344,13 +344,30 @@ bool OMPLPlanner::GetParametersCommand(std::ostream &sout, std::istream &sin) co
 {
     typedef std::map<std::string, ompl::base::GenericParamPtr> ParamMap;
 
-    ompl::base::ParamSet const &param_set = m_planner->params();
+    ompl::base::PlannerPtr planner;
+    if (m_planner) {
+        planner = m_planner;
+    }
+    // We need an instance of the planner to query its ParamSet. Unfortunately,
+    // constructing the planner requires a SpaceInformationPtr, which can only
+    // be generated from an existing StateSpace. As a workaround, we construct
+    // a simple one-DOF state space and make a temporary planner instance.
+    else {
+        ompl::base::StateSpacePtr const state_space
+            = boost::make_shared<ompl::base::RealVectorStateSpace>(1);
+        ompl::base::SpaceInformationPtr const space_information 
+            = boost::make_shared<ompl::base::SpaceInformation>(state_space);
+        planner.reset(m_planner_factory(space_information));
+    }
+
+    // Query the supported parameters. Each planner has a name and a "range
+    // suggestion", which is used to generate the GUI in OMPL.app.
+    ompl::base::ParamSet const &param_set = planner->params();
     ParamMap const &param_map = param_set.getParams();
 
     ParamMap::const_iterator it;
     for (it = param_map.begin(); it != param_map.end(); ++it) {
-        sout << "- " << it->first << ": " << it->second->getRangeSuggestion()
-             << " (default: " << it->second->getValue() << '\n';
+        sout << it->first << " (" << it->second->getRangeSuggestion() << ")\n";
     }
 
     return true;
