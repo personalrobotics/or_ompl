@@ -85,12 +85,12 @@ Eigen::Matrix<double, 6, 1> TSRChain::distance(const Eigen::Affine3d &ee_pose) c
     // Compute the distance between the two
     Eigen::Affine3d offset = Tnear.inverse() * Ttarget;
     Eigen::Matrix<double, 6, 1> dist = Eigen::Matrix<double, 6, 1>::Zero();
-    dist(0,0) = offset.translation()(0);
-	dist(1,0) = offset.translation()(1);
-	dist(2,0) = offset.translation()(2);
-	dist(3,0) = atan2(offset.rotation()(2,1), offset.rotation()(2,2));
-	dist(4,0) = -asin(offset.rotation()(2,0));
-	dist(5,0) = atan2(offset.rotation()(1,0), offset.rotation()(0,0));
+    dist[0] = offset.translation()[0];
+	dist[1] = offset.translation()[1];
+	dist[2] = offset.translation()[2];
+	dist[3] = atan2(offset.rotation()(2,1), offset.rotation()(2,2));
+	dist[4] = -asin(offset.rotation()(2,0));
+	dist[5] = atan2(offset.rotation()(1,0), offset.rotation()(0,0));
 
     return dist;
 }
