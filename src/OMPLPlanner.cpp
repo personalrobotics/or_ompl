@@ -66,6 +66,10 @@ OMPLPlanner::OMPLPlanner(OpenRAVE::EnvironmentBasePtr penv,
     , m_planner_factory(planner_factory)
 
 {
+    RegisterCommand("GetParameters",
+        boost::bind(&OMPLPlanner::GetParametersCommand, this, _1, _2),
+        "returns the list of accepted planner parameters"
+    );
 }
 
 OMPLPlanner::~OMPLPlanner()
@@ -334,6 +338,22 @@ OpenRAVE::PlannerStatus OMPLPlanner::ToORTrajectory(
         or_traj->Insert(i, sample, true);
     }
     return OpenRAVE::PS_HasSolution;
+}
+
+bool OMPLPlanner::GetParametersCommand(std::ostream &sout, std::istream &sin) const
+{
+    typedef std::map<std::string, ompl::base::GenericParamPtr> ParamMap;
+
+    ompl::base::ParamSet const &param_set = m_planner->params();
+    ParamMap const &param_map = param_set.getParams();
+
+    ParamMap::const_iterator it;
+    for (it = param_map.begin(); it != param_map.end(); ++it) {
+        sout << "- " << it->first << ": " << it->second->getRangeSuggestion()
+             << " (default: " << it->second->getValue() << '\n';
+    }
+
+    return true;
 }
 
 }
