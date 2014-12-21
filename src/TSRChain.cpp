@@ -46,8 +46,10 @@ Eigen::Affine3d TSRChain::sample() const {
 
 	Eigen::Affine3d T0_w;
 	if(_tsrs.size() == 0){
-		RAVELOG_ERROR("[TSRChain] No TSRs specified for this chain");
-		return T0_w;
+        throw OpenRAVE::openrave_exception(
+            "There are no TSRs in this TSR Chain.",
+            OpenRAVE::ORE_InvalidState
+        );
 	}
 
 	T0_w = _tsrs.front()->getOriginTransform();
@@ -66,13 +68,18 @@ Eigen::Matrix<double, 6, 1> TSRChain::distance(const Eigen::Affine3d &ee_pose) c
 	}
      
     if(!_tsr_robot){
-        RAVELOG_ERROR("[TSRChain] Failed to compute distance to TSR chain. Did you set an OpenRAVE::Environment using the setEnv function?");
-        return std::numeric_limits<double>::infinity() * Eigen::Matrix<double, 6, 1>::Ones();
+        throw OpenRAVE::openrave_exception(
+            "Failed to compute distance to TSRChain. Did you set the"
+            " environment by calling the setEnv function?",
+            OpenRAVE::ORE_InvalidState
+        );
     }
     
     if(!_tsr_robot->construct()){
-        RAVELOG_ERROR("[TSRChain] Failed to robotize TSR. Cannot compute distance.");
-        return std::numeric_limits<double>::infinity() * Eigen::Matrix<double, 6, 1>::Ones();
+        throw OpenRAVE::openrave_exception(
+            "Failed to robotize TSR.",
+            OpenRAVE::ORE_Failed
+        );
     }
     
     RAVELOG_DEBUG("[TSRChain] Solving IK to compute distance");
