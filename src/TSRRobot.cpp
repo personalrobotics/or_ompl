@@ -22,7 +22,7 @@ bool TSRRobot::construct() {
     // Create an emtpy robot of the correct type
     _probot = RaveCreateRobot(_penv, "GenericRobot");
     if( _probot.get() == NULL ){
-        RAVELOG_INFO("[TSRRobot] Failed to create robot of type GenericRobot");
+        RAVELOG_ERROR("[TSRRobot] Failed to create robot of type GenericRobot");
         return _initialized;
     }
 
@@ -53,7 +53,7 @@ bool TSRRobot::construct() {
             // If the bounds are equal and non-zero, we should do something reasonable
             //  For now, this isn't supported
             if(Bw(j,0) == Bw(j,1)){
-                RAVELOG_FATAL("[TSRRobot] ERROR: TSR Chains are currently unable to deal with cases where two bounds are equal but non-zero, cannot robotize.\n");
+                RAVELOG_ERROR("[TSRRobot] ERROR: TSR Chains are currently unable to deal with cases where two bounds are equal but non-zero, cannot robotize.\n");
                 return _initialized;
             }
 
@@ -178,13 +178,13 @@ bool TSRRobot::construct() {
         manip_infos.push_back(manip_info);
     }else{
         _point_tsr = true;
-        RAVELOG_INFO("[TSRRobot] This is a point TSR, no robotized TSR needed.");
+        RAVELOG_DEBUG("[TSRRobot] This is a point TSR, no robotized TSR needed.");
         _initialized = true;
         return _initialized;
     }
 
     if(_point_tsr && _tsrs.size() != 1){
-        RAVELOG_INFO("[TSRRobot] Can't yet handle case where the TSRChain has no freedom but multiple TSRs, try making it a chain of length 1.\n");
+        RAVELOG_ERROR("[TSRRobot] Can't yet handle case where the TSRChain has no freedom but multiple TSRs, try making it a chain of length 1.\n");
         _initialized = false;
         return _initialized;
     }
@@ -206,7 +206,7 @@ bool TSRRobot::construct() {
     // Create an IK Solver
     _ik_solver = OpenRAVE::RaveCreateIkSolver(_penv, "GeneralIK");
     if(_ik_solver.get() == NULL){
-        RAVELOG_INFO("[TSRRobot] Cannot create IK solver, make sure you have the GeneralIK plugin loadable by OpenRAVE\n");
+        RAVELOG_ERROR("[TSRRobot] Cannot create IK solver, make sure you have the GeneralIK plugin loadable by OpenRAVE\n");
         _initialized = false;
         return _initialized;
     }
