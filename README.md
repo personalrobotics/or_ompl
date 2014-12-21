@@ -163,9 +163,12 @@ set of active DOFs:
     result = simplifier.PlanPath(traj)
     assert result == PlannerStatus.HasSolution
 
-    # Retime and cxecute the trajectory.
+    # Time the trajectory.
     result = planningutils.RetimeTrajectory(traj)
     assert result == PlannerStatus.HasSolution
+
+    # Execute the trajectory.
+    robot.GetController().SetPath(traj)
 
 See the [documentation on the OpenRAVE
 website](http://openrave.org/docs/latest_stable/tutorials/openravepy_examples/#directly-launching-planners)
