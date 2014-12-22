@@ -290,7 +290,7 @@ OpenRAVE::PlannerStatus OMPLPlanner::PlanPath(OpenRAVE::TrajectoryBasePtr ptraj)
         for (;;) {
             clock_gettime(CLOCK_THREAD_CPUTIME_ID, &curr_time);
             CD_OS_TIMESPEC_SUB(&curr_time, &start_time);
-            double const time_ellapsed = CD_OS_TIMESPEC_DOUBLE(&curr_time);
+            double time_ellapsed = CD_OS_TIMESPEC_DOUBLE(&curr_time);
 
             // Pause after each m_pollPeriod seconds of planning to call any
             // planner callbacks.
@@ -299,11 +299,15 @@ OpenRAVE::PlannerStatus OMPLPlanner::PlanPath(OpenRAVE::TrajectoryBasePtr ptraj)
             m_simple_setup->solve(poll_period);
             bool const has_solution = m_simple_setup->haveExactSolutionPath();
 
+            clock_gettime(CLOCK_THREAD_CPUTIME_ID, &curr_time);
+            CD_OS_TIMESPEC_SUB(&curr_time, &start_time);
+            time_ellapsed = CD_OS_TIMESPEC_DOUBLE(&curr_time);
+
             // Call any registered callbacks.
             progress._iteration++;
             action = _CallCallbacks(progress);
-            RAVELOG_INFO("Queried planner callbacks after %.3f seconds of"
-                         " planning. Returned: %d\n", time_ellapsed, action);
+            RAVELOG_DEBUG("Queried planner callbacks after %.3f seconds of"
+                          " planning. Returned: %d\n", time_ellapsed, action);
 
             // Check if we should abort early.
             if (action == OpenRAVE::PA_ReturnWithAnySolution && has_solution) {
