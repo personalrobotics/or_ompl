@@ -46,7 +46,6 @@ public:
         : m_seed(0)
         , m_timeLimit(10)
         , m_pollPeriod(0.2)
-        , m_plannerType("")
         , m_isAnytime(false)
         , m_isProcessing(false)
         , m_dat_filename("")
@@ -55,7 +54,6 @@ public:
         _vXMLParameters.push_back("seed");
         _vXMLParameters.push_back("time_limit");
         _vXMLParameters.push_back("poll_period");
-        _vXMLParameters.push_back("planner_type");
         _vXMLParameters.push_back("is_anytime");
         _vXMLParameters.push_back("dat_filename");
         _vXMLParameters.push_back("trajs_fileformat");
@@ -63,7 +61,6 @@ public:
 
     unsigned int m_seed;
     double m_timeLimit;
-    std::string m_plannerType;
     bool m_isAnytime;
     bool m_isProcessing;
     std::string m_dat_filename;
@@ -79,7 +76,6 @@ protected:
         O << "<seed>" << m_seed << "</seed>" << std::endl;
         O << "<time_limit>" << m_timeLimit << "</time_limit>" << std::endl;
         O << "<poll_period>" << m_pollPeriod << "</poll_period>" << std::endl;
-        O << "<planner_type>" << m_plannerType << "</planner_type>" << std::endl;
         O << "<is_anytime>" << m_isAnytime << "</is_anytime>" << std::endl;
         O << "<dat_filename>" << m_dat_filename << "</dat_filename>" << std::endl;
         O << "<trajs_fileformat>" << m_trajs_fileformat << "</trajs_fileformat>" << std::endl;
@@ -107,7 +103,6 @@ protected:
              name == "seed"
           || name == "time_limit"
           || name == "poll_period"
-          || name == "planner_type"
           || name == "is_anytime"
           || name == "dat_filename"
           || name == "trajs_fileformat";
@@ -124,8 +119,6 @@ protected:
                 _ss >> m_timeLimit;
             } else if (name == "poll_period") {
                 _ss >> m_pollPeriod;
-            } else if (name == "planner_type") {
-                _ss >> m_plannerType;
             } else if (name == "is_anytime") {
                 _ss >> m_isAnytime;
             } else if (name == "dat_filename") {
