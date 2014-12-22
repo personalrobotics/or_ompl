@@ -67,9 +67,11 @@ private:
     bool m_initialized;
     PlannerFactory m_planner_factory;
     OMPLPlannerParametersPtr m_parameters;
+
     ompl::geometric::SimpleSetupPtr m_simple_setup;
     ompl::base::StateSpacePtr m_state_space;
     ompl::base::PlannerPtr m_planner;
+
     OpenRAVE::RobotBasePtr m_robot;
     OpenRAVE::CollisionReportPtr m_collisionReport;
     int m_numCollisionChecks;

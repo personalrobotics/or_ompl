@@ -61,6 +61,7 @@ public:
 
     unsigned int m_seed;
     double m_timeLimit;
+    double m_pollPeriod;
     bool m_isAnytime;
     bool m_isProcessing;
     std::string m_dat_filename;
