@@ -2,8 +2,8 @@
 Changelog for package or_ompl
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.4.0 (2014-12-22)
+------------------
 * Added support for building a standalone OpenRAVE plugin.
 * Fixed several CMake issues.
 * Added licensing information.
