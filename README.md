@@ -2,7 +2,7 @@
 
 [OpenRAVE](http://openrave.org/) bindings for the
 [OMPL](http://ompl.kavrakilab.org/) suite of motion planning algorithms. This
-package provides an "OMPL" plugin that implements the `OpenRAVE::PlannerBase`
+package provides an OMPL plugin that implements the `OpenRAVE::PlannerBase`
 interface and delegates planning requests to an OMPL planner. It also includes
 the "OMPLSimplifier" plugin that exposes OMPL's `PathSimplifier` to OpenRAVE
 through the same interface. See [this demo video](http://youtu.be/6qRRbvNzHG8)
@@ -14,22 +14,20 @@ is implemented by providing OMPL with a custom "state validity checker"
 that uses OpenRAVE's `CheckCollision` and `CheckSelfCollision` calls to check
 for collision with the environment.
 
-This plugin supports all of the geometric planners that are currently
-implemented in OMPL. The desired planner and time limit for each query is
-specified by passing the `planner_type` and `time_limit` parameters,
-respectively, to `InitPlan`. Any planner-specific parameters that are exposed
-through the planner's `PlannerSet` can be similarly set by name as custom
-`PlannerParameters` in OpenRAVE.
+or_ompl wraps each OMPL geometric planner as an OpenRAVE planner that
+implements the `PlannerBase` interface. E.g. OMPL's RRTConnect algorithm is
+exposed through a `OMPL_RRTConnect` planner in OpenRAVE. The planning time
+limit and any planner parameters that are exposed through OMPL's `ParamSet`
+class can be set by name in the `PlannerParameters` struct in OpenRAVE.
 
-The wrapper classes necessary to call a geometric
-planner are automatically generated from the `planners.yaml` configuration file
-by the Python script `scripts/wrap_planners.py`. If you find that a planner is
-missing, please [open an
-issue](https://github.com/personalrobotics/or_ompl/issues/new) or send a [send
-us a pull request](https://github.com/personalrobotics/or_ompl/compare/) with
-an updated 'planners.yaml' file. The presence or absence of each planner is
-determined by testing whether the corresponding header file exists in the OMPL
-include directory.
+The wrapper classes necessary to call a planner are automatically generated
+from the `planners.yaml` configuration file by the Python script
+`scripts/wrap_planners.py`. If you find that a planner is missing, please [open
+an issue](https://github.com/personalrobotics/or_ompl/issues/new) or send a
+[send us a pull request](https://github.com/personalrobotics/or_ompl/compare/)
+with an updated 'planners.yaml' file. The presence or absence of each planner
+is determined by testing whether the corresponding header file exists in the
+OMPL include directory.
 
 ## Dependencies
 
@@ -134,6 +132,9 @@ these features.
 
 ## Usage
 
+You can find planners provided by this plugin by looking for planners that
+start with the `OMPL_` prefix in the output of `openrave --listplugins`.
+
 The following Python code will plan using OMPL's implementation of RRT-Connect,
 then shortcut the trajectory using OMPL's path simplifier.  We assume that the
 variable `robot` is an OpenRAVE robot that is configured with an appropriate
@@ -143,14 +144,18 @@ set of active DOFs:
 
     env = ... # your environment
     robot = ... # your robot
-    planner = RaveCreatePlanner(env, 'OMPL')
-    simplifier = RaveCreatePlanner(env, 'OMPLSimplifier')
+    planner = RaveCreatePlanner(env, 'OMPL_RRTConnect')
+    simplifier = RaveCreatePlanner(env, 'OMPL_Simplifier')
 
     # Setup the planning instance.
     params = Planner.PlannerParameters()
     params.SetRobotActiveJoints(robot)
     params.SetGoalConfig(goal)
-    params.SetExtraParameters('<planner_type>RRTConnect</planner_type>')
+
+    # Set the timeout and planner-specific parameters. You can view a list of
+    # supported parameters by calling: planner.SendCommand('GetParameters')
+    params.SetExtraParameters('<range>0.02</range>')
+
     planner.InitPlan(robot, params)
 
     # Invoke the planner.
@@ -163,12 +168,15 @@ set of active DOFs:
     result = simplifier.PlanPath(traj)
     assert result == PlannerStatus.HasSolution
 
-    # Retime and cxecute the trajectory.
+    # Time the trajectory.
     result = planningutils.RetimeTrajectory(traj)
     assert result == PlannerStatus.HasSolution
 
- See the [documentation on the OpenRAVE
-website](http://openrave.org/docs/latest_stable/tutorials/openravepy_examples/#directly-launching-planners)
+    # Execute the trajectory.
+    robot.GetController().SetPath(traj)
+
+A working version of this script is included in `scripts/example.py`. See the
+[documentation on the OpenRAVE website](http://openrave.org/docs/latest_stable/tutorials/openravepy_examples/#directly-launching-planners)
 for more information about how to invoke an OpenRAVE planner.
 
 ## License

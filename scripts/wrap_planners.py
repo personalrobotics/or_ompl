@@ -73,6 +73,19 @@ registry_entry = '    ("{name:s}", dynamic_cast<BasePlannerFactory *>(new {name:
 registry_backmatter = """\
     ;
 
+std::vector<std::string> get_planner_names()
+{
+    std::vector<std::string> names;
+    names.reserve(registry.size());
+
+    PlannerRegistry::const_iterator it;
+    for (it = registry.begin(); it != registry.end(); ++it) {
+        names.push_back(it->first);
+    }
+
+    return names;
+}
+
 ompl::base::Planner *create(std::string const &name,
                             ompl::base::SpaceInformationPtr space)
 {

@@ -45,21 +45,18 @@ public:
     OMPLPlannerParameters()
         : m_seed(0)
         , m_timeLimit(10)
-        , m_plannerType("")
         , m_isProcessing(false)
         , m_dat_filename("")
         , m_trajs_fileformat("")
     {
         _vXMLParameters.push_back("seed");
         _vXMLParameters.push_back("time_limit");
-        _vXMLParameters.push_back("planner_type");
         _vXMLParameters.push_back("dat_filename");
         _vXMLParameters.push_back("trajs_fileformat");
     }
 
     unsigned int m_seed;
     double m_timeLimit;
-    std::string m_plannerType;
     bool m_isProcessing;
     std::string m_dat_filename;
     std::string m_trajs_fileformat;
@@ -73,7 +70,6 @@ protected:
 
         O << "<seed>" << m_seed << "</seed>" << std::endl;
         O << "<time_limit>" << m_timeLimit << "</time_limit>" << std::endl;
-        O << "<planner_type>" << m_plannerType << "</planner_type>" << std::endl;
         O << "<dat_filename>" << m_dat_filename << "</dat_filename>" << std::endl;
         O << "<trajs_fileformat>" << m_trajs_fileformat << "</trajs_fileformat>" << std::endl;
 
@@ -99,7 +95,6 @@ protected:
         m_isProcessing =
              name == "seed"
           || name == "time_limit"
-          || name == "planner_type"
           || name == "dat_filename"
           || name == "trajs_fileformat";
 
@@ -113,8 +108,6 @@ protected:
                 _ss >> m_seed;
             } else if (name == "time_limit") {
                 _ss >> m_timeLimit;
-            } else if (name == "planner_type") {
-                _ss >> m_plannerType;
             } else if (name == "dat_filename") {
                 _ss >> m_dat_filename; }
             else if (name == "trajs_fileformat") {
