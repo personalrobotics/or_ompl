@@ -77,6 +77,11 @@ private:
     int m_numCollisionChecks;
     double m_totalCollisionTime;
 
+    ompl::time::point m_time_start;
+    bool m_has_time_limit;
+    ompl::time::duration m_time_limit;
+    OpenRAVE::PlannerStatus m_status;
+
     ompl::base::PlannerPtr CreatePlanner(OMPLPlannerParameters const &params);
     bool IsStateValid(const ompl::base::State* state);
     bool IsInOrCollision(std::vector<double> const &jointValues);
@@ -85,6 +90,8 @@ private:
 
     bool GetParametersCommand(std::ostream &sout, std::istream &sin) const;
     bool GetSolutionCommand(std::ostream &sout, std::istream &sin) const;
+
+    bool PlannerTerminationCallback();
 
     static OpenRAVE::PlannerAction ReturnWithAnySolutionCallback(
         OpenRAVE::PlannerBase::PlannerProgress const &progress);

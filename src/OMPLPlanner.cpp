@@ -33,6 +33,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 *************************************************************************/
 #include <time.h>
 #include <tinyxml.h>
+#include <boost/bind.hpp>
 #include <boost/foreach.hpp>
 #include <boost/make_shared.hpp>
 #include <ompl/config.h>
@@ -55,6 +56,15 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #define CD_OS_TIMESPEC_DOUBLE(src) ((src)->tv_sec + ((double)((src)->tv_nsec))/1000000000.0)
 
 #define TIME_COLLISION_CHECKS
+
+using OpenRAVE::PS_Failed;
+using OpenRAVE::PS_HasSolution;
+using OpenRAVE::PS_Interrupted;
+using OpenRAVE::PS_InterruptedWithSolution;
+
+using OpenRAVE::PA_None;
+using OpenRAVE::PA_Interrupt;
+using OpenRAVE::PA_ReturnWithAnySolution;
 
 namespace or_ompl
 {
@@ -167,6 +177,17 @@ bool OMPLPlanner::InitPlan(OpenRAVE::RobotBasePtr robot,
         m_simple_setup->setStateValidityChecker(
             boost::bind(&or_ompl::OMPLPlanner::IsStateValid, this, _1));
 
+        if (m_parameters->m_timeLimit > 0) {
+            m_has_time_limit = true;
+            m_time_limit = ompl::time::seconds(m_parameters->m_timeLimit);
+            RAVELOG_DEBUG("Set time limit to %.3f seconds.\n",
+                          m_parameters->m_timeLimit);
+        } else {
+            m_has_time_limit = false;
+            m_time_limit = ompl::time::seconds(0.);
+            RAVELOG_DEBUG("Disabled time limit.\n");
+        }
+
         m_initialized = true;
         return true;
     } catch (std::runtime_error const &e) {
@@ -256,10 +277,13 @@ OpenRAVE::PlannerStatus OMPLPlanner::PlanPath(OpenRAVE::TrajectoryBasePtr ptraj)
     try {
         if (!m_initialized) {
             RAVELOG_ERROR("Unable to plan. Did you call InitPlan?\n");
-            return OpenRAVE::PS_Failed;
+            return PS_Failed;
         }
 
-        // Don't check collision with inactive links.
+        // Don't check collision with inactive links. This can dramatically
+        // reduce the number of pairwise collision checks that are necessary
+        // for checking self collision.
+        RAVELOG_DEBUG("Setting CO_ActiveDOFs collision option.\n");
         OpenRAVE::CollisionCheckerBasePtr const collision_checker
             = GetEnv()->GetCollisionChecker();
         OpenRAVE::CollisionOptionsStateSaver const collision_saver(
@@ -269,81 +293,33 @@ OpenRAVE::PlannerStatus OMPLPlanner::PlanPath(OpenRAVE::TrajectoryBasePtr ptraj)
         // solution. To do so, we register a temporary PlannerCallback function
         // that always returns PA_ReturnWithAnySolution. This will be called if
         // and only if all other planner callbacks return PA_None.
-        OpenRAVE::UserDataPtr const callback_handle = RegisterPlanCallback(
-            &OMPLPlanner::ReturnWithAnySolutionCallback);
-
-        // Allow anytime planners to continue planning until: (1) we are
-        // interrupted or (2) we run out of time. Non-anytime planners should
-        // still immediately return with the first valid solution.
-        OpenRAVE::PlannerBase::PlannerProgress progress;
-        OpenRAVE::PlannerStatus status = OpenRAVE::PS_Failed;
-        OpenRAVE::PlannerAction action;
-
-        if (m_parameters->m_isAnytime) {
-            action = OpenRAVE::PA_None;
-        } else {
-            action = OpenRAVE::PA_ReturnWithAnySolution;
+        OpenRAVE::UserDataPtr callback_handle;
+        if (!m_parameters->m_isAnytime) {
+            RAVELOG_DEBUG("Setting PA_ReturnWithAnySolution flag since the"
+                          " is_anytime flag is false.\n");
+            callback_handle = RegisterPlanCallback(
+                &OMPLPlanner::ReturnWithAnySolutionCallback);
         }
 
-        double const time_limit = m_parameters->m_timeLimit;
-        bool const has_timeout = (time_limit > 0);
-        struct timespec start_time, curr_time;
-
-        clock_gettime(CLOCK_THREAD_CPUTIME_ID, &start_time);
-
-        for (;;) {
-            clock_gettime(CLOCK_THREAD_CPUTIME_ID, &curr_time);
-            CD_OS_TIMESPEC_SUB(&curr_time, &start_time);
-            double time_ellapsed = CD_OS_TIMESPEC_DOUBLE(&curr_time);
-
-            // Pause after each m_pollPeriod seconds of planning to call any
-            // planner callbacks.
-            double const poll_period = std::min(time_limit - time_ellapsed,
-                                                m_parameters->m_pollPeriod);
-            m_simple_setup->solve(poll_period);
-            bool const has_solution = m_simple_setup->haveExactSolutionPath();
-
-            clock_gettime(CLOCK_THREAD_CPUTIME_ID, &curr_time);
-            CD_OS_TIMESPEC_SUB(&curr_time, &start_time);
-            time_ellapsed = CD_OS_TIMESPEC_DOUBLE(&curr_time);
-
-            // Call any registered callbacks.
-            progress._iteration++;
-            action = _CallCallbacks(progress);
-            RAVELOG_DEBUG("Queried planner callbacks after %.3f seconds of"
-                          " planning. Returned: %d\n", time_ellapsed, action);
-
-            // Check if we should abort early.
-            if (action == OpenRAVE::PA_ReturnWithAnySolution && has_solution) {
-                if (m_parameters->m_isAnytime) {
-                    status = OpenRAVE::PS_InterruptedWithSolution;
-                } else {
-                    status = OpenRAVE::PS_HasSolution;
-                }
-                break;
-            } else if (action == OpenRAVE::PA_Interrupt) {
-                status = OpenRAVE::PS_Interrupted;
-                break;
-            } else if (time_ellapsed > time_limit && has_timeout) {
-                if (has_solution) {
-                    status = OpenRAVE::PS_HasSolution;
-                    break;
-                } else {
-                    status = OpenRAVE::PS_Failed;
-                    break;
-                }
-            }
-        }
+        // Call the planner. We'll manually enforce the timeout in our custom
+        // PlannerTerminationCallback to call OpenRAVE's planner callbacks.
+        m_time_start = ompl::time::now();
+        ompl::base::PlannerTerminationCondition term(
+            boost::bind(&OMPLPlanner::PlannerTerminationCallback, this)
+        );
+        m_planner->solve(term);
 
         // Convert the OMPL path to an OpenRAVE trajectory.
-        if (status == OpenRAVE::PS_HasSolution
-         || status == OpenRAVE::PS_InterruptedWithSolution) {
+        if (m_status == PS_HasSolution || m_status == PS_InterruptedWithSolution) {
+            BOOST_ASSERT(m_simple_setup->haveExactSolutionPath());
             ToORTrajectory(m_simple_setup->getSolutionPath(), ptraj);
+        } else {
+            BOOST_ASSERT(!m_simple_setup->haveExactSolutionPath());
         }
-        return status;
+        return m_status;
     } catch (std::runtime_error const &e) {
         RAVELOG_ERROR("Planning failed: %s\n", e.what());
-        return OpenRAVE::PS_Failed;
+        return PS_Failed;
     }
 }
 
@@ -393,7 +369,7 @@ OpenRAVE::PlannerStatus OMPLPlanner::ToORTrajectory(
         if (!state) {
             RAVELOG_ERROR("Unable to convert output trajectory."
                           "State is not a RealVectorStateSpace::StateType.");
-            return OpenRAVE::PS_Failed;
+            return PS_Failed;
         }
 
         std::vector<OpenRAVE::dReal> sample(num_dof);
@@ -402,7 +378,7 @@ OpenRAVE::PlannerStatus OMPLPlanner::ToORTrajectory(
         }
         or_traj->Insert(i, sample, true);
     }
-    return OpenRAVE::PS_HasSolution;
+    return PS_HasSolution;
 }
 
 bool OMPLPlanner::GetParametersCommand(std::ostream &sout, std::istream &sin) const
@@ -453,6 +429,55 @@ bool OMPLPlanner::GetSolutionCommand(std::ostream &sout, std::istream &sin) cons
         ToORTrajectory(m_simple_setup->getSolutionPath(), traj);
         traj->serialize(sout, 0);
 
+        return true;
+    } else {
+        return false;
+    }
+}
+
+bool OMPLPlanner::PlannerTerminationCallback()
+{
+    static OpenRAVE::PlannerBase::PlannerProgress progress;
+
+    ompl::time::point const curr_time = ompl::time::now();
+    ompl::time::duration const time_elapsed = curr_time - m_time_start;
+
+    OpenRAVE::PlannerAction const planner_action = _CallCallbacks(progress);
+    bool const has_solution = m_simple_setup->haveExactSolutionPath();
+
+    // Stop planning when a feasible path is available.
+    if (planner_action == PA_ReturnWithAnySolution && has_solution) {
+        if (m_parameters->m_isAnytime) {
+            m_status = PS_InterruptedWithSolution;
+            RAVELOG_DEBUG("Returning with solution after %.3f seconds; the"
+                          " PS_InterruptedWithSolution flag is set.\n",
+                          ompl::time::seconds(time_elapsed));
+        } else {
+            m_status = PS_HasSolution;
+            RAVELOG_DEBUG("Returning with solution after %.3f seconds; this is"
+                          " not an any-time planner.\n",
+                          ompl::time::seconds(time_elapsed));
+        }
+        return true;
+    }
+    // Stop planning when we are interrupted.
+    else if (planner_action == PA_Interrupt) {
+        m_status = PS_Interrupted;
+        RAVELOG_DEBUG("Planning interrupted after %.3f seconds.\n",
+                      ompl::time::seconds(time_elapsed));
+        return true;
+    }
+    // Stop planning when we exceed the time limit.
+    else if (m_has_time_limit && time_elapsed > m_time_limit) {
+        if (has_solution) {
+            m_status = PS_HasSolution;
+            RAVELOG_DEBUG("Timed out with solution after %.3f seconds.\n",
+                          ompl::time::seconds(time_elapsed));
+        } else {
+            m_status = PS_Failed;
+            RAVELOG_DEBUG("Timed out with no solution after %.3f seconds.\n",
+                          ompl::time::seconds(time_elapsed));
+        }
         return true;
     } else {
         return false;

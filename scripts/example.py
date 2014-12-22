@@ -18,6 +18,9 @@ start_config = [  0.80487864,  0.42326865, -0.54016693,  2.28895761,
 goal_config  = [  2.41349473, -1.43062044, -2.69016693,  2.12681216,
                  -0.75643783, -1.52392537,  1.01239878 ]
 
+RaveInitialize(True)
+RaveSetDebugLevel(DebugLevel.Debug)
+
 # Setup the environment.
 env = Environment()
 env.SetViewer('qtcoin')
