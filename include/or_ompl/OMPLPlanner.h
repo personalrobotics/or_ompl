@@ -84,6 +84,7 @@ private:
                                            OpenRAVE::TrajectoryBasePtr or_traj) const;
 
     bool GetParametersCommand(std::ostream &sout, std::istream &sin) const;
+    bool GetSolutionCommand(std::ostream &sout, std::istream &sin) const;
 
     static OpenRAVE::PlannerAction ReturnWithAnySolutionCallback(
         OpenRAVE::PlannerBase::PlannerProgress const &progress);

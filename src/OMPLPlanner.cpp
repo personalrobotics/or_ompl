@@ -70,6 +70,10 @@ OMPLPlanner::OMPLPlanner(OpenRAVE::EnvironmentBasePtr penv,
         boost::bind(&OMPLPlanner::GetParametersCommand, this, _1, _2),
         "returns the list of accepted planner parameters"
     );
+    RegisterCommand("GetSolution",
+        boost::bind(&OMPLPlanner::GetSolutionCommand, this, _1, _2),
+        "gets the planner's current solution as XML"
+    );
 }
 
 OMPLPlanner::~OMPLPlanner()
@@ -432,6 +436,27 @@ bool OMPLPlanner::GetParametersCommand(std::ostream &sout, std::istream &sin) co
     }
 
     return true;
+}
+
+bool OMPLPlanner::GetSolutionCommand(std::ostream &sout, std::istream &sin) const
+{
+    if (!m_simple_setup) {
+        throw OpenRAVE::openrave_exception(
+            "Planner is not initialized. Did you call InitPlan?",
+            OpenRAVE::ORE_InvalidState
+        );
+    } else if (m_simple_setup->haveExactSolutionPath()) {
+        RAVELOG_INFO("Returning current solution.\n");
+        OpenRAVE::EnvironmentBasePtr env = GetEnv();
+        OpenRAVE::TrajectoryBasePtr traj = OpenRAVE::RaveCreateTrajectory(env);
+
+        ToORTrajectory(m_simple_setup->getSolutionPath(), traj);
+        traj->serialize(sout, 0);
+
+        return true;
+    } else {
+        return false;
+    }
 }
 
 OpenRAVE::PlannerAction OMPLPlanner::ReturnWithAnySolutionCallback(
