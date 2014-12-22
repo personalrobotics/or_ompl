@@ -261,6 +261,13 @@ OpenRAVE::PlannerStatus OMPLPlanner::PlanPath(OpenRAVE::TrajectoryBasePtr ptraj)
         OpenRAVE::CollisionOptionsStateSaver const collision_saver(
             collision_checker, OpenRAVE::CO_ActiveDOFs, false);
 
+        // Force non-anytime planners to return as soon as they find a
+        // solution. To do so, we register a temporary PlannerCallback function
+        // that always returns PA_ReturnWithAnySolution. This will be called if
+        // and only if all other planner callbacks return PA_None.
+        OpenRAVE::UserDataPtr const callback_handle = RegisterPlanCallback(
+            &OMPLPlanner::ReturnWithAnySolutionCallback);
+
         // Allow anytime planners to continue planning until: (1) we are
         // interrupted or (2) we run out of time. Non-anytime planners should
         // still immediately return with the first valid solution.
@@ -298,13 +305,13 @@ OpenRAVE::PlannerStatus OMPLPlanner::PlanPath(OpenRAVE::TrajectoryBasePtr ptraj)
             RAVELOG_INFO("Queried planner callbacks after %.3f seconds of"
                          " planning. Returned: %d\n", time_ellapsed, action);
 
-            if (action == OpenRAVE::PA_None && !m_parameters->m_isAnytime) {
-                action = OpenRAVE::PA_ReturnWithAnySolution;
-            }
-
             // Check if we should abort early.
             if (action == OpenRAVE::PA_ReturnWithAnySolution && has_solution) {
-                status = OpenRAVE::PS_InterruptedWithSolution;
+                if (m_parameters->m_isAnytime) {
+                    status = OpenRAVE::PS_InterruptedWithSolution;
+                } else {
+                    status = OpenRAVE::PS_HasSolution;
+                }
                 break;
             } else if (action == OpenRAVE::PA_Interrupt) {
                 status = OpenRAVE::PS_Interrupted;
@@ -421,6 +428,12 @@ bool OMPLPlanner::GetParametersCommand(std::ostream &sout, std::istream &sin) co
     }
 
     return true;
+}
+
+OpenRAVE::PlannerAction OMPLPlanner::ReturnWithAnySolutionCallback(
+        OpenRAVE::PlannerBase::PlannerProgress const &progress)
+{
+    return OpenRAVE::PA_ReturnWithAnySolution;
 }
 
 }
