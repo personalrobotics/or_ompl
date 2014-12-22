@@ -175,8 +175,8 @@ set of active DOFs:
     # Execute the trajectory.
     robot.GetController().SetPath(traj)
 
-See the [documentation on the OpenRAVE
-website](http://openrave.org/docs/latest_stable/tutorials/openravepy_examples/#directly-launching-planners)
+A working version of this script is included in `scripts/example.py`. See the
+[documentation on the OpenRAVE website](http://openrave.org/docs/latest_stable/tutorials/openravepy_examples/#directly-launching-planners)
 for more information about how to invoke an OpenRAVE planner.
 
 ## License

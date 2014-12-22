@@ -8,6 +8,7 @@ Forthcoming
   `OMPL_RRTConnect` wraps OMPL's RRTConnect planner).
 * Renamed the `OMPLSimplifier` planner to `OMPL_Simplifier`.
 * Added a `GetParameters` command for querying planner parameters.
+* Added the `example.py` example script.
 * Contributors: Michael Koval
 
 0.4.0 (2014-12-22)

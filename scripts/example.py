@@ -1,4 +1,16 @@
-#!/usr/bin/env python
+#!//bin/env python
+# This script requires the models that are shipped with OpenRAVE to be in your
+# OPENRAVE_DATA path. This is true by default, but may not be true if you set
+# your OPENRAVE_DATA environmental variable. Notably, this includes if you
+# source a Catkin workspace that includes the openrave_catkin package.
+#
+# If so, you should explicitly add this directory to your path:
+#
+#    export OPENRAVE_DATA="${OPENRAVE_DATA}:/usr/share/openrave-0.9/data"
+#
+# This path assumes that you installed OpenRAVE to /usr. You may need to alter
+# the command to match your acutal install destination.
+
 from openravepy import *
 
 start_config = [  0.80487864,  0.42326865, -0.54016693,  2.28895761,
