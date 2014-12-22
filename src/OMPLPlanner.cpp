@@ -303,18 +303,28 @@ OpenRAVE::PlannerStatus OMPLPlanner::PlanPath(OpenRAVE::TrajectoryBasePtr ptraj)
 
         // Call the planner. We'll manually enforce the timeout in our custom
         // PlannerTerminationCallback to call OpenRAVE's planner callbacks.
+        m_status = PS_Failed;
         m_time_start = ompl::time::now();
+
         ompl::base::PlannerTerminationCondition term(
             boost::bind(&OMPLPlanner::PlannerTerminationCallback, this)
         );
-        m_planner->solve(term);
+        m_simple_setup->solve(term);
+
+        // Force an update to m_status.
+        PlannerTerminationCallback();
+
+        // Return success if we terminated with a valid trajectory. This can
+        // occur if we run an anytime planner until it times out.
+        // TODO: This check shouldn't be necessary.
+        if (m_status == PS_Failed && m_simple_setup->haveExactSolutionPath()) {
+            m_status = PS_HasSolution;
+        }
 
         // Convert the OMPL path to an OpenRAVE trajectory.
         if (m_status == PS_HasSolution || m_status == PS_InterruptedWithSolution) {
             BOOST_ASSERT(m_simple_setup->haveExactSolutionPath());
             ToORTrajectory(m_simple_setup->getSolutionPath(), ptraj);
-        } else {
-            BOOST_ASSERT(!m_simple_setup->haveExactSolutionPath());
         }
         return m_status;
     } catch (std::runtime_error const &e) {
