@@ -151,6 +151,11 @@ set of active DOFs:
     params = Planner.PlannerParameters()
     params.SetRobotActiveJoints(robot)
     params.SetGoalConfig(goal)
+
+    # Set the timeout and planner-specific parameters. You can view a list of
+    # supported parameters by calling: planner.SendCommand('GetParameters')
+    params.SetExtraParameters('<range>0.02</range>')
+
     planner.InitPlan(robot, params)
 
     # Invoke the planner.
