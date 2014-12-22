@@ -31,6 +31,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 *************************************************************************/
 #include <boost/make_shared.hpp>
 #include <ompl/base/ScopedState.h>
+#include <ompl/util/Time.h>
 #include "OMPLConversions.h"
 #include "OMPLSimplifer.h"
 
@@ -132,10 +133,38 @@ OpenRAVE::PlannerStatus OMPLSimplifier::PlanPath(OpenRAVE::TrajectoryBasePtr ptr
 
     // Run path simplification.
     // TODO: Why does this SEGFAULT? Something must be wrong with the OMPL path
+    double const length_before = path.length();
+    int num_iterations = 0;
+    int num_changes = 0;
+
+    ompl::time::duration const time_limit
+        = ompl::time::seconds(m_parameters->m_timeLimit);
+    ompl::time::point const time_before = ompl::time::now();
+    ompl::time::point time_current;
+
     RAVELOG_DEBUG("Running path simplification for %f seconds.\n",
                   m_parameters->m_timeLimit);
-    BOOST_ASSERT(m_parameters);
-    m_simplifier->simplify(path, m_parameters->m_timeLimit);
+
+    do {
+        bool const is_change = m_simplifier->shortcutPath(path, 1, 1, 1.0, 0.005);
+
+        time_current = ompl::time::now();
+        num_iterations += 1;
+        num_changes += !!is_change;
+    } while (time_current - time_before <= time_limit);
+
+    double const length_after = path.length();
+
+    RAVELOG_DEBUG(
+        "Ran %d iterations of smoothing over %.3f seconds. %d of %d iterations"
+        " (%.2f%%) were effective. Reduced path length from %.3f to %.3f.\n",
+        num_iterations,
+        ompl::time::seconds(time_current - time_before),
+        num_changes,
+        num_iterations,
+        100 * static_cast<double>(num_changes) / num_iterations,
+        length_before, length_after
+    );
 
     // Store the result in the OpenRAVE trajectory.
     RAVELOG_DEBUG("Reconstructing OpenRAVE trajectory with %d waypoints.\n",
