@@ -3,6 +3,8 @@
 Copyright (c) 2014, Carnegie Mellon University
 All rights reserved.
 
+Authors: Michael Koval <mkoval@cs.cmu.edu>
+
 Redistribution and use in source and binary forms, with or without
 modification, are permitted provided that the following conditions are
 met:
@@ -28,7 +30,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 *************************************************************************/
 #ifndef OMPLSIMPLIFIER_H
-#define OMPLPIMPLIFIER_H
+#define OMPLSIMPLIFIER_H
 
 #include <openrave-core.h>
 #include <openrave/planner.h>

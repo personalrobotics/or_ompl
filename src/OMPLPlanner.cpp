@@ -3,6 +3,10 @@
 Copyright (c) 2014, Carnegie Mellon University
 All rights reserved.
 
+Authors: Michael Koval <mkoval@cs.cmu.edu>
+         Matthew Klingensmith <mklingen@cs.cmu.edu>
+         Christopher Dellin <cdellin@cs.cmu.edu>
+
 Redistribution and use in source and binary forms, with or without
 modification, are permitted provided that the following conditions are
 met:
@@ -248,6 +252,12 @@ OpenRAVE::PlannerStatus OMPLPlanner::PlanPath(OpenRAVE::TrajectoryBasePtr ptraj)
             return OpenRAVE::PS_Failed;
         }
 
+        // Don't check collision with inactive links.
+        OpenRAVE::CollisionCheckerBasePtr const collision_checker
+            = GetEnv()->GetCollisionChecker();
+        OpenRAVE::CollisionOptionsStateSaver const collision_saver(
+            collision_checker, OpenRAVE::CO_ActiveDOFs, false);
+
         m_ptraj = ptraj;
         OpenRAVE::PlannerBase::PlannerProgress progress;
 
@@ -319,22 +329,10 @@ bool OMPLPlanner::getTrajectory(std::ostream& soutput, std::istream& sinput){
 
 bool OMPLPlanner::IsInOrCollision(std::vector<double> const &values)
 {
-#ifdef TIME_COLLISION_CHECKS
-    struct timespec tic;
-    clock_gettime(CLOCK_THREAD_CPUTIME_ID, &tic);
-#endif
-
     m_robot->SetActiveDOFValues(values, OpenRAVE::KinBody::CLA_Nothing);
     bool const collided = GetEnv()->CheckCollision(m_robot)
                        || m_robot->CheckSelfCollision();
     m_numCollisionChecks++;
-
-#ifdef TIME_COLLISION_CHECKS
-    struct timespec toc;
-    clock_gettime(CLOCK_THREAD_CPUTIME_ID, &toc);
-    CD_OS_TIMESPEC_SUB(&toc, &tic);
-    m_totalCollisionTime += CD_OS_TIMESPEC_DOUBLE(&toc);
-#endif
     return collided;
 }
 
