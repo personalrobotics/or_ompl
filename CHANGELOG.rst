@@ -2,6 +2,14 @@
 Changelog for package or_ompl
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* Create a separate OpenRAVE Planner for each OMPL planner (e.g.
+  `OMPL_RRTConnect` wraps OMPL's RRTConnect planner).
+* Renamed the `OMPLSimplifier` planner to `OMPL_Simplifier`.
+* Added a `GetParameters` command for querying planner parameters.
+* Contributors: Michael Koval
+
 0.4.0 (2014-12-22)
 ------------------
 * Added support for building a standalone OpenRAVE plugin.
