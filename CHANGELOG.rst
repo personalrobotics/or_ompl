@@ -6,6 +6,7 @@ Forthcoming
 -----------
 * Create a separate OpenRAVE Planner for each OMPL planner (e.g.
   `OMPL_RRTConnect` wraps OMPL's RRTConnect planner).
+* `OMPLSimplifier` now calls `shortcutPath` instead of `simplify`.
 * Renamed the `OMPLSimplifier` planner to `OMPL_Simplifier`.
 * Added a `GetParameters` command for querying planner parameters.
 * Added the `example.py` example script.
