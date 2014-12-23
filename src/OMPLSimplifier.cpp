@@ -145,11 +145,22 @@ OpenRAVE::PlannerStatus OMPLSimplifier::PlanPath(OpenRAVE::TrajectoryBasePtr ptr
                   m_parameters->m_timeLimit);
 
     do {
-        bool const is_change = m_simplifier->shortcutPath(path, 1, 1, 1.0, 0.005);
+        // Run one iteration of shortcutting. This gives us fine control over
+        // the termination condition and allows us to invoke the planner
+        // callbacks between iterations.
+        //
+        // The numeric arguments are the following:
+        // - maxSteps: maximum number of iterations
+        // - maxEmptySteps: maximum number of iterations without improvement
+        // - rangeRatio: maximum connection distance attempted, specified as a
+        //               ratio of the total number of states
+        // - snapToVertex: ratio of total path length used to snap samples to
+        //                 vertices
+        bool const changed = m_simplifier->shortcutPath(path, 1, 1, 1.0, 0.005);
 
         time_current = ompl::time::now();
         num_iterations += 1;
-        num_changes += !!is_change;
+        num_changes += !!changed;
     } while (time_current - time_before <= time_limit);
 
     double const length_after = path.length();
