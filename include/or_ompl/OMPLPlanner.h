@@ -67,13 +67,20 @@ private:
     bool m_initialized;
     PlannerFactory m_planner_factory;
     OMPLPlannerParametersPtr m_parameters;
+
     ompl::geometric::SimpleSetupPtr m_simple_setup;
     ompl::base::StateSpacePtr m_state_space;
     ompl::base::PlannerPtr m_planner;
+
     OpenRAVE::RobotBasePtr m_robot;
     OpenRAVE::CollisionReportPtr m_collisionReport;
     int m_numCollisionChecks;
     double m_totalCollisionTime;
+
+    ompl::time::point m_time_start;
+    bool m_has_time_limit;
+    ompl::time::duration m_time_limit;
+    OpenRAVE::PlannerStatus m_status;
 
     ompl::base::PlannerPtr CreatePlanner(OMPLPlannerParameters const &params);
     bool IsStateValid(const ompl::base::State* state);
@@ -82,6 +89,12 @@ private:
                                            OpenRAVE::TrajectoryBasePtr or_traj) const;
 
     bool GetParametersCommand(std::ostream &sout, std::istream &sin) const;
+    bool GetSolutionCommand(std::ostream &sout, std::istream &sin) const;
+
+    bool PlannerTerminationCallback();
+
+    static OpenRAVE::PlannerAction ReturnWithAnySolutionCallback(
+        OpenRAVE::PlannerBase::PlannerProgress const &progress);
 };
 
 typedef boost::shared_ptr<OMPLPlanner> OMPLPlannerPtr;

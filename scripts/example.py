@@ -18,6 +18,9 @@ start_config = [  0.80487864,  0.42326865, -0.54016693,  2.28895761,
 goal_config  = [  2.41349473, -1.43062044, -2.69016693,  2.12681216,
                  -0.75643783, -1.52392537,  1.01239878 ]
 
+RaveInitialize(True)
+RaveSetDebugLevel(DebugLevel.Debug)
+
 # Setup the environment.
 env = Environment()
 env.SetViewer('qtcoin')
@@ -25,7 +28,7 @@ env.Load('wamtest1.env.xml')
 robot = env.GetRobot('BarrettWAM')
 manipulator = robot.GetManipulator('arm')
 
-planner = RaveCreatePlanner(env, 'OMPL_RRTConnect')
+planner = RaveCreatePlanner(env, 'OMPL_RRTstar')
 simplifier = RaveCreatePlanner(env, 'OMPL_Simplifier')
 
 with env:
@@ -43,7 +46,7 @@ params.SetGoalConfig(goal_config)
 print 'Parameters:'
 print planner.SendCommand('GetParameters')
 
-params.SetExtraParameters('<range>0.02</range>')
+params.SetExtraParameters('<time_limit>100</time_limit><range>0.02</range><is_anytime>1</is_anytime>')
 
 with env:
     with robot:
