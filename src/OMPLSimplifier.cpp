@@ -132,7 +132,6 @@ OpenRAVE::PlannerStatus OMPLSimplifier::PlanPath(OpenRAVE::TrajectoryBasePtr ptr
     }
 
     // Run path simplification.
-    // TODO: Why does this SEGFAULT? Something must be wrong with the OMPL path
     double const length_before = path.length();
     int num_iterations = 0;
     int num_changes = 0;
