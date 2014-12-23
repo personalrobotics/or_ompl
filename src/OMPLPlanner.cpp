@@ -43,10 +43,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "OMPLPlanner.h"
 #include "PlannerRegistry.h"
 
-#define OMPL_VERSION_COMP (  OMPL_MAJOR_VERSION * 1000000 \
-                           + OMPL_MINOR_VERSION * 1000 \
-                           + OMPL_PATCH_VERSION)
-
 #define CD_OS_TIMESPEC_SET_ZERO(t) do { (t)->tv_sec = 0; (t)->tv_nsec = 0; } while (0)
 #define CD_OS_TIMESPEC_ADD(dst, src) do { (dst)->tv_sec += (src)->tv_sec; (dst)->tv_nsec += (src)->tv_nsec; \
    if ((dst)->tv_nsec > 999999999) { (dst)->tv_sec += 1; (dst)->tv_nsec -= 1000000000; } } while (0)
@@ -270,7 +266,7 @@ OpenRAVE::PlannerStatus OMPLPlanner::PlanPath(OpenRAVE::TrajectoryBasePtr ptraj)
         }
 
         if (m_simple_setup->haveExactSolutionPath()) {
-            ToORTrajectory(m_simple_setup->getSolutionPath(), ptraj);
+            ToORTrajectory(m_robot, m_simple_setup->getSolutionPath(), ptraj);
             return OpenRAVE::PS_HasSolution;
         } else {
             return OpenRAVE::PS_Failed;
@@ -307,37 +303,6 @@ bool OMPLPlanner::IsStateValid(ompl::base::State const *state)
         RAVELOG_ERROR("Invalid StateType. This should never happen.\n");
         return false;
     }
-}
-
-OpenRAVE::PlannerStatus OMPLPlanner::ToORTrajectory(
-        ompl::geometric::PathGeometric &ompl_traj,
-        OpenRAVE::TrajectoryBasePtr or_traj) const
-{
-#if OMPL_VERSION_COMP >= 000010002
-    std::vector<ompl::base::State*> const &states = ompl_traj.getStates();
-#else
-    std::vector<ompl::base::State*> const &states = ompl_traj.states;
-#endif
-
-    size_t const num_dof = m_robot->GetActiveDOF();
-    or_traj->Init(m_robot->GetActiveConfigurationSpecification());
-
-    for (size_t i = 0; i < states.size(); ++i){
-        ompl::base::RealVectorStateSpace::StateType const *state
-            = states[i]->as<ompl::base::RealVectorStateSpace::StateType>();
-        if (!state) {
-            RAVELOG_ERROR("Unable to convert output trajectory."
-                          "State is not a RealVectorStateSpace::StateType.");
-            return OpenRAVE::PS_Failed;
-        }
-
-        std::vector<OpenRAVE::dReal> sample(num_dof);
-        for (size_t j = 0; j < num_dof; ++j) {
-            sample[j] = (*state)[j];
-        }
-        or_traj->Insert(i, sample, true);
-    }
-    return OpenRAVE::PS_HasSolution;
 }
 
 bool OMPLPlanner::GetParametersCommand(std::ostream &sout, std::istream &sin) const
