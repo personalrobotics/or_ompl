@@ -35,6 +35,13 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "OMPLConversions.h"
 #include "OMPLSimplifer.h"
 
+using OpenRAVE::PA_None;
+using OpenRAVE::PA_Interrupt;
+using OpenRAVE::PA_ReturnWithAnySolution;
+
+using OpenRAVE::PS_HasSolution;
+using OpenRAVE::PS_InterruptedWithSolution;
+
 namespace or_ompl
 {
 
@@ -132,8 +139,9 @@ OpenRAVE::PlannerStatus OMPLSimplifier::PlanPath(OpenRAVE::TrajectoryBasePtr ptr
     }
 
     // Run path simplification.
+    OpenRAVE::PlannerBase::PlannerProgress progress;
+    OpenRAVE::PlannerAction planner_action = PA_None;
     double const length_before = path.length();
-    int num_iterations = 0;
     int num_changes = 0;
 
     ompl::time::duration const time_limit
@@ -145,23 +153,40 @@ OpenRAVE::PlannerStatus OMPLSimplifier::PlanPath(OpenRAVE::TrajectoryBasePtr ptr
                   m_parameters->m_timeLimit);
 
     do {
-        bool const is_change = m_simplifier->shortcutPath(path, 1, 1, 1.0, 0.005);
+        // Run one iteration of shortcutting. This gives us fine control over
+        // the termination condition and allows us to invoke the planner
+        // callbacks between iterations.
+        //
+        // The numeric arguments are the following:
+        // - maxSteps: maximum number of iterations
+        // - maxEmptySteps: maximum number of iterations without improvement
+        // - rangeRatio: maximum connection distance attempted, specified as a
+        //               ratio of the total number of states
+        // - snapToVertex: ratio of total path length used to snap samples to
+        //                 vertices
+        bool const changed = m_simplifier->shortcutPath(path, 1, 1, 1.0, 0.005);
+
+        num_changes += !!changed;
+        progress._iteration += 1;
+
+        // Call any user-registered callbacks. These functions can terminate
+        // planning early.
+        planner_action = _CallCallbacks(progress);
 
         time_current = ompl::time::now();
-        num_iterations += 1;
-        num_changes += !!is_change;
-    } while (time_current - time_before <= time_limit);
+    } while (time_current - time_before <= time_limit
+          && planner_action == PA_None);
 
     double const length_after = path.length();
 
     RAVELOG_DEBUG(
         "Ran %d iterations of smoothing over %.3f seconds. %d of %d iterations"
         " (%.2f%%) were effective. Reduced path length from %.3f to %.3f.\n",
-        num_iterations,
+        progress._iteration,
         ompl::time::seconds(time_current - time_before),
         num_changes,
-        num_iterations,
-        100 * static_cast<double>(num_changes) / num_iterations,
+        progress._iteration,
+        100 * static_cast<double>(num_changes) / progress._iteration,
         length_before, length_after
     );
 
@@ -171,17 +196,13 @@ OpenRAVE::PlannerStatus OMPLSimplifier::PlanPath(OpenRAVE::TrajectoryBasePtr ptr
     BOOST_ASSERT(ptraj);
     ptraj->Remove(0, ptraj->GetNumWaypoints());
 
-    for (size_t iwaypoint = 0; iwaypoint < path.getStateCount(); ++iwaypoint) {
-        ompl::base::State const *waypoint_generic = path.getState(iwaypoint);
-        StateType const &waypoint_ompl = *waypoint_generic->as<StateType>();
+    ToORTrajectory(m_robot, path, ptraj);
 
-        std::vector<OpenRAVE::dReal> waypoint_openrave(num_dof);
-        for (size_t idof = 0; idof < num_dof; ++idof) {
-            waypoint_openrave[idof] = waypoint_ompl[idof];
-        }
-        ptraj->Insert(iwaypoint, waypoint_openrave, m_cspec);
+    if (planner_action == PA_None) {
+        return PS_HasSolution;
+    } else {
+        return PS_InterruptedWithSolution;
     }
-    return OpenRAVE::PS_HasSolution;
 }
 
 bool OMPLSimplifier::IsInOrCollision(std::vector<double> const &values)

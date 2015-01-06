@@ -33,7 +33,12 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 *************************************************************************/
 
 #include <boost/make_shared.hpp>
+#include <ompl/config.h>
 #include "OMPLConversions.h"
+
+#define OMPL_VERSION_COMP (  OMPL_MAJOR_VERSION * 1000000 \
+                           + OMPL_MINOR_VERSION * 1000 \
+                           + OMPL_PATCH_VERSION)
 
 namespace or_ompl {
 
@@ -170,6 +175,34 @@ RealVectorSpacePtr CreateStateSpace(OpenRAVE::RobotBasePtr const robot,
                      " there are no weights.\n");
     }
     return state_space;
+}
+
+OpenRAVE::PlannerStatus ToORTrajectory(
+        OpenRAVE::RobotBasePtr const &robot,
+        ompl::geometric::PathGeometric const &ompl_traj,
+        OpenRAVE::TrajectoryBasePtr or_traj)
+{
+    using ompl::geometric::PathGeometric;
+
+    size_t const num_dof = robot->GetActiveDOF();
+    or_traj->Init(robot->GetActiveConfigurationSpecification());
+
+    for (size_t i = 0; i < ompl_traj.getStateCount(); ++i){
+        ompl::base::RealVectorStateSpace::StateType const *state
+                = ompl_traj.getState(i)->as<ompl::base::RealVectorStateSpace::StateType>();
+        if (!state) {
+            RAVELOG_ERROR("Unable to convert output trajectory."
+                          "State is not a RealVectorStateSpace::StateType.");
+            return OpenRAVE::PS_Failed;
+        }
+
+        std::vector<OpenRAVE::dReal> sample(num_dof);
+        for (size_t j = 0; j < num_dof; ++j) {
+            sample[j] = (*state)[j];
+        }
+        or_traj->Insert(i, sample, true);
+    }
+    return OpenRAVE::PS_HasSolution;
 }
 
 }
