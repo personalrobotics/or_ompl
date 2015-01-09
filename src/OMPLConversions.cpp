@@ -1,4 +1,4 @@
-xo/***********************************************************************
+/***********************************************************************
 
 Copyright (c) 2014, Carnegie Mellon University
 All rights reserved.
@@ -87,7 +87,7 @@ void OpenRAVEHandler::log(std::string const &text, ompl::msg::LogLevel level,
     }
 }
 
-RobotStateSpace CreateStateSpace(OpenRAVE::RobotBasePtr const robot,
+RobotStateSpacePtr CreateStateSpace(OpenRAVE::RobotBasePtr const robot,
                                     OMPLPlannerParameters const &params)
 {
     if (!robot) {
@@ -113,7 +113,7 @@ RobotStateSpace CreateStateSpace(OpenRAVE::RobotBasePtr const robot,
 
     std::vector<int> dof_indices = robot->GetActiveDOFIndices();
     const unsigned int num_dof = dof_indices.size();
-    RobotStateSpacePtr state_space = boost::make_shared<RobotStateSpace)(dof_indices);
+    RobotStateSpacePtr state_space = boost::make_shared<RobotStateSpace>(dof_indices);
 
     RAVELOG_DEBUG("Setting joint limits.\n");
     std::vector<OpenRAVE::dReal> lowerLimits, upperLimits;

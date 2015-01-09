@@ -135,6 +135,13 @@ bool OMPLPlanner::InitPlan(OpenRAVE::RobotBasePtr robot,
             }
 		}
 
+        if(goal_chains.size() > 0 && m_parameters->vgoalconfig.size() > 0){
+            RAVELOG_ERROR("A goal TSR chain has been supplied and a goal configuration"
+                          " has been specified. The desired behavior is ambiguous."
+                          " Please specified one or the other.");
+            return false;
+        }
+
 		if(goal_chains.size() > 0) {
 			TSRGoal::Ptr goaltsr = boost::make_shared<TSRGoal>(m_simple_setup->getSpaceInformation(),
 															   goal_chains,

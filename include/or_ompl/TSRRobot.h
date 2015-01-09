@@ -51,8 +51,8 @@ namespace or_ompl {
         std::vector<TSR::Ptr> _tsrs;
         OpenRAVE::EnvironmentBasePtr  _penv;
         OpenRAVE::RobotBasePtr _probot;
+        std::string _solver;
         OpenRAVE::IkSolverBasePtr _ik_solver;
-        std::vector<OpenRAVE::dReal> _ikparams;
         std::vector<OpenRAVE::dReal> _upperlimits;
         std::vector<OpenRAVE::dReal> _lowerlimits;
         bool _initialized;

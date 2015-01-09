@@ -5,7 +5,7 @@
 using namespace or_ompl;
 
 TSRRobot::TSRRobot(const std::vector<TSR::Ptr> &tsrs, const OpenRAVE::EnvironmentBasePtr &penv)
-    : _tsrs(tsrs), _penv(penv), _initialized(false) {
+    : _tsrs(tsrs), _penv(penv), _initialized(false), _solver("GeneralIK") {
 
  
 }
@@ -204,7 +204,7 @@ bool TSRRobot::construct() {
     _probot->SetTransform(toOR<double>(_tsrs[0]->getOriginTransform()));
 
     // Create an IK Solver
-    _ik_solver = OpenRAVE::RaveCreateIkSolver(_penv, "GeneralIK");
+    _ik_solver = OpenRAVE::RaveCreateIkSolver(_penv, _solver);
     if(_ik_solver.get() == NULL){
         RAVELOG_ERROR("[TSRRobot] Cannot create IK solver, make sure you have the GeneralIK plugin loadable by OpenRAVE\n");
         _initialized = false;
@@ -214,14 +214,6 @@ bool TSRRobot::construct() {
     // Grab the active manipulator on our newly created robot
     OpenRAVE::RobotBase::ManipulatorPtr pmanip = _probot->GetActiveManipulator();
     _ik_solver->Init(pmanip);
-
-    // Initialize some parameters used later for IK solving
-    _ikparams.resize(12);
-    _ikparams[0] = 1;
-    _ikparams[1] = 0;
-    _ikparams[9] = 0; // don't do any balancing
-    _ikparams[10] = 0; // select the mode
-    _ikparams[11] = 0; // do rotation
 
     // Finally, disable the robot so we don't do collision checking against it
     _probot->Enable(false);
@@ -234,19 +226,43 @@ Eigen::Affine3d TSRRobot::findNearestFeasibleTransform(const Eigen::Affine3d &Tt
 
     OpenRAVE::Transform or_target = toOR<double>(Ttarget);
 
-    _ikparams[2] = or_target.rot.x;
-    _ikparams[3] = or_target.rot.y;
-    _ikparams[4] = or_target.rot.z;
-    _ikparams[5] = or_target.rot.w;
-    _ikparams[6] = or_target.trans.x;
-    _ikparams[7] = or_target.trans.y;
-    _ikparams[8] = or_target.trans.z;
+    if(_solver.compare("GeneralIK") != 0){
+        RAVELOG_ERROR("[TSRRobot] Only GeneralIK solver supported.");
+        throw OpenRAVE::openrave_exception(
+            "Only GeneralIK solver supported.",
+            OpenRAVE::ORE_Failed
+            );
+    }
+
+    // Setup the free parameters - the format and meaning of these is defined directly by 
+    //  the IK solver - in our case GeneralIK
+    std::vector<OpenRAVE::dReal> ikfreeparams; 
+
+    ikfreeparams.resize(12);
+    ikfreeparams[0] = 1; // The number of targets - in this case always 1
+    ikfreeparams[1] = 0; // The manipulator associated the target - only one manipulator to always 0
+    
+    // Pose of target
+    ikfreeparams[2] = or_target.rot.x; 
+    ikfreeparams[3] = or_target.rot.y;
+    ikfreeparams[4] = or_target.rot.z;
+    ikfreeparams[5] = or_target.rot.w;
+    ikfreeparams[6] = or_target.trans.x;
+    ikfreeparams[7] = or_target.trans.y;
+    ikfreeparams[8] = or_target.trans.z;
+
+    
+    ikfreeparams[9] = 0;  // no balancing
+    ikfreeparams[10] = 0; // junk parameters - mode in previous versions of GeneralIK
+    ikfreeparams[11] = 0; // not translation only - aka do rotation
 
     std::vector<OpenRAVE::dReal> q0;
-    boost::shared_ptr<std::vector<OpenRAVE::dReal> > solution = boost::make_shared<std::vector<OpenRAVE::dReal> >();
+    boost::shared_ptr<std::vector<OpenRAVE::dReal> > solution
+        = boost::make_shared<std::vector<OpenRAVE::dReal> >();
 
     // solve ik
-    _ik_solver->Solve(OpenRAVE::IkParameterization(), q0, _ikparams, false, solution);
+    _ik_solver->Solve(OpenRAVE::IkParameterization(), q0, ikfreeparams, 
+                      OpenRAVE::IKFO_IgnoreSelfCollisions, solution);
 
     // Set the dof values to the solution and grab the end-effector transform in world coordinates
     _probot->SetDOFValues(*solution);
