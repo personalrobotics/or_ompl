@@ -134,7 +134,7 @@ void TSRGoal::sampleGoal(ompl::base::State *state) const {
 	}
 
 	if(!success){
-		RAVELOG_ERROR("[TSRGoal] Failed to sample valid goal.");
+		RAVELOG_ERROR("[TSRGoal] Failed to sample valid goal.\n");
 	}
 }
 
