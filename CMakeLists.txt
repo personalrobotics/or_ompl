@@ -1,10 +1,7 @@
 cmake_minimum_required(VERSION 2.8.3)
 project(or_ompl)
 
-if (${NO_ROS})
-    message(STATUS "NO_ROS flag specified; forcing a standalone build.")
-    include(${PROJECT_SOURCE_DIR}/standalone.cmake)
-elseif (DEFINED CATKIN_TOPLEVEL OR (NOT ("$ENV{ROS_DISTRO}" STREQUAL "fuerte")))
+if (DEFINED CATKIN_TOPLEVEL OR (NOT ("$ENV{ROS_DISTRO}" STREQUAL "fuerte")))
     include(${PROJECT_SOURCE_DIR}/catkin.cmake)
 else ()
     include(${PROJECT_SOURCE_DIR}/rosbuild.cmake)

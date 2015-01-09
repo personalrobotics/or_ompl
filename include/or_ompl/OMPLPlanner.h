@@ -77,7 +77,8 @@ private:
 
     ompl::base::PlannerPtr CreatePlanner(OMPLPlannerParameters const &params);
     bool IsStateValid(const ompl::base::State* state);
-    bool IsInOrCollision(std::vector<double> const &jointValues);
+    bool IsInOrCollision(std::vector<double> const &jointValues,
+                         std::vector<int> const &jointIndices);
 
     bool GetParametersCommand(std::ostream &sout, std::istream &sin) const;
 };

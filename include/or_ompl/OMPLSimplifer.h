@@ -60,7 +60,8 @@ private:
     ompl::geometric::PathSimplifierPtr m_simplifier;
     OpenRAVE::ConfigurationSpecification m_cspec;
 
-    bool IsInOrCollision(std::vector<double> const &values);
+    bool IsInOrCollision(std::vector<double> const &values,
+                         std::vector<int> const &indices);
     bool IsStateValid(ompl::base::State const *state);
 };
 

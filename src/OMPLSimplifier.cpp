@@ -97,8 +97,7 @@ bool OMPLSimplifier::InitPlan(OpenRAVE::RobotBasePtr robot, std::istream &input)
 
 OpenRAVE::PlannerStatus OMPLSimplifier::PlanPath(OpenRAVE::TrajectoryBasePtr ptraj)
 {
-    typedef ompl::base::RealVectorStateSpace::StateType StateType;
-    typedef ompl::base::ScopedState<ompl::base::RealVectorStateSpace> ScopedState;
+    typedef ompl::base::ScopedState<RobotStateSpace> ScopedState;
 
     if (!m_simplifier) {
         RAVELOG_ERROR("Not initialized. Did you call InitPlan?\n");
@@ -205,24 +204,18 @@ OpenRAVE::PlannerStatus OMPLSimplifier::PlanPath(OpenRAVE::TrajectoryBasePtr ptr
     }
 }
 
-bool OMPLSimplifier::IsInOrCollision(std::vector<double> const &values)
+bool OMPLSimplifier::IsInOrCollision(std::vector<double> const &values, std::vector<int> const &indices)
 {
-    m_robot->SetActiveDOFValues(values, OpenRAVE::KinBody::CLA_Nothing);
+    m_robot->SetDOFValues(values, OpenRAVE::KinBody::CLA_Nothing, indices);
     return GetEnv()->CheckCollision(m_robot) || m_robot->CheckSelfCollision();
 }
 
 bool OMPLSimplifier::IsStateValid(ompl::base::State const *state)
 {
-    typedef ompl::base::RealVectorStateSpace::StateType StateType;
-    StateType const *realVectorState = state->as<StateType>();
-    size_t const num_dof = m_robot->GetActiveDOF();
+    RobotState const *realVectorState = state->as<RobotState>();
 
     if (realVectorState) {
-        std::vector<OpenRAVE::dReal> values(num_dof);
-        for (size_t i = 0; i < num_dof; i++) {
-            values[i] = realVectorState->values[i];
-        }
-        return !IsInOrCollision(values);
+        return !IsInOrCollision(realVectorState->getValues(), realVectorState->getIndices());
     } else {
         RAVELOG_ERROR("Invalid StateType. This should never happen.\n");
         return false;

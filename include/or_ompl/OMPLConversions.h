@@ -34,12 +34,10 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef OMPLCONVERSIONS_H_
 #define OMPLCONVERSIONS_H_
 #include <ompl/util/Console.h>
-#include <ompl/base/spaces/RealVectorStateSpace.h>
 #include <ompl/geometric/PathGeometric.h>
 #include <openrave/openrave.h>
 #include "OMPLPlannerParameters.h"
-
-typedef boost::shared_ptr<ompl::base::RealVectorStateSpace> RealVectorSpacePtr;
+#include "RobotStateSpace.h"
 
 namespace or_ompl {
 
@@ -49,7 +47,7 @@ public:
                      char const *filename, int line);
 };
 
-RealVectorSpacePtr CreateStateSpace(OpenRAVE::RobotBasePtr const robot,
+RobotStateSpacePtr CreateStateSpace(OpenRAVE::RobotBasePtr const robot,
                                     OMPLPlannerParameters const &params);
 
 OpenRAVE::PlannerStatus ToORTrajectory(OpenRAVE::RobotBasePtr const &robot,
