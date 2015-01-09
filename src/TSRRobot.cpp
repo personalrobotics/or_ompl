@@ -13,8 +13,11 @@ TSRRobot::TSRRobot(const std::vector<TSR::Ptr> &tsrs, const OpenRAVE::Environmen
 bool TSRRobot::construct() {
 
     if(_initialized){
-        RAVELOG_DEBUG("[TSRRobot] Already initialized. Skipping construct.");
-        return _initialized;
+        RAVELOG_ERROR("[TSRRobot] Already initialized. TSRRobot::construct cannot be called twice.");
+        throw OpenRAVE::openrave_exception(
+            "TSRRobot::construct cannot be called twice",
+            OpenRAVE::ORE_Failed
+            );
     }
 
     _initialized = false;
