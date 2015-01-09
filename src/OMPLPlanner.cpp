@@ -3,6 +3,10 @@
 Copyright (c) 2014, Carnegie Mellon University
 All rights reserved.
 
+Authors: Michael Koval <mkoval@cs.cmu.edu>
+         Matthew Klingensmith <mklingen@cs.cmu.edu>
+         Christopher Dellin <cdellin@cs.cmu.edu>
+
 Redistribution and use in source and binary forms, with or without
 modification, are permitted provided that the following conditions are
 met:
@@ -40,26 +44,20 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "TSRGoal.h"
 #include "PlannerRegistry.h"
 
-#define OMPL_VERSION_COMP (  OMPL_MAJOR_VERSION * 1000000 \
-                           + OMPL_MINOR_VERSION * 1000 \
-                           + OMPL_PATCH_VERSION)
-
-#define CD_OS_TIMESPEC_SET_ZERO(t) do { (t)->tv_sec = 0; (t)->tv_nsec = 0; } while (0)
-#define CD_OS_TIMESPEC_ADD(dst, src) do { (dst)->tv_sec += (src)->tv_sec; (dst)->tv_nsec += (src)->tv_nsec; \
-   if ((dst)->tv_nsec > 999999999) { (dst)->tv_sec += 1; (dst)->tv_nsec -= 1000000000; } } while (0)
-#define CD_OS_TIMESPEC_SUB(dst, src) do { (dst)->tv_sec -= (src)->tv_sec; (dst)->tv_nsec -= (src)->tv_nsec; \
-   if ((dst)->tv_nsec < 0) { (dst)->tv_sec -= 1; (dst)->tv_nsec += 1000000000; } } while (0)
-#define CD_OS_TIMESPEC_DOUBLE(src) ((src)->tv_sec + ((double)((src)->tv_nsec))/1000000000.0)
-
-#define TIME_COLLISION_CHECKS
-
 namespace or_ompl
 {
 
-OMPLPlanner::OMPLPlanner(OpenRAVE::EnvironmentBasePtr penv)
+OMPLPlanner::OMPLPlanner(OpenRAVE::EnvironmentBasePtr penv,
+                         PlannerFactory const &planner_factory)
     : OpenRAVE::PlannerBase(penv)
     , m_initialized(false)
+    , m_planner_factory(planner_factory)
+
 {
+    RegisterCommand("GetParameters",
+        boost::bind(&OMPLPlanner::GetParametersCommand, this, _1, _2),
+        "returns the list of accepted planner parameters"
+    );
 }
 
 OMPLPlanner::~OMPLPlanner()
@@ -131,7 +129,10 @@ bool OMPLPlanner::InitPlan(OpenRAVE::RobotBasePtr robot,
 			if(tsr_chain->sampleGoal()){
                 tsr_chain->setEnv(robot->GetEnv()); // required to enable distance to TSR chains
 				goal_chains.push_back(tsr_chain);
-			}
+			}else{
+                RAVELOG_ERROR("Only goal TSR chains are supported by OMPL. Failing.");
+                return false;
+            }
 		}
 
 		if(goal_chains.size() > 0) {
@@ -181,14 +182,12 @@ ompl::base::PlannerPtr OMPLPlanner::CreatePlanner(
     OMPLPlannerParameters const &params)
 {
     // Create the planner.
-    std::string const plannerName = m_parameters->m_plannerType;
     ompl::base::SpaceInformationPtr const spaceInformation
             = m_simple_setup->getSpaceInformation();
 
-    ompl::base::PlannerPtr planner(registry::create(
-            plannerName, spaceInformation));
+    ompl::base::PlannerPtr planner(m_planner_factory(spaceInformation));
     if (!planner) {
-        RAVELOG_ERROR("Failed creating planner '%s'.\n", plannerName.c_str());
+        RAVELOG_ERROR("Failed creating planner.");
         return ompl::base::PlannerPtr();
     }
 
@@ -265,21 +264,21 @@ OpenRAVE::PlannerStatus OMPLPlanner::PlanPath(OpenRAVE::TrajectoryBasePtr ptraj)
 
         // TODO: Configure anytime algorithms to keep planning.
         //m_simpleSetup->getGoal()->setMaximumPathLength(0.0);
-       
-        // TODO: What is all of this? Should this really be in the planner?
-        struct timespec tic;
-        clock_gettime(CLOCK_THREAD_CPUTIME_ID, &tic);
 
-        // Call the planner.
-        bool const success = m_simple_setup->solve(m_parameters->m_timeLimit);
+        {
+            // Don't check collision with inactive links.
+            OpenRAVE::CollisionCheckerBasePtr const collision_checker
+                = GetEnv()->GetCollisionChecker();
+            OpenRAVE::CollisionOptionsStateSaver const collision_saver(
+                collision_checker, OpenRAVE::CO_ActiveDOFs, false);
 
-        struct timespec toc;
-        clock_gettime(CLOCK_THREAD_CPUTIME_ID, &toc);
-        CD_OS_TIMESPEC_SUB(&toc, &tic);
-        RAVELOG_DEBUG("cputime seconds: %f\n", CD_OS_TIMESPEC_DOUBLE(&toc));
+            // Call the planner.
+            m_simple_setup->solve(m_parameters->m_timeLimit);
+        }
 
-        if (success) {
-            return ToORTrajectory(m_simple_setup->getSolutionPath(), ptraj);
+        if (m_simple_setup->haveExactSolutionPath()) {
+            ToORTrajectory(m_robot, m_simple_setup->getSolutionPath(), ptraj);
+            return OpenRAVE::PS_HasSolution;
         } else {
             return OpenRAVE::PS_Failed;
         }
@@ -292,22 +291,11 @@ OpenRAVE::PlannerStatus OMPLPlanner::PlanPath(OpenRAVE::TrajectoryBasePtr ptraj)
 
 bool OMPLPlanner::IsInOrCollision(std::vector<double> const &values, std::vector<int> const &indices)
 {
-#ifdef TIME_COLLISION_CHECKS
-    struct timespec tic;
-    clock_gettime(CLOCK_THREAD_CPUTIME_ID, &tic);
-#endif
 
     m_robot->SetDOFValues(values, OpenRAVE::KinBody::CLA_Nothing, indices);
     bool const collided = GetEnv()->CheckCollision(m_robot)
                        || m_robot->CheckSelfCollision();
     m_numCollisionChecks++;
-
-#ifdef TIME_COLLISION_CHECKS
-    struct timespec toc;
-    clock_gettime(CLOCK_THREAD_CPUTIME_ID, &toc);
-    CD_OS_TIMESPEC_SUB(&toc, &tic);
-    m_totalCollisionTime += CD_OS_TIMESPEC_DOUBLE(&toc);
-#endif
     return collided;
 }
 
@@ -324,30 +312,37 @@ bool OMPLPlanner::IsStateValid(ompl::base::State const *state)
     }
 }
 
-OpenRAVE::PlannerStatus OMPLPlanner::ToORTrajectory(
-        ompl::geometric::PathGeometric &ompl_traj,
-        OpenRAVE::TrajectoryBasePtr or_traj) const
+bool OMPLPlanner::GetParametersCommand(std::ostream &sout, std::istream &sin) const
 {
-#if OMPL_VERSION_COMP >= 000010002
-    std::vector<ompl::base::State*> const &states = ompl_traj.getStates();
-#else
-    std::vector<ompl::base::State*> const &states = ompl_traj.states;
-#endif
+    typedef std::map<std::string, ompl::base::GenericParamPtr> ParamMap;
 
-    size_t const num_dof = m_robot->GetActiveDOF();
-    or_traj->Init(m_robot->GetActiveConfigurationSpecification());
-
-    for (size_t i = 0; i < states.size(); ++i){
-        RobotState const *state
-            = states[i]->as<RobotState>();
-        if (!state) {
-            RAVELOG_ERROR("Unable to convert output trajectory."
-                          "State is not a RealVectorStateSpace::StateType.");
-            return OpenRAVE::PS_Failed;
-        }
-        or_traj->Insert(i, state->getValues(), true);
+    ompl::base::PlannerPtr planner;
+    if (m_planner) {
+        planner = m_planner;
     }
-    return OpenRAVE::PS_HasSolution;
+    // We need an instance of the planner to query its ParamSet. Unfortunately,
+    // constructing the planner requires a SpaceInformationPtr, which can only
+    // be generated from an existing StateSpace. As a workaround, we construct
+    // a simple one-DOF state space and make a temporary planner instance.
+    else {
+        ompl::base::StateSpacePtr const state_space
+            = boost::make_shared<ompl::base::RealVectorStateSpace>(1);
+        ompl::base::SpaceInformationPtr const space_information 
+            = boost::make_shared<ompl::base::SpaceInformation>(state_space);
+        planner.reset(m_planner_factory(space_information));
+    }
+
+    // Query the supported parameters. Each planner has a name and a "range
+    // suggestion", which is used to generate the GUI in OMPL.app.
+    ompl::base::ParamSet const &param_set = planner->params();
+    ParamMap const &param_map = param_set.getParams();
+
+    ParamMap::const_iterator it;
+    for (it = param_map.begin(); it != param_map.end(); ++it) {
+        sout << it->first << " (" << it->second->getRangeSuggestion() << ")\n";
+    }
+
+    return true;
 }
 
 }

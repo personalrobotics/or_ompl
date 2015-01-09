@@ -1,7 +1,46 @@
+/***********************************************************************
+
+Copyright (c) 2014, Carnegie Mellon University
+All rights reserved.
+
+Authors: Michael Koval <mkoval@cs.cmu.edu>
+
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are
+met:
+
+  Redistributions of source code must retain the above copyright
+  notice, this list of conditions and the following disclaimer.
+
+  Redistributions in binary form must reproduce the above copyright
+  notice, this list of conditions and the following disclaimer in the
+  documentation and/or other materials provided with the distribution.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+"AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+*************************************************************************/
 #include <boost/make_shared.hpp>
 #include <ompl/base/ScopedState.h>
+#include <ompl/util/Time.h>
 #include "OMPLConversions.h"
-#include <or_ompl/OMPLSimplifier.h>
+#include "OMPLSimplifer.h"
+
+using OpenRAVE::PA_None;
+using OpenRAVE::PA_Interrupt;
+using OpenRAVE::PA_ReturnWithAnySolution;
+
+using OpenRAVE::PS_HasSolution;
+using OpenRAVE::PS_InterruptedWithSolution;
 
 namespace or_ompl
 {
@@ -40,6 +79,7 @@ bool OMPLSimplifier::InitPlan(OpenRAVE::RobotBasePtr robot,
         m_space_info = boost::make_shared<SpaceInformation>(m_state_space);
         m_space_info->setStateValidityChecker(
                 boost::bind(&OMPLSimplifier::IsStateValid, this, _1));
+        m_space_info->setup();
         m_simplifier = boost::make_shared<PathSimplifier>(m_space_info);
         return true;
     } catch (std::runtime_error const &e) {
@@ -57,8 +97,7 @@ bool OMPLSimplifier::InitPlan(OpenRAVE::RobotBasePtr robot, std::istream &input)
 
 OpenRAVE::PlannerStatus OMPLSimplifier::PlanPath(OpenRAVE::TrajectoryBasePtr ptraj)
 {
-    typedef ompl::base::RealVectorStateSpace::StateType StateType;
-    typedef ompl::base::ScopedState<ompl::base::RealVectorStateSpace> ScopedState;
+    typedef ompl::base::ScopedState<RobotStateSpace> ScopedState;
 
     if (!m_simplifier) {
         RAVELOG_ERROR("Not initialized. Did you call InitPlan?\n");
@@ -99,11 +138,56 @@ OpenRAVE::PlannerStatus OMPLSimplifier::PlanPath(OpenRAVE::TrajectoryBasePtr ptr
     }
 
     // Run path simplification.
-    // TODO: Why does this SEGFAULT? Something must be wrong with the OMPL path
+    OpenRAVE::PlannerBase::PlannerProgress progress;
+    OpenRAVE::PlannerAction planner_action = PA_None;
+    double const length_before = path.length();
+    int num_changes = 0;
+
+    ompl::time::duration const time_limit
+        = ompl::time::seconds(m_parameters->m_timeLimit);
+    ompl::time::point const time_before = ompl::time::now();
+    ompl::time::point time_current;
+
     RAVELOG_DEBUG("Running path simplification for %f seconds.\n",
                   m_parameters->m_timeLimit);
-    BOOST_ASSERT(m_parameters);
-    m_simplifier->simplify(path, m_parameters->m_timeLimit);
+
+    do {
+        // Run one iteration of shortcutting. This gives us fine control over
+        // the termination condition and allows us to invoke the planner
+        // callbacks between iterations.
+        //
+        // The numeric arguments are the following:
+        // - maxSteps: maximum number of iterations
+        // - maxEmptySteps: maximum number of iterations without improvement
+        // - rangeRatio: maximum connection distance attempted, specified as a
+        //               ratio of the total number of states
+        // - snapToVertex: ratio of total path length used to snap samples to
+        //                 vertices
+        bool const changed = m_simplifier->shortcutPath(path, 1, 1, 1.0, 0.005);
+
+        num_changes += !!changed;
+        progress._iteration += 1;
+
+        // Call any user-registered callbacks. These functions can terminate
+        // planning early.
+        planner_action = _CallCallbacks(progress);
+
+        time_current = ompl::time::now();
+    } while (time_current - time_before <= time_limit
+          && planner_action == PA_None);
+
+    double const length_after = path.length();
+
+    RAVELOG_DEBUG(
+        "Ran %d iterations of smoothing over %.3f seconds. %d of %d iterations"
+        " (%.2f%%) were effective. Reduced path length from %.3f to %.3f.\n",
+        progress._iteration,
+        ompl::time::seconds(time_current - time_before),
+        num_changes,
+        progress._iteration,
+        100 * static_cast<double>(num_changes) / progress._iteration,
+        length_before, length_after
+    );
 
     // Store the result in the OpenRAVE trajectory.
     RAVELOG_DEBUG("Reconstructing OpenRAVE trajectory with %d waypoints.\n",
@@ -111,37 +195,27 @@ OpenRAVE::PlannerStatus OMPLSimplifier::PlanPath(OpenRAVE::TrajectoryBasePtr ptr
     BOOST_ASSERT(ptraj);
     ptraj->Remove(0, ptraj->GetNumWaypoints());
 
-    for (size_t iwaypoint = 0; iwaypoint < path.getStateCount(); ++iwaypoint) {
-        ompl::base::State const *waypoint_generic = path.getState(iwaypoint);
-        StateType const &waypoint_ompl = *waypoint_generic->as<StateType>();
+    ToORTrajectory(m_robot, path, ptraj);
 
-        std::vector<OpenRAVE::dReal> waypoint_openrave(num_dof);
-        for (size_t idof = 0; idof < num_dof; ++idof) {
-            waypoint_openrave[idof] = waypoint_ompl[idof];
-        }
-        ptraj->Insert(iwaypoint, waypoint_openrave, m_cspec);
+    if (planner_action == PA_None) {
+        return PS_HasSolution;
+    } else {
+        return PS_InterruptedWithSolution;
     }
-    return OpenRAVE::PS_HasSolution;
 }
 
-bool OMPLSimplifier::IsInOrCollision(std::vector<double> const &values)
+bool OMPLSimplifier::IsInOrCollision(std::vector<double> const &values, std::vector<int> const &indices)
 {
-    m_robot->SetActiveDOFValues(values, OpenRAVE::KinBody::CLA_Nothing);
+    m_robot->SetDOFValues(values, OpenRAVE::KinBody::CLA_Nothing, indices);
     return GetEnv()->CheckCollision(m_robot) || m_robot->CheckSelfCollision();
 }
 
 bool OMPLSimplifier::IsStateValid(ompl::base::State const *state)
 {
-    typedef ompl::base::RealVectorStateSpace::StateType StateType;
-    StateType const *realVectorState = state->as<StateType>();
-    size_t const num_dof = m_robot->GetActiveDOF();
+    RobotState const *realVectorState = state->as<RobotState>();
 
     if (realVectorState) {
-        std::vector<OpenRAVE::dReal> values(num_dof);
-        for (size_t i = 0; i < num_dof; i++) {
-            values[i] = realVectorState->values[i];
-        }
-        return !IsInOrCollision(values);
+        return !IsInOrCollision(realVectorState->getValues(), realVectorState->getIndices());
     } else {
         RAVELOG_ERROR("Invalid StateType. This should never happen.\n");
         return false;

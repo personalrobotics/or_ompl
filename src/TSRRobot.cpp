@@ -1,5 +1,5 @@
-#include <or_ompl/TSRRobot.h>
-#include <or_ompl/or_conversions.h>
+#include "TSRRobot.h"
+#include "or_conversions.h"
 #include <boost/make_shared.hpp>
 
 using namespace or_ompl;

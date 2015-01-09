@@ -1,5 +1,44 @@
+xo/***********************************************************************
+
+Copyright (c) 2014, Carnegie Mellon University
+All rights reserved.
+
+Authors: Michael Koval <mkoval@cs.cmu.edu>
+         Matthew Klingensmith <mklingen@cs.cmu.edu>
+         Christopher Dellin <cdellin@cs.cmu.edu>
+
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are
+met:
+
+  Redistributions of source code must retain the above copyright
+  notice, this list of conditions and the following disclaimer.
+
+  Redistributions in binary form must reproduce the above copyright
+  notice, this list of conditions and the following disclaimer in the
+  documentation and/or other materials provided with the distribution.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+"AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+*************************************************************************/
+
 #include <boost/make_shared.hpp>
+#include <ompl/config.h>
 #include "OMPLConversions.h"
+
+#define OMPL_VERSION_COMP (  OMPL_MAJOR_VERSION * 1000000 \
+                           + OMPL_MINOR_VERSION * 1000 \
+                           + OMPL_PATCH_VERSION)
 
 namespace or_ompl {
 
@@ -48,7 +87,7 @@ void OpenRAVEHandler::log(std::string const &text, ompl::msg::LogLevel level,
     }
 }
 
-RobotStateSpacePtr CreateStateSpace(OpenRAVE::RobotBasePtr const robot,
+RobotStateSpace CreateStateSpace(OpenRAVE::RobotBasePtr const robot,
                                     OMPLPlannerParameters const &params)
 {
     if (!robot) {
@@ -74,7 +113,7 @@ RobotStateSpacePtr CreateStateSpace(OpenRAVE::RobotBasePtr const robot,
 
     std::vector<int> dof_indices = robot->GetActiveDOFIndices();
     const unsigned int num_dof = dof_indices.size();
-    RobotStateSpacePtr state_space = boost::make_shared<RobotStateSpace>(dof_indices);
+    RobotStateSpacePtr state_space = boost::make_shared<RobotStateSpace)(dof_indices);
 
     RAVELOG_DEBUG("Setting joint limits.\n");
     std::vector<OpenRAVE::dReal> lowerLimits, upperLimits;
@@ -136,6 +175,28 @@ RobotStateSpacePtr CreateStateSpace(OpenRAVE::RobotBasePtr const robot,
                      " there are no weights.\n");
     }
     return state_space;
+}
+
+OpenRAVE::PlannerStatus ToORTrajectory(
+        OpenRAVE::RobotBasePtr const &robot,
+        ompl::geometric::PathGeometric const &ompl_traj,
+        OpenRAVE::TrajectoryBasePtr or_traj)
+{
+    using ompl::geometric::PathGeometric;
+
+    size_t const num_dof = robot->GetActiveDOF();
+    or_traj->Init(robot->GetActiveConfigurationSpecification());
+
+    for (size_t i = 0; i < ompl_traj.getStateCount(); ++i){
+        RobotState const *state = ompl_traj.getState(i)->as<RobotState>();
+        if (!state) {
+            RAVELOG_ERROR("Unable to convert output trajectory."
+                          "State is not a RealVectorStateSpace::StateType.");
+            return OpenRAVE::PS_Failed;
+        }
+        or_traj->Insert(i, state->getValues(), true);
+    }
+    return OpenRAVE::PS_HasSolution;
 }
 
 }

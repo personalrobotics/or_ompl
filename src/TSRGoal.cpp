@@ -1,5 +1,5 @@
-#include <or_ompl/TSRGoal.h>
-#include <or_ompl/RobotStateSpace.h>
+#include "TSRGoal.h"
+#include "RobotStateSpace.h"
 
 #include <boost/foreach.hpp>
 #include <ompl/base/spaces/RealVectorStateSpace.h>
@@ -47,7 +47,7 @@ bool TSRGoal::isSatisfied(const ompl::base::State *state) const {
 double TSRGoal::distanceGoal(const ompl::base::State *state) const {
 
 	// Save the state of the robot
-	OpenRAVE::EnvironmentMutex::scoped_lock lockenv(_robot->GetEnv()->GetMutex());
+    OpenRAVE::EnvironmentMutex::scoped_lock lockenv(_robot->GetEnv()->GetMutex());
 	OpenRAVE::KinBody::KinBodyStateSaver rsaver(_robot);
 
     OpenRAVE::RobotBase::ManipulatorPtr active_manip = _robot->GetActiveManipulator();
@@ -64,8 +64,8 @@ double TSRGoal::distanceGoal(const ompl::base::State *state) const {
 	// Convert to Eigen
     Eigen::Affine3d ee_pose = Eigen::Affine3d::Identity();
     ee_pose.linear() << or_matrix.m[0], or_matrix.m[1], or_matrix.m[2],
-                         or_matrix.m[4], or_matrix.m[5], or_matrix.m[6],
-                         or_matrix.m[8], or_matrix.m[9], or_matrix.m[10];
+        or_matrix.m[4], or_matrix.m[5], or_matrix.m[6],
+        or_matrix.m[8], or_matrix.m[9], or_matrix.m[10];
     ee_pose.translation() << or_matrix.trans.x, or_matrix.trans.y, or_matrix.trans.z;
 
 	// Get distance to TSR

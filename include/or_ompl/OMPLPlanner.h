@@ -3,6 +3,10 @@
 Copyright (c) 2014, Carnegie Mellon University
 All rights reserved.
 
+Authors: Michael Koval <mkoval@cs.cmu.edu>
+         Matthew Klingensmith <mklingen@cs.cmu.edu>
+         Christopher Dellin <cdellin@cs.cmu.edu>
+
 Redistribution and use in source and binary forms, with or without
 modification, are permitted provided that the following conditions are
 met:
@@ -40,9 +44,12 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 namespace or_ompl
 {
 
+typedef boost::function<ompl::base::Planner *(ompl::base::SpaceInformationPtr)> PlannerFactory;
+
 class OMPLPlanner: public OpenRAVE::PlannerBase {
 public:
-    OMPLPlanner(OpenRAVE::EnvironmentBasePtr penv);
+    OMPLPlanner(OpenRAVE::EnvironmentBasePtr penv,
+                PlannerFactory const &planner_factory);
     virtual ~OMPLPlanner();
 
     virtual bool InitPlan(OpenRAVE::RobotBasePtr robot,
@@ -58,6 +65,7 @@ public:
 
 private:
     bool m_initialized;
+    PlannerFactory m_planner_factory;
     OMPLPlannerParametersPtr m_parameters;
     ompl::geometric::SimpleSetupPtr m_simple_setup;
     ompl::base::StateSpacePtr m_state_space;
@@ -69,9 +77,10 @@ private:
 
     ompl::base::PlannerPtr CreatePlanner(OMPLPlannerParameters const &params);
     bool IsStateValid(const ompl::base::State* state);
-    bool IsInOrCollision(std::vector<double> const &jointValues, std::vector<int> const &jointIndices);
-    OpenRAVE::PlannerStatus ToORTrajectory(ompl::geometric::PathGeometric &ompl_traj,
-                                           OpenRAVE::TrajectoryBasePtr or_traj) const;
+    bool IsInOrCollision(std::vector<double> const &jointValues,
+                         std::vector<int> const &jointIndices);
+
+    bool GetParametersCommand(std::ostream &sout, std::istream &sin) const;
 };
 
 typedef boost::shared_ptr<OMPLPlanner> OMPLPlannerPtr;

@@ -1,7 +1,7 @@
 #ifndef OMPL_TSR_ROBOT_H_
 #define OMPL_TSR_ROBOT_H_
 
-#include <or_ompl/TSR.h>
+#include "TSR.h"
 #include <openrave/openrave.h>
 #include <boost/shared_ptr.hpp>
 
