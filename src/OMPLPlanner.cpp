@@ -130,7 +130,7 @@ bool OMPLPlanner::InitPlan(OpenRAVE::RobotBasePtr robot,
                 tsr_chain->setEnv(robot->GetEnv()); // required to enable distance to TSR chains
 				goal_chains.push_back(tsr_chain);
 			}else{
-                RAVELOG_ERROR("Only goal TSR chains are supported by OMPL. Failing.");
+                RAVELOG_ERROR("Only goal TSR chains are supported by OMPL. Failing.\n");
                 return false;
             }
 		}
@@ -138,7 +138,7 @@ bool OMPLPlanner::InitPlan(OpenRAVE::RobotBasePtr robot,
         if(goal_chains.size() > 0 && m_parameters->vgoalconfig.size() > 0){
             RAVELOG_ERROR("A goal TSR chain has been supplied and a goal configuration"
                           " has been specified. The desired behavior is ambiguous."
-                          " Please specified one or the other.");
+                          " Please specified one or the other.\n");
             return false;
         }
 
