@@ -75,6 +75,21 @@ namespace or_ompl {
 		 * @return The bounds specified for the TSR (Bw)
 		 */
 		Eigen::Matrix<double, 6, 2> getBounds(void) const { return _Bw; }
+
+        /**
+         * @return The index of the manipulator this TSR describes
+         */
+        int getManipulatorIndex(void) const { return _manip_ind; }
+
+        /**
+         * @return The name of the body that this TSR is relative to
+         */
+        std::string getRelativeBodyName(void) const { return _relative_body_name; }
+
+        /**
+         * @return The link on the body that this TSR is relative to
+         */
+        std::string getRelativeLinkName(void) const { return _relative_link_name; }
 		
 		/**
 		 * Output operator
@@ -94,7 +109,12 @@ namespace or_ompl {
 		Eigen::Affine3d _Tw_e;
 		Eigen::Affine3d _Tw_e_inv;
 		Eigen::Matrix<double, 6, 2> _Bw;
+        int _manip_ind;
+        std::string _relative_body_name;
+        std::string _relative_link_name;
+
 		bool _initialized;
+
 	};
 	   
 }

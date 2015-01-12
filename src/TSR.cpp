@@ -19,17 +19,14 @@ TSR::TSR(const Eigen::Affine3d &T0_w, const Eigen::Affine3d &Tw_e, const Eigen::
 
 bool TSR::deserialize(std::stringstream &ss) {
 
-	// TODO: Do we need this stuff? 
-	int manipind_ignored;
-    ss >> manipind_ignored;
+	// TODO: Deprecated. Modify this to ignore the manip index and just
+    //   take the manipulator name.
+    ss >> _manip_ind;        
 
-	std::string relativebodyname_ignored;
-    ss >> relativebodyname_ignored;
-   
-    if( relativebodyname_ignored != "NULL" )
+    ss >> _relative_body_name;
+    if( _relative_body_name != "NULL" )
     {
-		std::string relativelinkname_ignored;
-        ss >> relativelinkname_ignored;  
+        ss >> _relative_link_name;
     }  
     
 	// Read in the T0_w matrix 

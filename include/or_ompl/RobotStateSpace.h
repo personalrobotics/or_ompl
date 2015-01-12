@@ -3,6 +3,7 @@
 
 #include <ompl/base/spaces/RealVectorStateSpace.h>
 #include <boost/shared_ptr.hpp>
+#include <iostream>
 
 namespace or_ompl {
 
@@ -24,10 +25,26 @@ namespace or_ompl {
         ~RobotState();
 
         /**
+         * Checks if the given list of indices is in this state.  All values in 
+         * the input indices list must be in the state for this to return true.
+         * @param indices The dof indices to check
+         * @return True if all indices in the input vector are part of this state
+         */
+        bool containsIndices(const std::vector<int> &indices) const;
+
+        /**
          * Sets the values in the state. 
          * @param dof_values The values, this ordering must match the dof_indices
          */
         void set(const std::vector<double> &dof_values);
+
+        /**
+         * Sets the state values for only the given dof indices
+         * @param dof_indices The indices
+         * @param dof_values The partial state
+         */
+        void setPartial(const std::vector<int> &dof_indices,
+                        const std::vector<double> &dof_values);
 
         /**
          * @return The values in the state
@@ -37,10 +54,35 @@ namespace or_ompl {
         /**
          * @return An ordered list of indices this state corresponds to
          */
-        std::vector<int> getIndices() const { return _indices; }
+        std::vector<int> getIndices() const { return _dof_indices; }
+
+        /**
+         * Overload the output operator
+         */
+        friend std::ostream& operator <<(std::ostream &os, const RobotState &st) {
+            std::vector<double> st_vals = st.getValues();
+            std::vector<int> st_inds = st.getIndices();
+
+            os << " [";
+            for(unsigned int idx=0; idx < st_vals.size(); idx++){
+                os << " " << st_vals[idx] << " ";
+                if(idx != st_vals.size() - 1){
+                    os << ",";
+                }
+            }
+            os << "] (indices: [";
+            for(unsigned int idx=0; idx < st_inds.size(); idx++){
+                os << " " << st_inds[idx] << " ";
+                if(idx != st_inds.size() - 1){
+                    os << ",";
+                }
+            }    
+            os << "]";
+            return os;
+        }
 
     private:
-        std::vector<int> _indices;
+        std::vector<int> _dof_indices;
 
     };
 
