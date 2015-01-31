@@ -312,6 +312,14 @@ bool OMPLPlanner::IsStateValid(ompl::base::State const *state)
     RobotState const *realVectorState = state->as<RobotState>();
 
     if (realVectorState) {
+        std::vector<double> values = realVectorState->getValues();
+        BOOST_FOREACH(double v, values){
+            if(std::isnan(v)){
+                RAVELOG_ERROR("Invalid value in state.\n");
+                return false;
+            }
+        }
+    
         return !IsInOrCollision(realVectorState->getValues(), realVectorState->getIndices());
     } else {
         RAVELOG_ERROR("Invalid StateType. This should never happen.\n");

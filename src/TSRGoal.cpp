@@ -135,6 +135,8 @@ void TSRGoal::sampleGoal(ompl::base::State *state) const {
 
 	if(!success){
 		RAVELOG_ERROR("[TSRGoal] Failed to sample valid goal.\n");
+        const RobotState* mstate = state->as<RobotState>();
+        mstate->values[0] = std::numeric_limits<double>::quiet_NaN();
 	}
 }
 
