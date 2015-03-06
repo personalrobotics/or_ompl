@@ -185,7 +185,7 @@ OpenRAVE::PlannerStatus ToORTrajectory(
     using ompl::geometric::PathGeometric;
 
     size_t const num_dof = robot->GetActiveDOF();
-    or_traj->Init(robot->GetActiveConfigurationSpecification());
+    or_traj->Init(robot->GetActiveConfigurationSpecification("linear"));
 
     for (size_t i = 0; i < ompl_traj.getStateCount(); ++i){
         RobotState const *state = ompl_traj.getState(i)->as<RobotState>();
