@@ -36,6 +36,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <boost/foreach.hpp>
 #include <boost/make_shared.hpp>
 #include <ompl/config.h>
+#include <ompl/base/goals/GoalStates.h>
 #include <ompl/base/StateSpaceTypes.h>
 #include <ompl/base/StateSpace.h>
 #include <ompl/base/spaces/RealVectorStateSpace.h>
@@ -107,21 +108,31 @@ bool OMPLPlanner::InitPlan(OpenRAVE::RobotBasePtr robot,
         m_simple_setup = boost::make_shared<ompl::geometric::SimpleSetup>(m_state_space);
 
         RAVELOG_DEBUG("Setting initial configuration.\n");
-        if (m_parameters->vinitialconfig.size() != dof_indices.size()) {
+        if (m_parameters->vinitialconfig.size() % num_dof != 0) {
             RAVELOG_ERROR("Start configuration has incorrect DOF;"
-                          " expected %d, got %d.\n",
+                          " expected multiple of %d, got %d.\n",
                           num_dof, m_parameters->vinitialconfig.size());
             return false;
-        } else if (IsInOrCollision(m_parameters->vinitialconfig, dof_indices)) {
-            RAVELOG_ERROR("Initial configuration in collision.\n");
+        }
+        unsigned int num_starts = m_parameters->vinitialconfig.size() / num_dof;
+        if (num_starts == 0) {
+            RAVELOG_ERROR("No initial configurations provided.\n");
             return false;
         }
-
-        ScopedState q_start(m_state_space);
-        for (size_t i = 0; i < num_dof; i++) {
-            q_start->values[i] = m_parameters->vinitialconfig[i];
+        
+        if (num_starts == 1 && IsInOrCollision(m_parameters->vinitialconfig, dof_indices)) {
+            RAVELOG_ERROR("Single initial configuration in collision.\n");
+            return false;
         }
-        m_simple_setup->setStartState(q_start);
+        
+        for (unsigned int istart=0; istart<num_starts; istart++)
+        {
+            ScopedState q_start(m_state_space);
+            for (size_t i = 0; i < num_dof; i++) {
+                q_start->values[i] = m_parameters->vinitialconfig[istart*num_dof + i];
+            }
+            m_simple_setup->addStartState(q_start);
+        }
 
         RAVELOG_DEBUG("Setting goal configuration.\n");
 		std::vector<TSRChain::Ptr> goal_chains;
@@ -148,21 +159,45 @@ bool OMPLPlanner::InitPlan(OpenRAVE::RobotBasePtr robot,
 															   robot);
             m_simple_setup->setGoal(goaltsr);
         }else{
-            if (m_parameters->vgoalconfig.size() != num_dof) {
+            if (m_parameters->vgoalconfig.size() % num_dof != 0) {
                 RAVELOG_ERROR("End configuration has incorrect DOF;"
-                              "  expected %d, got %d.\n",
+                              "  expected multiple of %d, got %d.\n",
                               num_dof, m_parameters->vgoalconfig.size());
                 return false;
-            } else if (IsInOrCollision(m_parameters->vgoalconfig, dof_indices)) {
-                RAVELOG_ERROR("Goal configuration is in collision.\n");
+            }
+            unsigned int num_goals = m_parameters->vgoalconfig.size() / num_dof;
+            if (num_goals == 0) {
+                RAVELOG_ERROR("No goal configurations provided.\n");
                 return false;
             }
-
-            ScopedState q_goal(m_state_space);
-            for (size_t i = 0; i < num_dof; i++) {
-                q_goal->values[i] = m_parameters->vgoalconfig[i];
+            
+            if (num_goals == 1) {
+                if (IsInOrCollision(m_parameters->vgoalconfig, dof_indices)) {
+                    RAVELOG_ERROR("Single goal configuration is in collision.\n");
+                    return false;
+                }
+            
+                ScopedState q_goal(m_state_space);
+                for (size_t i = 0; i < num_dof; i++) {
+                    q_goal->values[i] = m_parameters->vgoalconfig[i];
+                }
+                m_simple_setup->setGoalState(q_goal);
+            } else {
+                // if multiple possible goals specified,
+                // don't check them all (this might be expensive)
+                // and instead lead the planner check some
+                ompl::base::GoalPtr ompl_goals(new ompl::base::GoalStates(
+                    m_simple_setup->getSpaceInformation()));
+                for (unsigned int igoal=0; igoal<num_goals; igoal++)
+                {
+                    ScopedState q_goal(m_state_space);
+                    for (size_t i = 0; i < num_dof; i++) {
+                        q_goal->values[i] = m_parameters->vgoalconfig[igoal*num_dof + i];
+                    }
+                    ompl_goals->as<ompl::base::GoalStates>()->addState(q_goal);
+                }
+                m_simple_setup->setGoal(ompl_goals);
             }
-            m_simple_setup->setGoalState(q_goal);
         }
 
         RAVELOG_DEBUG("Creating planner.\n");
