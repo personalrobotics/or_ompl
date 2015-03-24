@@ -62,6 +62,8 @@ public:
     {
         return m_parameters;
     }
+    
+    bool GetTimes(std::ostream & sout, std::istream & sin) const;
 
 private:
     bool m_initialized;
@@ -74,6 +76,7 @@ private:
     OpenRAVE::CollisionReportPtr m_collisionReport;
     int m_numCollisionChecks;
     double m_totalCollisionTime;
+    double m_totalPlanningTime;
 
     ompl::base::PlannerPtr CreatePlanner(OMPLPlannerParameters const &params);
     bool IsStateValid(const ompl::base::State* state);

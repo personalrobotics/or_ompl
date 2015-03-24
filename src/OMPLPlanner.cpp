@@ -59,6 +59,9 @@ OMPLPlanner::OMPLPlanner(OpenRAVE::EnvironmentBasePtr penv,
         boost::bind(&OMPLPlanner::GetParametersCommand, this, _1, _2),
         "returns the list of accepted planner parameters"
     );
+    RegisterCommand("GetTimes",
+        boost::bind(&OMPLPlanner::GetTimes,this,_1,_2),
+        "get timing information from last plan");
 }
 
 OMPLPlanner::~OMPLPlanner()
@@ -90,6 +93,7 @@ bool OMPLPlanner::InitPlan(OpenRAVE::RobotBasePtr robot,
 
         m_robot = robot;
         m_totalCollisionTime = 0.0;
+        m_totalPlanningTime = 0.0;
         m_numCollisionChecks = 0;
 
         std::vector<int> dof_indices = robot->GetActiveDOFIndices();
@@ -298,12 +302,17 @@ ompl::base::PlannerPtr OMPLPlanner::CreatePlanner(
 
 OpenRAVE::PlannerStatus OMPLPlanner::PlanPath(OpenRAVE::TrajectoryBasePtr ptraj)
 {
+    if (!m_initialized) {
+        RAVELOG_ERROR("Unable to plan. Did you call InitPlan?\n");
+        return OpenRAVE::PS_Failed;
+    }
+    
+    struct timespec tic;
+    struct timespec toc;
+    clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &tic);
+    
+    OpenRAVE::PlannerStatus planner_status;
     try {
-        if (!m_initialized) {
-            RAVELOG_ERROR("Unable to plan. Did you call InitPlan?\n");
-            return OpenRAVE::PS_Failed;
-        }
-
         // TODO: Configure anytime algorithms to keep planning.
         //m_simpleSetup->getGoal()->setMaximumPathLength(0.0);
 
@@ -320,46 +329,58 @@ OpenRAVE::PlannerStatus OMPLPlanner::PlanPath(OpenRAVE::TrajectoryBasePtr ptraj)
 
         if (m_simple_setup->haveExactSolutionPath()) {
             ToORTrajectory(m_robot, m_simple_setup->getSolutionPath(), ptraj);
-            return OpenRAVE::PS_HasSolution;
+            planner_status = OpenRAVE::PS_HasSolution;
         } else {
-            return OpenRAVE::PS_Failed;
+            planner_status = OpenRAVE::PS_Failed;
         }
 
     } catch (std::runtime_error const &e) {
         RAVELOG_ERROR("Planning failed: %s\n", e.what());
-        return OpenRAVE::PS_Failed;
+        planner_status = OpenRAVE::PS_Failed;
     }
+    
+    clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &toc);
+    m_totalPlanningTime += (toc.tv_sec - tic.tv_sec) + 1.0e-9*(toc.tv_nsec - tic.tv_nsec);
+    
+    return planner_status;
 }
 
 bool OMPLPlanner::IsInOrCollision(std::vector<double> const &values, std::vector<int> const &indices)
 {
-
+    struct timespec tic;
+    struct timespec toc;
+    clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &tic);
+    
     m_robot->SetDOFValues(values, OpenRAVE::KinBody::CLA_Nothing, indices);
     bool const collided = GetEnv()->CheckCollision(m_robot)
                        || m_robot->CheckSelfCollision();
+    
+    clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &toc);
     m_numCollisionChecks++;
+    m_totalCollisionTime += (toc.tv_sec - tic.tv_sec) + 1.0e-9*(toc.tv_nsec - tic.tv_nsec);
+    
     return collided;
 }
 
 bool OMPLPlanner::IsStateValid(ompl::base::State const *state)
 {
-
     RobotState const *realVectorState = state->as<RobotState>();
-
-    if (realVectorState) {
-        std::vector<double> values = realVectorState->getValues();
-        BOOST_FOREACH(double v, values){
-            if(std::isnan(v)){
-                RAVELOG_ERROR("Invalid value in state.\n");
-                return false;
-            }
-        }
     
-        return !IsInOrCollision(realVectorState->getValues(), realVectorState->getIndices());
-    } else {
+    if (!realVectorState)
+    {
         RAVELOG_ERROR("Invalid StateType. This should never happen.\n");
         return false;
     }
+    
+    std::vector<double> values = realVectorState->getValues();
+    BOOST_FOREACH(double v, values) {
+        if(std::isnan(v)) {
+            RAVELOG_ERROR("Invalid value in state.\n");
+            return false;
+        }
+    }
+    
+    return !IsInOrCollision(realVectorState->getValues(), realVectorState->getIndices());
 }
 
 bool OMPLPlanner::GetParametersCommand(std::ostream &sout, std::istream &sin) const
@@ -392,6 +413,14 @@ bool OMPLPlanner::GetParametersCommand(std::ostream &sout, std::istream &sin) co
         sout << it->first << " (" << it->second->getRangeSuggestion() << ")\n";
     }
 
+    return true;
+}
+
+bool OMPLPlanner::GetTimes(std::ostream & sout, std::istream & sin) const
+{
+    sout << "checktime " << m_totalCollisionTime;
+    sout << " totaltime " << m_totalPlanningTime;
+    sout << " n_checks " << m_numCollisionChecks;
     return true;
 }
 
