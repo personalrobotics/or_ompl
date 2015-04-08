@@ -4,13 +4,28 @@ Changelog for package or_ompl
 
 Forthcoming
 -----------
+* Added `GetTimes` command to measure timing performance
+* Added support for multiple initial/goal configs to using standard OpenRAVE
+  vinitialconfig/vgoalconfig sequencing
+* Return trajectories with "linear" interpolation.
+* Adding logic to set one element of the state to NaN and logic to the state
+  validity checker to test for this.
+* Support for goal TSRs.
+* Throwing exception if construct is called more than once.
+* Removed unused `CD_` macros.
+* Call planner callbacks from OMPL_Simplifier.
+* Switched from `simplify` to `shortcutPath`.
+* Made TSRRobot logging more consistent.
+* Removed planner type from `PlannerParameters`.
+* Switched to `PlannerFactory` architecture.
+* Switched to using a custom robot state space.
 * Create a separate OpenRAVE Planner for each OMPL planner (e.g.
   `OMPL_RRTConnect` wraps OMPL's RRTConnect planner).
 * `OMPLSimplifier` now calls `shortcutPath` instead of `simplify`.
 * Renamed the `OMPLSimplifier` planner to `OMPL_Simplifier`.
 * Added a `GetParameters` command for querying planner parameters.
 * Added the `example.py` example script.
-* Contributors: Michael Koval
+* Contributors: Chris Dellin, Jennifer King, Michael Koval, Pras Velagapudi
 
 0.4.0 (2014-12-22)
 ------------------
