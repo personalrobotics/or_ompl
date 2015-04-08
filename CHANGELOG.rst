@@ -2,8 +2,8 @@
 Changelog for package or_ompl
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.5.0 (2015-04-08)
+------------------
 * Added `GetTimes` command to measure timing performance
 * Added support for multiple initial/goal configs to using standard OpenRAVE
   vinitialconfig/vgoalconfig sequencing
