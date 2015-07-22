@@ -81,7 +81,11 @@ bool OMPLPlanner::InitPlan(OpenRAVE::RobotBasePtr robot,
     m_initialized = false;
 
     try {
+<<<<<<< HEAD
         typedef ompl::base::ScopedState<RobotStateSpace> ScopedState;
+=======
+        typedef ompl::base::ScopedState<ompl::base::CompoundStateSpace> ScopedState;
+>>>>>>> 855935148bf75666567def3b44094079434f7e22
 
         if (!robot) {
             RAVELOG_ERROR("Robot must not be NULL.\n");
@@ -101,6 +105,7 @@ bool OMPLPlanner::InitPlan(OpenRAVE::RobotBasePtr robot,
         m_parameters = boost::make_shared<OMPLPlannerParameters>();
         m_parameters->copy(params_raw);
 
+
         RAVELOG_DEBUG("Creating state space.\n");
         m_state_space = CreateStateSpace(robot, *m_parameters);
         if (!m_state_space) {
@@ -110,9 +115,18 @@ bool OMPLPlanner::InitPlan(OpenRAVE::RobotBasePtr robot,
 
         RAVELOG_DEBUG("Creating OMPL setup.\n");
         m_simple_setup = boost::make_shared<ompl::geometric::SimpleSetup>(m_state_space);
+       // std::cout << "***************1**********************";
 
         RAVELOG_DEBUG("Setting initial configuration.\n");
+<<<<<<< HEAD
         if (m_parameters->vinitialconfig.size() % num_dof != 0) {
+=======
+
+       // std::cout << "***************2**********************";
+
+
+        if (m_parameters->vinitialconfig.size() != num_dof) {
+>>>>>>> 855935148bf75666567def3b44094079434f7e22
             RAVELOG_ERROR("Start configuration has incorrect DOF;"
                           " expected multiple of %d, got %d.\n",
                           num_dof, m_parameters->vinitialconfig.size());
@@ -123,6 +137,7 @@ bool OMPLPlanner::InitPlan(OpenRAVE::RobotBasePtr robot,
             RAVELOG_ERROR("No initial configurations provided.\n");
             return false;
         }
+<<<<<<< HEAD
         
         if (num_starts == 1 && IsInOrCollision(m_parameters->vinitialconfig, dof_indices)) {
             RAVELOG_ERROR("Single initial configuration in collision.\n");
@@ -136,7 +151,29 @@ bool OMPLPlanner::InitPlan(OpenRAVE::RobotBasePtr robot,
                 q_start->value(i) = m_parameters->vinitialconfig[istart*num_dof + i];
             }
             m_simple_setup->addStartState(q_start);
+=======
+
+       // std::cout << "***************3**********************";
+
+ 
+        ScopedState q_start(m_state_space);
+        
+        //ompl::base::CompoundStateSpace *compoundStateSpace = 
+        //const ompl::base::CompoundStateSpace *T = 
+        ompl::base::CompoundStateSpace *compoundStateSpacePtr = q_start.getSpace()->as<ompl::base::CompoundStateSpace>();
+        //compoundStateSpacePtr->getSubspace(i);
+        for (size_t i = 0; i < num_dof; i++) {
+        //    std::cout << "***************3.5**********************";
+
+             // mpl::base::CompoundStateSpace *compoundStateSpace q_start.get();
+            //ompl::base::CompoundStateSpace *compoundStateSpace = q_start.get();
+            //boost::shared_ptr<ompl::base::SO2StateSpace> so2_state_space = q_start->getSubspace(i);
+            //q_start.getSpace()
+            //values[i] = m_parameters->vinitialconfig[i];
+>>>>>>> 855935148bf75666567def3b44094079434f7e22
         }
+
+        //std::cout << "***************4**********************";
 
         RAVELOG_DEBUG("Setting goal configuration.\n");
 		std::vector<TSRChain::Ptr> goal_chains;
@@ -157,6 +194,7 @@ bool OMPLPlanner::InitPlan(OpenRAVE::RobotBasePtr robot,
             return false;
         }
 
+<<<<<<< HEAD
         if(goal_chains.size() > 0) {
             TSRGoal::Ptr goaltsr = boost::make_shared<TSRGoal>(m_simple_setup->getSpaceInformation(),
 															   goal_chains,
@@ -202,6 +240,11 @@ bool OMPLPlanner::InitPlan(OpenRAVE::RobotBasePtr robot,
                 }
                 m_simple_setup->setGoal(ompl_goals);
             }
+=======
+        ScopedState q_goal(m_state_space);
+        for (size_t i = 0; i < num_dof; i++) {
+            //q_goal->values[i] = m_parameters->vgoalconfig[i];
+>>>>>>> 855935148bf75666567def3b44094079434f7e22
         }
 
         RAVELOG_DEBUG("Creating planner.\n");
