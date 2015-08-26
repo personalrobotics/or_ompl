@@ -7,11 +7,11 @@ catkin_package(
     DEPENDS ompl eigen
 )
 
-find_package(Boost REQUIRED COMPONENTS system)
-find_package(OMPL REQUIRED)
-find_package(TinyXML REQUIRED)
-find_package(OpenRAVE REQUIRED)
+find_package(Boost REQUIRED COMPONENTS chrono system)
 find_package(Eigen REQUIRED)
+find_package(OMPL REQUIRED)
+find_package(OpenRAVE REQUIRED)
+find_package(TinyXML REQUIRED)
 
 include_directories(
     include/${PROJECT_NAME}
@@ -23,10 +23,11 @@ include_directories(
 )
 link_directories(
     ${OMPL_LIBRARY_DIRS}
+    ${OpenRAVE_LIBRARY_DIRS}
     ${catkin_LIBRARY_DIRS}
 )
 add_definitions(
-  ${EIGEN_DEFINITIONS}
+    ${EIGEN_DEFINITIONS}
 )
 
 # Generate the OMPL planner wrappers.
