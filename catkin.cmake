@@ -78,3 +78,8 @@ install(DIRECTORY "include/${PROJECT_NAME}/"
     DESTINATION "${CATKIN_PACKAGE_INCLUDE_DESTINATION}"
     PATTERN ".svn" EXCLUDE
 )
+
+# Tests
+if(CATKIN_ENABLE_TESTING)
+    cmake_add_nosetests(tests/test_Planner.py)
+endif(CATKIN_ENABLE_TESTING)
