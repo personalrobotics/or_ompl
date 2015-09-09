@@ -23,4 +23,6 @@
   <exec_depend>openrave_catkin</exec_depend>
   <exec_depend>ompl</exec_depend>
   <exec_depend>tinyxml</exec_depend>
+  <test_depend>python-nose</test_depend>
+  <test_depend>python-numpy</test_depend>
 </package>
