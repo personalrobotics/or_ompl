@@ -81,5 +81,5 @@ install(DIRECTORY "include/${PROJECT_NAME}/"
 
 # Tests
 if(CATKIN_ENABLE_TESTING)
-    cmake_add_nosetests(tests/test_Planner.py)
+    catkin_add_nosetests(tests/test_Planner.py)
 endif(CATKIN_ENABLE_TESTING)
