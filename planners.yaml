@@ -35,3 +35,8 @@
   header: ompl/geometric/planners/prm/SPARStwo.h
 - name: ompl::geometric::TRRT
   header: ompl/geometric/planners/rrt/TRRT.h
+- name: ompl::geometric::FMT
+  header: ompl/geometric/planners/fmt/FMT.h
+- name: ompl::geometric::BITstar
+  header: ompl/geometric/planners/bitstar/BITstar.h
+
