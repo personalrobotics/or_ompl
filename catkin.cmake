@@ -37,8 +37,8 @@ add_custom_command(OUTPUT "${CMAKE_BINARY_DIR}/src/PlannerRegistry.cpp"
     DEPENDS "${PROJECT_SOURCE_DIR}/scripts/wrap_planners.py"
     COMMAND "${PROJECT_SOURCE_DIR}/scripts/wrap_planners.py"
             --include-dirs="${OMPL_INCLUDE_DIRS}"
-            < "${PROJECT_SOURCE_DIR}/planners.yaml"
-            > "${CMAKE_BINARY_DIR}/src/PlannerRegistry.cpp"
+            --planners-yaml="${PROJECT_SOURCE_DIR}/planners.yaml"
+            --generated-cpp="${CMAKE_BINARY_DIR}/src/PlannerRegistry.cpp"
 )
 
 # Helper library.

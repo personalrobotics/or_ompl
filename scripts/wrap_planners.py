@@ -29,7 +29,7 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 from __future__ import print_function
-import argparse, yaml, os.path, sys
+import argparse, yaml, os.path
 
 factory_frontmatter = """\
 #include <map>
@@ -108,27 +108,37 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--include-dirs', type=str,
                         help='OMPL include directories')
+    parser.add_argument('--planners-yaml', type=str, required=True,
+                        help='input filename for planner list')
+    parser.add_argument('--generated-cpp', type=str, required=True,
+                        help='output filename for generated code')
     args = parser.parse_args()
 
     include_dirs = args.include_dirs.split(os.path.pathsep)
 
     # Filter planners by version number.
-    planners = yaml.load(sys.stdin)
+    planners = yaml.load(open(args.planners_yaml))
     supported_planners = []
 
+    print('\033[94mConfiguring or_ompl planner registry ...\033[0m')
     for planner in planners:
         for include_dir in include_dirs:
             header_path = os.path.join(include_dir, planner['header'])
             if os.path.exists(header_path):
                 supported_planners.append(planner)
+                print('  \033[92mplanner {} found\033[0m'.format(planner['name']))
                 break
+        else:
+            print('  \033[91mplanner {} not found\033[0m'.format(planner['name']))
 
     planners = supported_planners
+    
+    fout = open(args.generated_cpp,'w')
 
     # Include the necessary OMPL 
     headers = [ planner['header'] for planner in planners ]
     includes = [ '#include <{:s}>'.format(path) for path in headers ]
-    print(factory_frontmatter.format(includes='\n'.join(includes)))
+    fout.write(factory_frontmatter.format(includes='\n'.join(includes)))
 
     # Generate the factory class implementations.
     names = [ planner['name'] for planner in planners ]
@@ -138,14 +148,15 @@ def main():
         _, _, name = qualified_name.rpartition('::')
         args = { 'name': name,
                  'qualified_name': qualified_name }
-        print(factory_template.format(**args))
+        fout.write(factory_template.format(**args))
         registry_entries.append(registry_entry.format(**args))
 
     # Generate the registry of factory classes.
-    print(registry_frontmatter)
-    print('\n'.join(registry_entries))
-    print(registry_backmatter)
-
+    fout.write(registry_frontmatter)
+    fout.write('\n'.join(registry_entries))
+    fout.write(registry_backmatter)
+    
+    fout.close()
 
 if __name__ == '__main__':
     main()
