@@ -48,7 +48,7 @@ struct BasePlannerFactory {{
 
 /*
  * Planner Factories
- */\
+ */
 """
 factory_template = """\
 struct {name:s}Factory : public virtual BasePlannerFactory {{
@@ -59,7 +59,7 @@ struct {name:s}Factory : public virtual BasePlannerFactory {{
 }};
 """
 
-registry_frontmatter = """\
+registry_frontmatter = """
 /*
  * Planner Registry
  */
@@ -67,11 +67,11 @@ typedef std::map<std::string, BasePlannerFactory *> PlannerRegistry;
 
 // The dynamic_cast is necessary to work around a type inference bug when
 // using map_list_of on a polymorphic type.
-static PlannerRegistry registry = boost::assign::map_list_of\
+static PlannerRegistry registry = boost::assign::map_list_of
 """
 registry_entry = '    ("{name:s}", dynamic_cast<BasePlannerFactory *>(new {name:s}Factory))'
 registry_backmatter = """\
-    ;
+;
 
 std::vector<std::string> get_planner_names()
 {
@@ -97,8 +97,8 @@ ompl::base::Planner *create(std::string const &name,
     }
 }
 
-}
-}\
+} // namespace registry
+} // namespace or_ompl
 """
 
 def parse_version(version):
