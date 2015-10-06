@@ -29,7 +29,7 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 from __future__ import print_function
-import argparse, yaml, os.path
+import argparse, yaml, os.path, sys
 
 factory_frontmatter = """\
 #include <map>
@@ -104,6 +104,12 @@ ompl::base::Planner *create(std::string const &name,
 def parse_version(version):
     return tuple(int(x) for x in version.split('.'))
 
+def print_colored(colorcode, s):
+    if sys.stdout.isatty():
+        print('\033[{}m{}\033[0m'.format(colorcode, s))
+    else:
+        print(s)
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--include-dirs', type=str,
@@ -120,16 +126,16 @@ def main():
     planners = yaml.load(open(args.planners_yaml))
     supported_planners = []
 
-    print('\033[94mConfiguring or_ompl planner registry ...\033[0m')
+    print_colored(94, 'Configuring or_ompl planner registry ...')
     for planner in planners:
         for include_dir in include_dirs:
             header_path = os.path.join(include_dir, planner['header'])
             if os.path.exists(header_path):
                 supported_planners.append(planner)
-                print('  \033[92mplanner {} found\033[0m'.format(planner['name']))
+                print_colored(92, '  planner {} found'.format(planner['name']))
                 break
         else:
-            print('  \033[91mplanner {} not found\033[0m'.format(planner['name']))
+            print_colored(91, '  planner {} not found'.format(planner['name']))
 
     planners = supported_planners
     
