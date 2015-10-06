@@ -30,15 +30,15 @@ add_definitions(
 )
 
 # Generate the OMPL planner wrappers.
-file(MAKE_DIRECTORY "${CMAKE_BINARY_DIR}/src")
+file(MAKE_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/src")
 
-add_custom_command(OUTPUT "${CMAKE_BINARY_DIR}/src/PlannerRegistry.cpp"
+add_custom_command(OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/src/PlannerRegistry.cpp"
     MAIN_DEPENDENCY "${PROJECT_SOURCE_DIR}/planners.yaml"
     DEPENDS "${PROJECT_SOURCE_DIR}/scripts/wrap_planners.py"
     COMMAND "${PROJECT_SOURCE_DIR}/scripts/wrap_planners.py"
             --include-dirs="${OMPL_INCLUDE_DIRS}"
-            < "${PROJECT_SOURCE_DIR}/planners.yaml"
-            > "${CMAKE_BINARY_DIR}/src/PlannerRegistry.cpp"
+            --planners-yaml="${PROJECT_SOURCE_DIR}/planners.yaml"
+            --generated-cpp="${CMAKE_CURRENT_BINARY_DIR}/src/PlannerRegistry.cpp"
 )
 
 # Helper library.
@@ -51,7 +51,7 @@ add_library(${PROJECT_NAME}
     src/TSR.cpp
     src/TSRGoal.cpp
     src/TSRRobot.cpp
-    "${CMAKE_BINARY_DIR}/src/PlannerRegistry.cpp"
+    "${CMAKE_CURRENT_BINARY_DIR}/src/PlannerRegistry.cpp"
 )
 target_link_libraries(${PROJECT_NAME}
     ${OpenRAVE_LIBRARIES}
