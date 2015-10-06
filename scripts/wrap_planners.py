@@ -123,7 +123,8 @@ def main():
     include_dirs = args.include_dirs.split(os.path.pathsep)
 
     # Filter planners by version number.
-    planners = yaml.load(open(args.planners_yaml))
+    with open(args.planners_yaml) as fin:
+        planners = yaml.load(fin)
     supported_planners = []
 
     print_colored(94, 'Configuring or_ompl planner registry ...')
@@ -139,30 +140,28 @@ def main():
 
     planners = supported_planners
     
-    fout = open(args.generated_cpp,'w')
+    with open(args.generated_cpp,'w') as fout:
 
-    # Include the necessary OMPL 
-    headers = [ planner['header'] for planner in planners ]
-    includes = [ '#include <{:s}>'.format(path) for path in headers ]
-    fout.write(factory_frontmatter.format(includes='\n'.join(includes)))
+        # Include the necessary OMPL 
+        headers = [ planner['header'] for planner in planners ]
+        includes = [ '#include <{:s}>'.format(path) for path in headers ]
+        fout.write(factory_frontmatter.format(includes='\n'.join(includes)))
 
-    # Generate the factory class implementations.
-    names = [ planner['name'] for planner in planners ]
-    registry_entries = []
+        # Generate the factory class implementations.
+        names = [ planner['name'] for planner in planners ]
+        registry_entries = []
 
-    for qualified_name in names:
-        _, _, name = qualified_name.rpartition('::')
-        args = { 'name': name,
-                 'qualified_name': qualified_name }
-        fout.write(factory_template.format(**args))
-        registry_entries.append(registry_entry.format(**args))
+        for qualified_name in names:
+            _, _, name = qualified_name.rpartition('::')
+            args = { 'name': name,
+                     'qualified_name': qualified_name }
+            fout.write(factory_template.format(**args))
+            registry_entries.append(registry_entry.format(**args))
 
-    # Generate the registry of factory classes.
-    fout.write(registry_frontmatter)
-    fout.write('\n'.join(registry_entries))
-    fout.write(registry_backmatter)
-    
-    fout.close()
+        # Generate the registry of factory classes.
+        fout.write(registry_frontmatter)
+        fout.write('\n'.join(registry_entries))
+        fout.write(registry_backmatter)
 
 if __name__ == '__main__':
     main()
