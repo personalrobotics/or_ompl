@@ -33,8 +33,7 @@ OMPL include directory.
 
 The following table shows which OMPL planners are available via `or_ompl`.   
 
-(1 Oct 2015) Note that if you are using the ROS packaged OMPL `ros-indigo-ompl` then BIT* and FMT* will not be available.  
-To use those planners you will need to install the latest OMPL from source. There is a catkinized package here `DavidB-CMU/OMPL_catkin_pkg`
+(1 Oct 2015) Note that if you are using the ROS package of OMPL `ros-indigo-ompl` then BIT* and FMT* will not be available. To use those planners you will need to install the latest OMPL from source. There is a catkinized package here [OMPL_catkin_pkg](https://github.com/DavidB-CMU/OMPL_catkin_pkg)
 
 | Planner Name | <sub>OMPL Library</sub> | <sub>OpenRAVE<br>Plugin Name</sub> | <sub>`or_ompl`<br>Unit Test</sub> | <sub>Works with `herbpy`</sub> |
 |--------------|-------------------------|------------------------------------|-----------------------------------|-------------------------|
