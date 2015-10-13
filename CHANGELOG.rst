@@ -2,8 +2,8 @@
 Changelog for package or_ompl
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.7.0 (2015-10-12)
+------------------
 * Added FMT* and BIT* (`#28 <https://github.com/personalrobotics/or_ompl/issues/28>`_)
 * Added integration tests (`#23 <https://github.com/personalrobotics/or_ompl/issues/23>`_)
 * Added a print of which planners were found at build time (`#30 <https://github.com/personalrobotics/or_ompl/issues/30>`)
