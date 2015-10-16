@@ -37,7 +37,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <openrave-core.h>
 #include <openrave/planner.h>
 #include <boost/foreach.hpp>
-#include "TSRChain.h"
 
 namespace or_ompl
 {
@@ -63,7 +62,6 @@ public:
     bool m_isProcessing;
     std::string m_dat_filename;
     std::string m_trajs_fileformat;
-    std::vector<TSRChain::Ptr> m_tsrchains;
 
 protected:
     virtual bool serialize(std::ostream& O) const
@@ -76,9 +74,6 @@ protected:
         O << "<time_limit>" << m_timeLimit << "</time_limit>" << std::endl;
         O << "<dat_filename>" << m_dat_filename << "</dat_filename>" << std::endl;
         O << "<trajs_fileformat>" << m_trajs_fileformat << "</trajs_fileformat>" << std::endl;
-        BOOST_FOREACH(TSRChain::Ptr chain, m_tsrchains) {
-            O << "<tsr_chain>" << chain << "</tsr_chain>" << std::endl;
-        }
 
         return !!O;
     }
@@ -120,14 +115,6 @@ protected:
                 _ss >> m_dat_filename; 
             } else if (name == "trajs_fileformat") {
                 _ss >> m_trajs_fileformat;
-            } else if (name == "tsr_chain") {
-                TSRChain::Ptr chain = boost::make_shared<TSRChain>();
-                bool success = chain->deserialize(_ss);
-                if(!success){
-                    RAVELOG_ERROR("failed to deserialize TSRChain");
-                }else{
-                    m_tsrchains.push_back(chain);
-                }
             } else {
                 RAVELOG_WARN(str(boost::format("unknown tag %s\n") % name));
             }
