@@ -15,20 +15,19 @@ catkin_package(
 
 include_directories(
     include/${PROJECT_NAME}
-    ${catkin_INCLUDE_DIRS}
     ${Boost_INCLUDE_DIRS}
     ${Eigen_INCLUDE_DIRS}
     ${OMPL_INCLUDE_DIRS}
-    ${TinyXML_INCLUDE_DIRS}
     ${OpenRAVE_INCLUDE_DIRS}
-    ${Eigen_INCLUDE_DIRS}
+    ${TinyXML_INCLUDE_DIRS}
+    ${catkin_INCLUDE_DIRS}
 )
 link_directories(
     ${OMPL_LIBRARY_DIRS}
     ${catkin_LIBRARY_DIRS}
 )
 add_definitions(
-  ${Eigen_DEFINITIONS}
+    ${Eigen_DEFINITIONS}
 )
 
 # Generate the OMPL planner wrappers.
@@ -45,22 +44,22 @@ add_custom_command(OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/src/PlannerRegistry.cpp"
 
 # Helper library.
 add_library(${PROJECT_NAME}
+    src/OMPLConversions.cpp
     src/OMPLPlanner.cpp
     src/OMPLSimplifier.cpp
-    src/OMPLConversions.cpp
     src/RobotStateSpace.cpp
-    src/TSRChain.cpp
     src/TSR.cpp
+    src/TSRChain.cpp
     src/TSRGoal.cpp
     src/TSRRobot.cpp
     "${CMAKE_CURRENT_BINARY_DIR}/src/PlannerRegistry.cpp"
 )
 target_link_libraries(${PROJECT_NAME}
-    ${OpenRAVE_LIBRARIES}
-    ${OMPL_LIBRARIES}
     ${Boost_LIBRARIES}
-    ${TinyXML_LIBRARIES}
     ${Eigen_LIBRARIES}
+    ${OMPL_LIBRARIES}
+    ${OpenRAVE_LIBRARIES}
+    ${TinyXML_LIBRARIES}
 )
 
 # OpenRAVE plugin.
