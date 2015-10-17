@@ -10,7 +10,7 @@ find_package(Eigen REQUIRED)
 catkin_package(
     INCLUDE_DIRS include/
     LIBRARIES ${PROJECT_NAME}
-    DEPENDS OMPL Eigen
+    DEPENDS Boost Eigen OMPL OpenRAVE
 )
 
 include_directories(
