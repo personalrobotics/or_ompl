@@ -1,17 +1,17 @@
 cmake_minimum_required(VERSION 2.8.3)
 
 find_package(catkin REQUIRED cmake_modules openrave_catkin)
-catkin_package(
-    INCLUDE_DIRS include/
-    LIBRARIES ${PROJECT_NAME}
-    DEPENDS ompl eigen
-)
-
 find_package(Boost REQUIRED COMPONENTS system)
 find_package(OMPL REQUIRED)
 find_package(TinyXML REQUIRED)
 find_package(OpenRAVE REQUIRED)
 find_package(Eigen REQUIRED)
+
+catkin_package(
+    INCLUDE_DIRS include/
+    LIBRARIES ${PROJECT_NAME}
+    DEPENDS OMPL Eigen
+)
 
 include_directories(
     include/${PROJECT_NAME}
@@ -19,14 +19,14 @@ include_directories(
     ${OMPL_INCLUDE_DIRS}
     ${TinyXML_INCLUDE_DIRS}
     ${OpenRAVE_INCLUDE_DIRS}
-    ${EIGEN_INCLUDE_DIRS}
+    ${Eigen_INCLUDE_DIRS}
 )
 link_directories(
     ${OMPL_LIBRARY_DIRS}
     ${catkin_LIBRARY_DIRS}
 )
 add_definitions(
-  ${EIGEN_DEFINITIONS}
+  ${Eigen_DEFINITIONS}
 )
 
 # Generate the OMPL planner wrappers.
@@ -58,7 +58,7 @@ target_link_libraries(${PROJECT_NAME}
     ${OMPL_LIBRARIES}
     ${Boost_LIBRARIES}
     ${TinyXML_LIBRARIES}
-    ${EIGEN_LIBRARIES}
+    ${Eigen_LIBRARIES}
 )
 
 # OpenRAVE plugin.
