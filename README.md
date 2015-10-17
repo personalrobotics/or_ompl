@@ -60,12 +60,14 @@ manage the build process.
 Once the dependencies are satisfied, you can simply clone this repository into
 your Catkin workspace and run `catkin_make`:
 
-    $ . /my/workspace/devel/setup.bash
-    $ cd /my/workspace/src
-    $ git clone https://github.com/personalrobotics/openrave_catkin.git
-    $ git clone https://github.com/personalrobotics/or_ompl.git
-    $ cd ..
-    $ catkin_make
+```shell
+$ . /my/workspace/devel/setup.bash
+$ cd /my/workspace/src
+$ git clone https://github.com/personalrobotics/openrave_catkin.git
+$ git clone https://github.com/personalrobotics/or_ompl.git
+$ cd ..
+$ catkin_make
+```
 
 This will build the OpenRAVE plugins into the `share/openrave-0.9/plugins`
 directory in your devel space. If you run `catkin_make install` the plugin will
@@ -87,26 +89,32 @@ provided by the [openrave_planning](https://github.com/jsk-ros-pkg/openrave_plan
 Once the dependencies are satisified, you can simply clone this repository into
 your `ROS_PACKAGE_PATH` and run `rosmake`:
 
-    $ cd /my/workspace
-    $ export ROS_PACKAGE_PATH="$(pwd):${ROS_PACKAGE_PATH}"
-    $ git clone https://github.com/personalrobotics/or_ompl.git
-    $ rosmake or_ompl
+```shell
+$ cd /my/workspace
+$ export ROS_PACKAGE_PATH="$(pwd):${ROS_PACKAGE_PATH}"
+$ git clone https://github.com/personalrobotics/or_ompl.git
+$ rosmake or_ompl
+```
 
 The OpenRAVE plugins are built to the library `bin/libor_ompl.so`. You will
 need to manually add this directory to your `OPENRAVE_PLUGINS` path so that
 OpenRAVE can find it:
 
-    $ export OPENRAVE_PLUGINS="$(pwd)/or_ompl/lib:${OPENRAVE_PLUGINS}"
+```shell
+$ export OPENRAVE_PLUGINS="$(pwd)/or_ompl/lib:${OPENRAVE_PLUGINS}"
+```
 
 ### Standalone Build Instructions
 
 You can build or_ompl entirely ROS-agnostic by setting the `NO_ROS` variable:
 
-    $ git clone https://github.com/personalrobotics/or_ompl.git
-    $ mkdir build
-    $ cd build
-    $ cmake -DNO_ROS:bool=1 ..
-    $ make
+```shell
+$ git clone https://github.com/personalrobotics/or_ompl.git
+$ mkdir build
+$ cd build
+$ cmake -DNO_ROS:bool=1 ..
+$ make
+```
 
 Just as in the rosbuild case, this will build the plugin in the `lib/`
 directory. You will need to add this directory to your `OPENRAVE_PLUGINS` path
@@ -140,40 +148,42 @@ then shortcut the trajectory using OMPL's path simplifier.  We assume that the
 variable `robot` is an OpenRAVE robot that is configured with an appropriate
 set of active DOFs:
 
-    from openravepy import *
+```python
+from openravepy import *
 
-    env = ... # your environment
-    robot = ... # your robot
-    planner = RaveCreatePlanner(env, 'OMPL_RRTConnect')
-    simplifier = RaveCreatePlanner(env, 'OMPL_Simplifier')
+env = ... # your environment
+robot = ... # your robot
+planner = RaveCreatePlanner(env, 'OMPL_RRTConnect')
+simplifier = RaveCreatePlanner(env, 'OMPL_Simplifier')
 
-    # Setup the planning instance.
-    params = Planner.PlannerParameters()
-    params.SetRobotActiveJoints(robot)
-    params.SetGoalConfig(goal)
+# Setup the planning instance.
+params = Planner.PlannerParameters()
+params.SetRobotActiveJoints(robot)
+params.SetGoalConfig(goal)
 
-    # Set the timeout and planner-specific parameters. You can view a list of
-    # supported parameters by calling: planner.SendCommand('GetParameters')
-    params.SetExtraParameters('<range>0.02</range>')
+# Set the timeout and planner-specific parameters. You can view a list of
+# supported parameters by calling: planner.SendCommand('GetParameters')
+params.SetExtraParameters('<range>0.02</range>')
 
-    planner.InitPlan(robot, params)
+planner.InitPlan(robot, params)
 
-    # Invoke the planner.
-    traj = RaveCreateTrajectory(env, '')
-    result = planner.PlanPath(traj)
-    assert result == PlannerStatus.HasSolution
-    
-    # Shortcut the path.
-    simplifier.InitPlan(robot, Planner.PlannerParameters())
-    result = simplifier.PlanPath(traj)
-    assert result == PlannerStatus.HasSolution
+# Invoke the planner.
+traj = RaveCreateTrajectory(env, '')
+result = planner.PlanPath(traj)
+assert result == PlannerStatus.HasSolution
 
-    # Time the trajectory.
-    result = planningutils.RetimeTrajectory(traj)
-    assert result == PlannerStatus.HasSolution
+# Shortcut the path.
+simplifier.InitPlan(robot, Planner.PlannerParameters())
+result = simplifier.PlanPath(traj)
+assert result == PlannerStatus.HasSolution
 
-    # Execute the trajectory.
-    robot.GetController().SetPath(traj)
+# Time the trajectory.
+result = planningutils.RetimeTrajectory(traj)
+assert result == PlannerStatus.HasSolution
+
+# Execute the trajectory.
+robot.GetController().SetPath(traj)
+```
 
 A working version of this script is included in `scripts/example.py`. See the
 [documentation on the OpenRAVE website](http://openrave.org/docs/latest_stable/tutorials/openravepy_examples/#directly-launching-planners)
