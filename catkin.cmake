@@ -16,6 +16,8 @@ catkin_package(
 include_directories(
     include/${PROJECT_NAME}
     ${catkin_INCLUDE_DIRS}
+    ${Boost_INCLUDE_DIRS}
+    ${Eigen_INCLUDE_DIRS}
     ${OMPL_INCLUDE_DIRS}
     ${TinyXML_INCLUDE_DIRS}
     ${OpenRAVE_INCLUDE_DIRS}
