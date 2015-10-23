@@ -29,44 +29,6 @@ with an updated 'planners.yaml' file. The presence or absence of each planner
 is determined by testing whether the corresponding header file exists in the
 OMPL include directory.
 
-## Available Planners
-
-The following table shows which OMPL planners are available via `or_ompl`.   
-
-(1 Oct 2015) Note that if you are using the ROS package of OMPL `ros-indigo-ompl` then BIT* and FMT* will not be available. To use those planners you will need to install the latest OMPL from source. There is a catkinized package here [OMPL_catkin_pkg](https://github.com/DavidB-CMU/OMPL_catkin_pkg)
-
-| Planner Name | <sub>OMPL Library</sub> | <sub>OpenRAVE<br>Plugin Name</sub> | <sub>`or_ompl`<br>Unit Test</sub> | <sub>Works with `herbpy`</sub> |
-|--------------|-------------------------|------------------------------------|-----------------------------------|-------------------------|
-| <sub>BIT* (Batch Informed Trees)</sub> | <sub>BITstar</sub> | <sub>OMPL_BITstar</sub> | &#x2717; | &#10004; |
-| <sub>BKPIECE1 (Bi-directional KPIECE)</sub> | <sub>BKPIECE1</sub> | <sub>OMPL_BKPIECE1</sub> | &#10004; | &#10004; | 
-| <sub>EST (Expansive Space Trees)</sub> | <sub>EST</sub> | <sub>OMPL_EST</sub> | &#10004; | &#10004; | 
-| <sub>FMT* (Fast Marching Tree)</sub> | <sub>FMT</sub> | <sub>OMPL_FMT</sub> |&#x2717;| &#10004; |
-| <sub>KPIECE1 (Kinematic Planning by Interior-Exterior Cell Exploration)</sub> | <sub>KPIECE1</sub> | <sub>OMPL_KPIECE1</sub> | &#10004; | &#10004; |
-| <sub>LBKPIECE1 (Lazy Bi-directional KPIECE)</sub> | <sub>LBKPIECE1</sub> | <sub>OMPL_LBKPIECE1</sub> | &#10004; | &#10004; |
-| <sub>LazyPRM</sub> | <sub>LazyPRM</sub> | <sub>OMPL_LazyPRM</sub> | &#10004; | &#10004; |
-| <sub>LazyRRT</sub> | <sub>LazyRRT</sub> | <sub>OMPL_LazyRRT</sub> | &#10004; | &#10004; |
-| <sub>PDST (Path-Directed Subdivision Trees)</sub> | <sub>PDST</sub> | <sub>OMPL_PDST</sub> |&#x2717;| &#10004; |
-| <sub>PRM (Probabilistic Road Map)</sub> | <sub>PRM</sub> | <sub>OMPL_PRM</sub> | &#10004; | &#10004; |
-| <sub>PRM*</sub> | <sub>PRMstar</sub> | <sub>OMPL_PRMstar</sub> | &#10004; | &#10004; |
-| <sub>RRT (Rapidly Exploring Random Trees)</sub> | <sub>RRT</sub> | <sub>OMPL_RRT</sub> | &#10004; | &#10004; |
-| <sub>RRTConnect (Bi-directional RRT)</sub> | <sub>RRTConnect</sub> | <sub>OMPL_RRTConnect</sub> | &#10004; | &#10004; |
-| <sub>RRT*</sub> | <sub>RRTstar</sub> | <sub>OMPL_RRTstar</sub> |&#x2717;|&#10004; |
-| <sub>SBL (Single-query Bi-directional Lazy collision checking planner)</sub> | <sub>SBL</sub> | <sub>OMPL_SBL</sub> | &#10004; | &#10004; |
-| <sub>SPARS (SPArse Roadmap Spanner)</sub> | <sub>SPARS</sub> | <sub>OMPL_SPARS</sub> |&#x2717;| &#x2717; |
-| <sub>SPARS2</sub> | <sub>SPARStwo</sub> | <sub>OMPL_SPARStwo</sub> |&#x2717;| &#x2717; |
-| <sub>T-RRT (Transition-based RRT)</sub> | <sub>TRRT</sub> | <sub>OMPL_TRRT</sub> |&#x2717;| &#10004; |
-| <sub>pRRT (Parallel RRT)</sub> | <sub>pRRT</sub> | <sub>OMPL_pRRT</sub> |&#x2717;| &#x2717; |
-| <sub>pSBL (Parallel SBL)</sub> | <sub>pSBL</sub> | <sub>OMPL_pSBL</sub> |&#x2717;| &#x2717; |
-| <sub>Cforest (Coupled Forest of Random Engrafting Search Trees - parallelization framework)</sub> | <sub>CForest</sub> | <sub>N/A</sub> | <sub>N/A</sub> |  |
-| <sub>Thunder</sub> | <sub>Thunder</sub> | <sub>N/A</sub> | <sub>N/A</sub> |  |
-| <sub>Lightning</sub> | <sub>Lightning</sub> | <sub>N/A</sub> | <sub>N/A</sub> |  |
-| <sub>LazyPRM*</sub> | <sub>LazyPRMstar</sub> | <sub>N/A</sub> | <sub>N/A</sub> |  |
-| <sub>BiTRRT (Bidirectional T-RRT)</sub> | <sub>BiTRRT</sub> |   <sub>N/A</sub> | <sub>N/A</sub> |  |
-| <sub>LazyLBTRRT</sub> | <sub>LazyLBTRRT</sub> | <sub>N/A</sub> | <sub>N/A</sub> |  |
-| <sub>LBTRRT (Lower Bound Tree RRT)</sub> | <sub>LBTRRT</sub> | <sub>N/A</sub> | <sub>N/A</sub> |  |
-| <sub>STRIDE (Search Tree with Resolution Independent Density Estimation)</sub> | <sub>STRIDE</sub> | <sub>N/A</sub> | <sub>N/A</sub> |  |
-
-
 ## Dependencies
 
 See the `package.xml` file for a full list of dependencies. These are the major
@@ -226,6 +188,43 @@ robot.GetController().SetPath(traj)
 A working version of this script is included in `scripts/example.py`. See the
 [documentation on the OpenRAVE website](http://openrave.org/docs/latest_stable/tutorials/openravepy_examples/#directly-launching-planners)
 for more information about how to invoke an OpenRAVE planner.
+
+## Available Planners
+
+The following table shows which OMPL planners are available via `or_ompl`.   
+
+(1 Oct 2015) Note that if you are using the ROS package of OMPL `ros-indigo-ompl` then BIT* and FMT* will not be available. To use those planners you will need to install the latest OMPL from source. There is a catkinized package here [OMPL_catkin_pkg](https://github.com/DavidB-CMU/OMPL_catkin_pkg)
+
+| Planner Name | <sub>OMPL Library</sub> | <sub>OpenRAVE<br>Plugin Name</sub> | <sub>`or_ompl`<br>Unit Test</sub> |
+|--------------|-------------------------|------------------------------------|-----------------------------------|
+| <sub>BIT* (Batch Informed Trees)</sub> | <sub>BITstar</sub> | <sub>OMPL_BITstar</sub> | &#x2717; |
+| <sub>BKPIECE1 (Bi-directional KPIECE)</sub> | <sub>BKPIECE1</sub> | <sub>OMPL_BKPIECE1</sub> | &#10004; |
+| <sub>EST (Expansive Space Trees)</sub> | <sub>EST</sub> | <sub>OMPL_EST</sub> | &#10004; |
+| <sub>FMT* (Fast Marching Tree)</sub> | <sub>FMT</sub> | <sub>OMPL_FMT</sub> |&#x2717;|
+| <sub>KPIECE1 (Kinematic Planning by Interior-Exterior Cell Exploration)</sub> | <sub>KPIECE1</sub> | <sub>OMPL_KPIECE1</sub> | &#10004; |
+| <sub>LBKPIECE1 (Lazy Bi-directional KPIECE)</sub> | <sub>LBKPIECE1</sub> | <sub>OMPL_LBKPIECE1</sub> | &#10004; |
+| <sub>LazyPRM</sub> | <sub>LazyPRM</sub> | <sub>OMPL_LazyPRM</sub> | &#10004; |
+| <sub>LazyRRT</sub> | <sub>LazyRRT</sub> | <sub>OMPL_LazyRRT</sub> | &#10004; |
+| <sub>PDST (Path-Directed Subdivision Trees)</sub> | <sub>PDST</sub> | <sub>OMPL_PDST</sub> |&#x2717;|
+| <sub>PRM (Probabilistic Road Map)</sub> | <sub>PRM</sub> | <sub>OMPL_PRM</sub> | &#10004; |
+| <sub>PRM*</sub> | <sub>PRMstar</sub> | <sub>OMPL_PRMstar</sub> | &#10004; |
+| <sub>RRT (Rapidly Exploring Random Trees)</sub> | <sub>RRT</sub> | <sub>OMPL_RRT</sub> | &#10004; |
+| <sub>RRTConnect (Bi-directional RRT)</sub> | <sub>RRTConnect</sub> | <sub>OMPL_RRTConnect</sub> | &#10004; |
+| <sub>RRT*</sub> | <sub>RRTstar</sub> | <sub>OMPL_RRTstar</sub> |&#x2717;|
+| <sub>SBL (Single-query Bi-directional Lazy collision checking planner)</sub> | <sub>SBL</sub> | <sub>OMPL_SBL</sub> | &#10004; |
+| <sub>SPARS (SPArse Roadmap Spanner)</sub> | <sub>SPARS</sub> | <sub>OMPL_SPARS</sub> |&#x2717;|
+| <sub>SPARS2</sub> | <sub>SPARStwo</sub> | <sub>OMPL_SPARStwo</sub> |&#x2717;|
+| <sub>T-RRT (Transition-based RRT)</sub> | <sub>TRRT</sub> | <sub>OMPL_TRRT</sub> |&#x2717;|
+| <sub>pRRT (Parallel RRT)</sub> | <sub>pRRT</sub> | <sub>OMPL_pRRT</sub> |&#x2717;|
+| <sub>pSBL (Parallel SBL)</sub> | <sub>pSBL</sub> | <sub>OMPL_pSBL</sub> |&#x2717;|
+| <sub>Cforest (Coupled Forest of Random Engrafting Search Trees - parallelization framework)</sub> | <sub>CForest</sub> | <sub>N/A</sub> | <sub>N/A</sub> |
+| <sub>Thunder</sub> | <sub>Thunder</sub> | <sub>N/A</sub> | <sub>N/A</sub> |
+| <sub>Lightning</sub> | <sub>Lightning</sub> | <sub>N/A</sub> | <sub>N/A</sub> |
+| <sub>LazyPRM*</sub> | <sub>LazyPRMstar</sub> | <sub>N/A</sub> | <sub>N/A</sub> |
+| <sub>BiTRRT (Bidirectional T-RRT)</sub> | <sub>BiTRRT</sub> |   <sub>N/A</sub> | <sub>N/A</sub> |
+| <sub>LazyLBTRRT</sub> | <sub>LazyLBTRRT</sub> | <sub>N/A</sub> | <sub>N/A</sub> |
+| <sub>LBTRRT (Lower Bound Tree RRT)</sub> | <sub>LBTRRT</sub> | <sub>N/A</sub> | <sub>N/A</sub> |
+| <sub>STRIDE (Search Tree with Resolution Independent Density Estimation)</sub> | <sub>STRIDE</sub> | <sub>N/A</sub> | <sub>N/A</sub> |
 
 ## License
 or_ompl is licensed under a BSD license. See `LICENSE` for more information.
