@@ -193,14 +193,14 @@ for more information about how to invoke an OpenRAVE planner.
 
 The following table shows which OMPL planners are available via `or_ompl`.   
 
-(1 Oct 2015) Note that if you are using the ROS package of OMPL `ros-indigo-ompl` then BIT* and FMT* will not be available. To use those planners you will need to install the latest OMPL from source. There is a catkinized package here [OMPL_catkin_pkg](https://github.com/DavidB-CMU/OMPL_catkin_pkg)
+(1 Oct 2015) Note that if you are using the ROS package of OMPL `ros-indigo-ompl` then BIT* and FMT* will not be available. To use those planners&#9827; you will need to install the latest OMPL from source. There is a catkinized package here [OMPL_catkin_pkg](https://github.com/DavidB-CMU/OMPL_catkin_pkg)
 
 | Planner Name | <sub>OMPL Library</sub> | <sub>OpenRAVE<br>Plugin Name</sub> | <sub>`or_ompl`<br>Unit Test</sub> |
 |--------------|-------------------------|------------------------------------|-----------------------------------|
-| <sub>BIT* (Batch Informed Trees)</sub> | <sub>BITstar</sub> | <sub>OMPL_BITstar</sub> | &#x2717; |
+| <sub>BIT* (Batch Informed Trees) &#9827;</sub> | <sub>BITstar</sub> | <sub>OMPL_BITstar</sub> | &#x2717; |
 | <sub>BKPIECE1 (Bi-directional KPIECE)</sub> | <sub>BKPIECE1</sub> | <sub>OMPL_BKPIECE1</sub> | &#10004; |
 | <sub>EST (Expansive Space Trees)</sub> | <sub>EST</sub> | <sub>OMPL_EST</sub> | &#10004; |
-| <sub>FMT* (Fast Marching Tree)</sub> | <sub>FMT</sub> | <sub>OMPL_FMT</sub> |&#x2717;|
+| <sub>FMT* (Fast Marching Tree) &#9827;</sub> | <sub>FMT</sub> | <sub>OMPL_FMT</sub> |&#x2717;|
 | <sub>KPIECE1 (Kinematic Planning by Interior-Exterior Cell Exploration)</sub> | <sub>KPIECE1</sub> | <sub>OMPL_KPIECE1</sub> | &#10004; |
 | <sub>LBKPIECE1 (Lazy Bi-directional KPIECE)</sub> | <sub>LBKPIECE1</sub> | <sub>OMPL_LBKPIECE1</sub> | &#10004; |
 | <sub>LazyPRM</sub> | <sub>LazyPRM</sub> | <sub>OMPL_LazyPRM</sub> | &#10004; |
