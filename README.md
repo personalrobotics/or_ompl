@@ -1,5 +1,7 @@
 # or_ompl
 
+[![Build Status](https://travis-ci.org/personalrobotics/or_ompl.svg?branch=master)](https://travis-ci.org/personalrobotics/or_ompl)
+
 [OpenRAVE](http://openrave.org/) bindings for the
 [OMPL](http://ompl.kavrakilab.org/) suite of motion planning algorithms. This
 package provides an OMPL plugin that implements the `OpenRAVE::PlannerBase`
