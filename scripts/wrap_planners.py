@@ -48,7 +48,7 @@ struct BasePlannerFactory {{
 
 /*
  * Planner Factories
- */\
+ */
 """
 factory_template = """\
 struct {name:s}Factory : public virtual BasePlannerFactory {{
@@ -59,7 +59,7 @@ struct {name:s}Factory : public virtual BasePlannerFactory {{
 }};
 """
 
-registry_frontmatter = """\
+registry_frontmatter = """
 /*
  * Planner Registry
  */
@@ -67,11 +67,11 @@ typedef std::map<std::string, BasePlannerFactory *> PlannerRegistry;
 
 // The dynamic_cast is necessary to work around a type inference bug when
 // using map_list_of on a polymorphic type.
-static PlannerRegistry registry = boost::assign::map_list_of\
+static PlannerRegistry registry = boost::assign::map_list_of
 """
 registry_entry = '    ("{name:s}", dynamic_cast<BasePlannerFactory *>(new {name:s}Factory))'
 registry_backmatter = """\
-    ;
+;
 
 std::vector<std::string> get_planner_names()
 {
@@ -97,55 +97,71 @@ ompl::base::Planner *create(std::string const &name,
     }
 }
 
-}
-}\
+} // namespace registry
+} // namespace or_ompl
 """
 
 def parse_version(version):
     return tuple(int(x) for x in version.split('.'))
 
+def print_colored(colorcode, s):
+    if sys.stdout.isatty():
+        print('\033[{}m{}\033[0m'.format(colorcode, s))
+    else:
+        print(s)
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--include-dirs', type=str,
                         help='OMPL include directories')
+    parser.add_argument('--planners-yaml', type=str, required=True,
+                        help='input filename for planner list')
+    parser.add_argument('--generated-cpp', type=str, required=True,
+                        help='output filename for generated code')
     args = parser.parse_args()
 
     include_dirs = args.include_dirs.split(os.path.pathsep)
 
     # Filter planners by version number.
-    planners = yaml.load(sys.stdin)
+    with open(args.planners_yaml) as fin:
+        planners = yaml.load(fin)
     supported_planners = []
 
+    print_colored(94, 'Configuring or_ompl planner registry ...')
     for planner in planners:
         for include_dir in include_dirs:
             header_path = os.path.join(include_dir, planner['header'])
             if os.path.exists(header_path):
                 supported_planners.append(planner)
+                print_colored(92, '  planner {} found'.format(planner['name']))
                 break
+        else:
+            print_colored(91, '  planner {} not found'.format(planner['name']))
 
     planners = supported_planners
+    
+    with open(args.generated_cpp,'w') as fout:
 
-    # Include the necessary OMPL 
-    headers = [ planner['header'] for planner in planners ]
-    includes = [ '#include <{:s}>'.format(path) for path in headers ]
-    print(factory_frontmatter.format(includes='\n'.join(includes)))
+        # Include the necessary OMPL 
+        headers = [ planner['header'] for planner in planners ]
+        includes = [ '#include <{:s}>'.format(path) for path in headers ]
+        fout.write(factory_frontmatter.format(includes='\n'.join(includes)))
 
-    # Generate the factory class implementations.
-    names = [ planner['name'] for planner in planners ]
-    registry_entries = []
+        # Generate the factory class implementations.
+        names = [ planner['name'] for planner in planners ]
+        registry_entries = []
 
-    for qualified_name in names:
-        _, _, name = qualified_name.rpartition('::')
-        args = { 'name': name,
-                 'qualified_name': qualified_name }
-        print(factory_template.format(**args))
-        registry_entries.append(registry_entry.format(**args))
+        for qualified_name in names:
+            _, _, name = qualified_name.rpartition('::')
+            args = { 'name': name,
+                     'qualified_name': qualified_name }
+            fout.write(factory_template.format(**args))
+            registry_entries.append(registry_entry.format(**args))
 
-    # Generate the registry of factory classes.
-    print(registry_frontmatter)
-    print('\n'.join(registry_entries))
-    print(registry_backmatter)
-
+        # Generate the registry of factory classes.
+        fout.write(registry_frontmatter)
+        fout.write('\n'.join(registry_entries))
+        fout.write(registry_backmatter)
 
 if __name__ == '__main__':
     main()

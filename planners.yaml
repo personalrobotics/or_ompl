@@ -1,8 +1,12 @@
 ---
+- name: ompl::geometric::BITstar
+  header: ompl/geometric/planners/bitstar/BITstar.h
 - name: ompl::geometric::BKPIECE1
   header: ompl/geometric/planners/kpiece/BKPIECE1.h
 - name: ompl::geometric::EST
   header: ompl/geometric/planners/est/EST.h
+- name: ompl::geometric::FMT
+  header: ompl/geometric/planners/fmt/FMT.h
 - name: ompl::geometric::KPIECE1
   header: ompl/geometric/planners/kpiece/KPIECE1.h
 - name: ompl::geometric::LazyRRT

@@ -65,6 +65,12 @@ public:
     
     bool GetTimes(std::ostream & sout, std::istream & sin) const;
 
+protected:
+    const ompl::base::PlannerPtr & get_planner()
+    {
+        return m_planner;
+    }
+
 private:
     bool m_initialized;
     PlannerFactory m_planner_factory;
