@@ -1,16 +1,16 @@
 cmake_minimum_required(VERSION 2.8.3)
 
 find_package(catkin REQUIRED cmake_modules openrave_catkin)
-find_package(Boost REQUIRED COMPONENTS system)
+find_package(Boost REQUIRED COMPONENTS chrono system)
 find_package(OMPL REQUIRED)
-find_package(TinyXML REQUIRED)
 find_package(OpenRAVE REQUIRED)
+find_package(TinyXML REQUIRED)
 find_package(Eigen REQUIRED)
 
 catkin_package(
     INCLUDE_DIRS include/
     LIBRARIES ${PROJECT_NAME}
-    DEPENDS Boost Eigen OMPL OpenRAVE
+    DEPENDS Boost eigen OMPL OpenRAVE
 )
 
 include_directories(
@@ -24,6 +24,7 @@ include_directories(
 )
 link_directories(
     ${OMPL_LIBRARY_DIRS}
+    ${OpenRAVE_LIBRARY_DIRS}
     ${catkin_LIBRARY_DIRS}
 )
 add_definitions(
