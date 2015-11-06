@@ -5,11 +5,12 @@ find_package(Boost REQUIRED COMPONENTS chrono system)
 find_package(OMPL REQUIRED)
 find_package(OpenRAVE REQUIRED)
 find_package(TinyXML REQUIRED)
+find_package(Eigen REQUIRED)
 
 catkin_package(
     INCLUDE_DIRS include/
     LIBRARIES ${PROJECT_NAME}
-    DEPENDS Boost Eigen OMPL OpenRAVE
+    DEPENDS Boost eigen OMPL OpenRAVE
 )
 
 include_directories(
