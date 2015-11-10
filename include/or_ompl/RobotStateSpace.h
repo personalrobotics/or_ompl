@@ -26,6 +26,8 @@ namespace or_ompl {
          */
         ~RobotState();
 
+        void enforceBounds();
+
         /**
          * Gets a reference to the value at index i.
          */

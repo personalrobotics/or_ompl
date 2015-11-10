@@ -191,7 +191,7 @@ RobotStateSpacePtr CreateStateSpace(OpenRAVE::RobotBasePtr const robot,
 
 OpenRAVE::PlannerStatus ToORTrajectory(
         OpenRAVE::RobotBasePtr const &robot,
-        ompl::geometric::PathGeometric const &ompl_traj,
+        ompl::geometric::PathGeometric& ompl_traj,
         OpenRAVE::TrajectoryBasePtr or_traj)
 {
     using ompl::geometric::PathGeometric;
@@ -200,12 +200,13 @@ OpenRAVE::PlannerStatus ToORTrajectory(
     or_traj->Init(robot->GetActiveConfigurationSpecification("linear"));
 
     for (size_t i = 0; i < ompl_traj.getStateCount(); ++i){
-        RobotState const *state = ompl_traj.getState(i)->as<RobotState>();
+        RobotState  *state = ompl_traj.getState(i)->as<RobotState>();
         if (!state) {
             RAVELOG_ERROR("Unable to convert output trajectory."
                           "State is not a RealVectorStateSpace::StateType.");
             return OpenRAVE::PS_Failed;
         }
+        state->enforceBounds();
         or_traj->Insert(i, state->getValues(), true);
     }
     return OpenRAVE::PS_HasSolution;

@@ -134,6 +134,7 @@ OpenRAVE::PlannerStatus OMPLSimplifier::PlanPath(OpenRAVE::TrajectoryBasePtr ptr
         for (size_t idof = 0; idof < num_dof; ++idof) {
             waypoint_ompl[idof] = waypoint_openrave[idof];
         }
+        waypoint_ompl->enforceBounds();
         path.append(waypoint_ompl.get());
     }
 
@@ -163,8 +164,9 @@ OpenRAVE::PlannerStatus OMPLSimplifier::PlanPath(OpenRAVE::TrajectoryBasePtr ptr
         //               ratio of the total number of states
         // - snapToVertex: ratio of total path length used to snap samples to
         //                 vertices
-        bool const changed = m_simplifier->shortcutPath(path, 1, 1, 1.0, 0.005);
-
+        //bool const changed = m_simplifier->shortcutPath(path, 1, 1, 1.0, 0.005);
+        //bool const changed = m_simplifier->reduceVertices(path, 1, 1, 0.2);
+        bool changed = false;
         num_changes += !!changed;
         progress._iteration += 1;
 

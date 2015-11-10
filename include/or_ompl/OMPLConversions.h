@@ -53,7 +53,7 @@ RobotStateSpacePtr CreateStateSpace(OpenRAVE::RobotBasePtr const robot,
                                     OMPLPlannerParameters const &params);
 
 OpenRAVE::PlannerStatus ToORTrajectory(OpenRAVE::RobotBasePtr const &robot,
-                                       ompl::geometric::PathGeometric const &ompl_traj,
+                                       ompl::geometric::PathGeometric &ompl_traj,
                                        OpenRAVE::TrajectoryBasePtr or_traj);
 
 }

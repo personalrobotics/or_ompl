@@ -17,7 +17,7 @@ void RobotState::set(const std::vector<double> &dof_values) {
     for(unsigned int idx=0; idx < _indices.size(); idx++){
         value(idx) = dof_values[idx];
     }
-
+    enforceBounds();
 }
 
 double& RobotState::value(const size_t& idx) {
@@ -46,6 +46,24 @@ std::vector<double> RobotState::getValues() const {
     }
 
     return retval;
+}
+
+void  RobotState::enforceBounds() {
+    for (size_t i = 0; i < _indices.size(); i++) {
+        if (_isContinuous[i]) {
+            ompl::base::SO2StateSpace::StateType* state = this->as<ompl::base::SO2StateSpace::StateType>(i);
+            if (!state) continue;
+            else {
+                double v = fmod(state->value, 2.0 * M_PI);
+                if (v <= -M_PI)
+                 v += 2.0 * M_PI;
+                else
+                 if (v > M_PI)
+                     v -= 2.0 * M_PI;
+                state->value = v;
+            }
+        }
+    }
 }
 
 RobotStateSpace::RobotStateSpace(const std::vector<int> &dof_indices, const std::vector<bool>& is_continuous) :
