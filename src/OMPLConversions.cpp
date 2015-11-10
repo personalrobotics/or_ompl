@@ -174,6 +174,9 @@ RobotStateSpacePtr CreateStateSpace(OpenRAVE::RobotBasePtr const robot,
                      " supported by OMPL; planning will commence as if"
                      " there are no weights.\n");
     }
+
+    state_space->setup();
+
     return state_space;
 }
 
