@@ -2,6 +2,16 @@
 Changelog for package or_ompl
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.7.0 (2015-10-12)
+------------------
+* Added FMT* and BIT* (`#28 <https://github.com/personalrobotics/or_ompl/issues/28>`_)
+* Added integration tests (`#23 <https://github.com/personalrobotics/or_ompl/issues/23>`_)
+* Added a print of which planners were found at build time (`#30 <https://github.com/personalrobotics/or_ompl/issues/30>`_)
+* Fixed codegen to output planner registery code into a package-specific location to avoid conflicts
+* Improved style of the auto-generated code
+* Upgraded package.xml to format 2
+* Contributors: Chris Dellin, David Butterworth, Michael Koval
+
 0.6.0 (2015-05-01)
 ------------------
 
