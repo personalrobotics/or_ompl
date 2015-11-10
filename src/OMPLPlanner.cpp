@@ -33,6 +33,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 *************************************************************************/
 #include <time.h>
 #include <tinyxml.h>
+#include <boost/chrono.hpp>
 #include <boost/foreach.hpp>
 #include <boost/make_shared.hpp>
 #include <ompl/config.h>
@@ -306,10 +307,9 @@ OpenRAVE::PlannerStatus OMPLPlanner::PlanPath(OpenRAVE::TrajectoryBasePtr ptraj)
         RAVELOG_ERROR("Unable to plan. Did you call InitPlan?\n");
         return OpenRAVE::PS_Failed;
     }
-    
-    struct timespec tic;
-    struct timespec toc;
-    clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &tic);
+
+    boost::chrono::steady_clock::time_point const tic
+       = boost::chrono::steady_clock::now();
     
     OpenRAVE::PlannerStatus planner_status;
     try {
@@ -339,25 +339,28 @@ OpenRAVE::PlannerStatus OMPLPlanner::PlanPath(OpenRAVE::TrajectoryBasePtr ptraj)
         planner_status = OpenRAVE::PS_Failed;
     }
     
-    clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &toc);
-    m_totalPlanningTime += (toc.tv_sec - tic.tv_sec) + 1.0e-9*(toc.tv_nsec - tic.tv_nsec);
+    boost::chrono::steady_clock::time_point const toc
+        = boost::chrono::steady_clock::now();
+    m_totalPlanningTime += boost::chrono::duration_cast<
+        boost::chrono::duration<double> >(toc - tic).count();
     
     return planner_status;
 }
 
 bool OMPLPlanner::IsInOrCollision(std::vector<double> const &values, std::vector<int> const &indices)
 {
-    struct timespec tic;
-    struct timespec toc;
-    clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &tic);
+    boost::chrono::steady_clock::time_point const tic
+       = boost::chrono::steady_clock::now();
     
     m_robot->SetDOFValues(values, OpenRAVE::KinBody::CLA_Nothing, indices);
     bool const collided = GetEnv()->CheckCollision(m_robot)
                        || m_robot->CheckSelfCollision();
     
-    clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &toc);
+    boost::chrono::steady_clock::time_point const toc
+        = boost::chrono::steady_clock::now();
+    m_totalCollisionTime += boost::chrono::duration_cast<
+        boost::chrono::duration<double> >(toc - tic).count();
     m_numCollisionChecks++;
-    m_totalCollisionTime += (toc.tv_sec - tic.tv_sec) + 1.0e-9*(toc.tv_nsec - tic.tv_nsec);
     
     return collided;
 }

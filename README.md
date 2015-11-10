@@ -1,5 +1,7 @@
 # or_ompl
 
+[![Build Status](https://travis-ci.org/personalrobotics/or_ompl.svg?branch=master)](https://travis-ci.org/personalrobotics/or_ompl)
+
 [OpenRAVE](http://openrave.org/) bindings for the
 [OMPL](http://ompl.kavrakilab.org/) suite of motion planning algorithms. This
 package provides an OMPL plugin that implements the `OpenRAVE::PlannerBase`
@@ -60,12 +62,14 @@ manage the build process.
 Once the dependencies are satisfied, you can simply clone this repository into
 your Catkin workspace and run `catkin_make`:
 
-    $ . /my/workspace/devel/setup.bash
-    $ cd /my/workspace/src
-    $ git clone https://github.com/personalrobotics/openrave_catkin.git
-    $ git clone https://github.com/personalrobotics/or_ompl.git
-    $ cd ..
-    $ catkin_make
+```shell
+$ . /my/workspace/devel/setup.bash
+$ cd /my/workspace/src
+$ git clone https://github.com/personalrobotics/openrave_catkin.git
+$ git clone https://github.com/personalrobotics/or_ompl.git
+$ cd ..
+$ catkin_make
+```
 
 This will build the OpenRAVE plugins into the `share/openrave-0.9/plugins`
 directory in your devel space. If you run `catkin_make install` the plugin will
@@ -87,26 +91,32 @@ provided by the [openrave_planning](https://github.com/jsk-ros-pkg/openrave_plan
 Once the dependencies are satisified, you can simply clone this repository into
 your `ROS_PACKAGE_PATH` and run `rosmake`:
 
-    $ cd /my/workspace
-    $ export ROS_PACKAGE_PATH="$(pwd):${ROS_PACKAGE_PATH}"
-    $ git clone https://github.com/personalrobotics/or_ompl.git
-    $ rosmake or_ompl
+```shell
+$ cd /my/workspace
+$ export ROS_PACKAGE_PATH="$(pwd):${ROS_PACKAGE_PATH}"
+$ git clone https://github.com/personalrobotics/or_ompl.git
+$ rosmake or_ompl
+```
 
 The OpenRAVE plugins are built to the library `bin/libor_ompl.so`. You will
 need to manually add this directory to your `OPENRAVE_PLUGINS` path so that
 OpenRAVE can find it:
 
-    $ export OPENRAVE_PLUGINS="$(pwd)/or_ompl/lib:${OPENRAVE_PLUGINS}"
+```shell
+$ export OPENRAVE_PLUGINS="$(pwd)/or_ompl/lib:${OPENRAVE_PLUGINS}"
+```
 
 ### Standalone Build Instructions
 
 You can build or_ompl entirely ROS-agnostic by setting the `NO_ROS` variable:
 
-    $ git clone https://github.com/personalrobotics/or_ompl.git
-    $ mkdir build
-    $ cd build
-    $ cmake -DNO_ROS:bool=1 ..
-    $ make
+```shell
+$ git clone https://github.com/personalrobotics/or_ompl.git
+$ mkdir build
+$ cd build
+$ cmake -DNO_ROS:bool=1 ..
+$ make
+```
 
 Just as in the rosbuild case, this will build the plugin in the `lib/`
 directory. You will need to add this directory to your `OPENRAVE_PLUGINS` path
@@ -140,44 +150,83 @@ then shortcut the trajectory using OMPL's path simplifier.  We assume that the
 variable `robot` is an OpenRAVE robot that is configured with an appropriate
 set of active DOFs:
 
-    from openravepy import *
+```python
+from openravepy import *
 
-    env = ... # your environment
-    robot = ... # your robot
-    planner = RaveCreatePlanner(env, 'OMPL_RRTConnect')
-    simplifier = RaveCreatePlanner(env, 'OMPL_Simplifier')
+env = ... # your environment
+robot = ... # your robot
+planner = RaveCreatePlanner(env, 'OMPL_RRTConnect')
+simplifier = RaveCreatePlanner(env, 'OMPL_Simplifier')
 
-    # Setup the planning instance.
-    params = Planner.PlannerParameters()
-    params.SetRobotActiveJoints(robot)
-    params.SetGoalConfig(goal)
+# Setup the planning instance.
+params = Planner.PlannerParameters()
+params.SetRobotActiveJoints(robot)
+params.SetGoalConfig(goal)
 
-    # Set the timeout and planner-specific parameters. You can view a list of
-    # supported parameters by calling: planner.SendCommand('GetParameters')
-    params.SetExtraParameters('<range>0.02</range>')
+# Set the timeout and planner-specific parameters. You can view a list of
+# supported parameters by calling: planner.SendCommand('GetParameters')
+params.SetExtraParameters('<range>0.02</range>')
 
-    planner.InitPlan(robot, params)
+planner.InitPlan(robot, params)
 
-    # Invoke the planner.
-    traj = RaveCreateTrajectory(env, '')
-    result = planner.PlanPath(traj)
-    assert result == PlannerStatus.HasSolution
-    
-    # Shortcut the path.
-    simplifier.InitPlan(robot, Planner.PlannerParameters())
-    result = simplifier.PlanPath(traj)
-    assert result == PlannerStatus.HasSolution
+# Invoke the planner.
+traj = RaveCreateTrajectory(env, '')
+result = planner.PlanPath(traj)
+assert result == PlannerStatus.HasSolution
 
-    # Time the trajectory.
-    result = planningutils.RetimeTrajectory(traj)
-    assert result == PlannerStatus.HasSolution
+# Shortcut the path.
+simplifier.InitPlan(robot, Planner.PlannerParameters())
+result = simplifier.PlanPath(traj)
+assert result == PlannerStatus.HasSolution
 
-    # Execute the trajectory.
-    robot.GetController().SetPath(traj)
+# Time the trajectory.
+result = planningutils.RetimeTrajectory(traj)
+assert result == PlannerStatus.HasSolution
+
+# Execute the trajectory.
+robot.GetController().SetPath(traj)
+```
 
 A working version of this script is included in `scripts/example.py`. See the
 [documentation on the OpenRAVE website](http://openrave.org/docs/latest_stable/tutorials/openravepy_examples/#directly-launching-planners)
 for more information about how to invoke an OpenRAVE planner.
+
+## Available Planners
+
+The following table shows which OMPL planners are available via `or_ompl`.   
+
+(1 Oct 2015) Note that if you are using the ROS package of OMPL `ros-indigo-ompl` then BIT* and FMT* will not be available. To use those planners&#9827; you will need to install the latest OMPL from source. There is a catkinized package here [OMPL_catkin_pkg](https://github.com/DavidB-CMU/OMPL_catkin_pkg)
+
+| Planner Name | <sub>OMPL Library</sub> | <sub>OpenRAVE<br>Plugin Name</sub> | <sub>`or_ompl`<br>Unit Test</sub> |
+|--------------|-------------------------|------------------------------------|-----------------------------------|
+| <sub>BIT* (Batch Informed Trees) &#9827;</sub> | <sub>BITstar</sub> | <sub>OMPL_BITstar</sub> | &#x2717; |
+| <sub>BKPIECE1 (Bi-directional KPIECE)</sub> | <sub>BKPIECE1</sub> | <sub>OMPL_BKPIECE1</sub> | &#10004; |
+| <sub>EST (Expansive Space Trees)</sub> | <sub>EST</sub> | <sub>OMPL_EST</sub> | &#10004; |
+| <sub>FMT* (Fast Marching Tree) &#9827;</sub> | <sub>FMT</sub> | <sub>OMPL_FMT</sub> |&#x2717;|
+| <sub>KPIECE1 (Kinematic Planning by Interior-Exterior Cell Exploration)</sub> | <sub>KPIECE1</sub> | <sub>OMPL_KPIECE1</sub> | &#10004; |
+| <sub>LBKPIECE1 (Lazy Bi-directional KPIECE)</sub> | <sub>LBKPIECE1</sub> | <sub>OMPL_LBKPIECE1</sub> | &#10004; |
+| <sub>LazyPRM</sub> | <sub>LazyPRM</sub> | <sub>OMPL_LazyPRM</sub> | &#10004; |
+| <sub>LazyRRT</sub> | <sub>LazyRRT</sub> | <sub>OMPL_LazyRRT</sub> | &#10004; |
+| <sub>PDST (Path-Directed Subdivision Trees)</sub> | <sub>PDST</sub> | <sub>OMPL_PDST</sub> |&#x2717;|
+| <sub>PRM (Probabilistic Road Map)</sub> | <sub>PRM</sub> | <sub>OMPL_PRM</sub> | &#10004; |
+| <sub>PRM*</sub> | <sub>PRMstar</sub> | <sub>OMPL_PRMstar</sub> | &#10004; |
+| <sub>RRT (Rapidly Exploring Random Trees)</sub> | <sub>RRT</sub> | <sub>OMPL_RRT</sub> | &#10004; |
+| <sub>RRTConnect (Bi-directional RRT)</sub> | <sub>RRTConnect</sub> | <sub>OMPL_RRTConnect</sub> | &#10004; |
+| <sub>RRT*</sub> | <sub>RRTstar</sub> | <sub>OMPL_RRTstar</sub> |&#x2717;|
+| <sub>SBL (Single-query Bi-directional Lazy collision checking planner)</sub> | <sub>SBL</sub> | <sub>OMPL_SBL</sub> | &#10004; |
+| <sub>SPARS (SPArse Roadmap Spanner)</sub> | <sub>SPARS</sub> | <sub>OMPL_SPARS</sub> |&#x2717;|
+| <sub>SPARS2</sub> | <sub>SPARStwo</sub> | <sub>OMPL_SPARStwo</sub> |&#x2717;|
+| <sub>T-RRT (Transition-based RRT)</sub> | <sub>TRRT</sub> | <sub>OMPL_TRRT</sub> |&#x2717;|
+| <sub>pRRT (Parallel RRT)</sub> | <sub>pRRT</sub> | <sub>OMPL_pRRT</sub> |&#x2717;|
+| <sub>pSBL (Parallel SBL)</sub> | <sub>pSBL</sub> | <sub>OMPL_pSBL</sub> |&#x2717;|
+| <sub>Cforest (Coupled Forest of Random Engrafting Search Trees - parallelization framework)</sub> | <sub>CForest</sub> | <sub>N/A</sub> | <sub>N/A</sub> |
+| <sub>Thunder</sub> | <sub>Thunder</sub> | <sub>N/A</sub> | <sub>N/A</sub> |
+| <sub>Lightning</sub> | <sub>Lightning</sub> | <sub>N/A</sub> | <sub>N/A</sub> |
+| <sub>LazyPRM*</sub> | <sub>LazyPRMstar</sub> | <sub>N/A</sub> | <sub>N/A</sub> |
+| <sub>BiTRRT (Bidirectional T-RRT)</sub> | <sub>BiTRRT</sub> |   <sub>N/A</sub> | <sub>N/A</sub> |
+| <sub>LazyLBTRRT</sub> | <sub>LazyLBTRRT</sub> | <sub>N/A</sub> | <sub>N/A</sub> |
+| <sub>LBTRRT (Lower Bound Tree RRT)</sub> | <sub>LBTRRT</sub> | <sub>N/A</sub> | <sub>N/A</sub> |
+| <sub>STRIDE (Search Tree with Resolution Independent Density Estimation)</sub> | <sub>STRIDE</sub> | <sub>N/A</sub> | <sub>N/A</sub> |
 
 ## License
 or_ompl is licensed under a BSD license. See `LICENSE` for more information.

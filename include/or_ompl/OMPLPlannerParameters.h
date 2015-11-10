@@ -37,6 +37,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <openrave-core.h>
 #include <openrave/planner.h>
 #include <boost/foreach.hpp>
+#include <boost/make_shared.hpp>
 #include "TSRChain.h"
 
 namespace or_ompl
