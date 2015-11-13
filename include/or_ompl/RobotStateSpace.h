@@ -106,9 +106,12 @@ namespace or_ompl {
             /** \brief Compute the projection as an array of double values */
             virtual void project(const ompl::base::State *state, ompl::base::EuclideanProjection &projection) const;
 
+            virtual void defaultCellSizes();
+
             virtual void setup();
         protected:
             or_ompl::RobotStateSpace* _robotStateSpace;
+            ompl::base::ProjectionMatrix _projectionMatrix;
     };
 
     typedef boost::shared_ptr<RobotProjectionEvaluator> RobotProjectionEvaluatorPtr;

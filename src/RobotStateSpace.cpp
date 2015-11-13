@@ -139,20 +139,28 @@ RobotProjectionEvaluator::~RobotProjectionEvaluator() {
 }
 
 void RobotProjectionEvaluator::setup() {
-    cellSizes_.clear();
-    for (size_t i = 0; i < _robotStateSpace->getSubspaceCount(); i++) {
-        const ompl::base::StateSpacePtr& space = _robotStateSpace->getSubspace(i);
-        const std::vector<double>& spaceSizes = space->getDefaultProjection()->getCellSizes();
-        for (size_t k = 0; k < spaceSizes.size(); k++) {
-            cellSizes_.push_back(spaceSizes[k]);
-        }
-    }
+    _projectionMatrix.mat = _projectionMatrix.ComputeRandom(_robotStateSpace->getDimension(), getDimension());
+    defaultCellSizes();
     ProjectionEvaluator::setup();
+}
+
+void RobotProjectionEvaluator::defaultCellSizes() {
+    cellSizes_.resize(getDimension());
+
+    for (size_t i = 0; i < getDimension(); i++) {
+        cellSizes_[i] = 0.5f;
+    }
 }
 
 /** \brief Return the dimension of the projection defined by this evaluator */
 unsigned int RobotProjectionEvaluator::getDimension() const {
-    return _robotStateSpace->getDimension();
+    int dim = _robotStateSpace->getDimension();
+    if (dim <= 2) {
+        return dim;
+    }
+    else {
+        return (int)(log(_robotStateSpace->getDimension())) + 1;
+    }
 }
 
 /** \brief Compute the projection as an array of double values */
@@ -164,22 +172,7 @@ void RobotProjectionEvaluator::project(const ompl::base::State *state, ompl::bas
         return;
     }
 
+    std::vector<double> values = robotState->getValues();
     projection.resize(getDimension());
-
-    // For each subspace, project it.
-    size_t d = 0;
-    for (size_t i = 0; i < _robotStateSpace->getSubspaceCount(); i++) {
-        const ompl::base::StateSpacePtr& space = _robotStateSpace->getSubspace(i);
-
-        // The subspace might have multiple DOFs
-        ompl::base::EuclideanProjection subProjection;
-        subProjection.resize(space->getDimension());
-        // TODO: How do I get more than just the default projection?
-        space->getDefaultProjection()->project(robotState->components[i], subProjection);
-        for (size_t k = 0; k < space->getDimension(); k++) {
-            BOOST_ASSERT(d < projection.size());
-            projection[d] = subProjection[k];
-            d++;
-        }
-    }
+    _projectionMatrix.project(values.data(), projection);
 }
