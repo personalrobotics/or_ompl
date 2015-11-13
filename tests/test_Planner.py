@@ -22,7 +22,7 @@ except subprocess.CalledProcessError as e:
 # Initialize OpenRAVE.
 openravepy.RaveInitialize(True)
 openravepy.misc.InitOpenRAVELogging()
-openravepy.RaveSetDebugLevel(openravepy.DebugLevel.Fatal)
+openravepy.RaveSetDebugLevel(openravepy.DebugLevel.Debug)
 
 
 class PlannerTestsMeta(type):

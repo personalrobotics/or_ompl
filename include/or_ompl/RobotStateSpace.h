@@ -5,6 +5,7 @@
 #include <ompl/base/spaces/SO2StateSpace.h>
 #include <ompl/base/spaces/RealVectorStateSpace.h>
 #include <boost/shared_ptr.hpp>
+#include <boost/weak_ptr.hpp>
 
 namespace or_ompl {
 
@@ -75,6 +76,10 @@ namespace or_ompl {
          */
         virtual ompl::base::State* allocState() const;
 
+        /** \brief Register the projections for this state space. Usually, this is at least the default
+            projection. These are implicit projections, set by the implementation of the state space. This is called by setup(). */
+        virtual void registerProjections();
+
         /**
          * Set the upper/lower bounds of the state space.
          */
@@ -83,10 +88,30 @@ namespace or_ompl {
     private:
         std::vector<int> _indices;
         std::vector<bool> _isContinuous;
+        ompl::base::ProjectionEvaluatorPtr _projectionEvaluator;
 
     };
 
     typedef boost::shared_ptr<RobotStateSpace> RobotStateSpacePtr;
+
+    class RobotProjectionEvaluator : public ompl::base::ProjectionEvaluator {
+        public:
+            RobotProjectionEvaluator(ompl::base::StateSpace* stateSpace);
+            RobotProjectionEvaluator(ompl::base::StateSpacePtr stateSpace);
+            virtual ~RobotProjectionEvaluator();
+
+            /** \brief Return the dimension of the projection defined by this evaluator */
+            virtual unsigned int getDimension() const;
+
+            /** \brief Compute the projection as an array of double values */
+            virtual void project(const ompl::base::State *state, ompl::base::EuclideanProjection &projection) const;
+
+            virtual void setup();
+        protected:
+            or_ompl::RobotStateSpace* _robotStateSpace;
+    };
+
+    typedef boost::shared_ptr<RobotProjectionEvaluator> RobotProjectionEvaluatorPtr;
 }
 
 #endif

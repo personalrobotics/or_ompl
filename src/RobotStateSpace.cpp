@@ -1,4 +1,5 @@
 #include "RobotStateSpace.h"
+#include <openrave/openrave.h>
 
 using namespace or_ompl;
 namespace ob = ompl::base;
@@ -48,6 +49,14 @@ std::vector<double> RobotState::getValues() const {
     return retval;
 }
 
+
+
+void RobotStateSpace::registerProjections() {
+    registerProjection("default", _projectionEvaluator);
+    registerDefaultProjection(_projectionEvaluator);
+    StateSpace::registerProjections();
+}
+
 void  RobotState::enforceBounds() {
     for (size_t i = 0; i < _indices.size(); i++) {
         if (_isContinuous[i]) {
@@ -77,6 +86,7 @@ RobotStateSpace::RobotStateSpace(const std::vector<int> &dof_indices, const std:
             addSubspace(ompl::base::StateSpacePtr(new ompl::base::RealVectorStateSpace(1)), 1.0);
         }
     }
+    _projectionEvaluator.reset(new RobotProjectionEvaluator(this));
 }
 
 ompl::base::State* RobotStateSpace::allocState() const {
@@ -96,6 +106,80 @@ void RobotStateSpace::setBounds(const ompl::base::RealVectorBounds& bounds) {
         }
         else {
             components_[i]->as<ompl::base::RealVectorStateSpace>()->setBounds(bounds.low[i], bounds.high[i]);
+        }
+    }
+}
+
+RobotProjectionEvaluator::RobotProjectionEvaluator(ompl::base::StateSpace* stateSpace) :
+    ompl::base::ProjectionEvaluator(stateSpace) {
+    RobotStateSpace* robotStateSpace = dynamic_cast<RobotStateSpace*>(stateSpace);
+
+    if (!robotStateSpace) {
+        RAVELOG_ERROR("Can only use RobotStateSpace with RobotProjectionEvaluator!");
+        return;
+    }
+
+    _robotStateSpace = robotStateSpace;
+}
+
+RobotProjectionEvaluator::RobotProjectionEvaluator(ompl::base::StateSpacePtr stateSpace) :
+    ProjectionEvaluator(stateSpace) {
+    RobotStateSpace* robotStateSpace = dynamic_cast<RobotStateSpace*>(stateSpace.get());
+
+    if (!robotStateSpace) {
+        RAVELOG_ERROR("Can only use RobotStateSpace with RobotProjectionEvaluator!");
+        return;
+    }
+
+    _robotStateSpace = robotStateSpace;
+}
+
+RobotProjectionEvaluator::~RobotProjectionEvaluator() {
+
+}
+
+void RobotProjectionEvaluator::setup() {
+    cellSizes_.clear();
+    for (size_t i = 0; i < _robotStateSpace->getSubspaceCount(); i++) {
+        const ompl::base::StateSpacePtr& space = _robotStateSpace->getSubspace(i);
+        const std::vector<double>& spaceSizes = space->getDefaultProjection()->getCellSizes();
+        for (size_t k = 0; k < spaceSizes.size(); k++) {
+            cellSizes_.push_back(spaceSizes[k]);
+        }
+    }
+    ProjectionEvaluator::setup();
+}
+
+/** \brief Return the dimension of the projection defined by this evaluator */
+unsigned int RobotProjectionEvaluator::getDimension() const {
+    return _robotStateSpace->getDimension();
+}
+
+/** \brief Compute the projection as an array of double values */
+void RobotProjectionEvaluator::project(const ompl::base::State *state, ompl::base::EuclideanProjection &projection) const {
+    const RobotState* robotState = dynamic_cast<const RobotState*>(state);
+
+    if (!robotState) {
+        RAVELOG_ERROR("Can only project robot states!");
+        return;
+    }
+
+    projection.resize(getDimension());
+
+    // For each subspace, project it.
+    size_t d = 0;
+    for (size_t i = 0; i < _robotStateSpace->getSubspaceCount(); i++) {
+        const ompl::base::StateSpacePtr& space = _robotStateSpace->getSubspace(i);
+
+        // The subspace might have multiple DOFs
+        ompl::base::EuclideanProjection subProjection;
+        subProjection.resize(space->getDimension());
+        // TODO: How do I get more than just the default projection?
+        space->getDefaultProjection()->project(robotState->components[i], subProjection);
+        for (size_t k = 0; k < space->getDimension(); k++) {
+            BOOST_ASSERT(d < projection.size());
+            projection[d] = subProjection[k];
+            d++;
         }
     }
 }
