@@ -134,7 +134,7 @@ bool OMPLPlanner::InitPlan(OpenRAVE::RobotBasePtr robot,
         {
             ScopedState q_start(m_state_space);
             for (size_t i = 0; i < num_dof; i++) {
-                q_start->values[i] = m_parameters->vinitialconfig[istart*num_dof + i];
+                q_start->value(i) = m_parameters->vinitialconfig[istart*num_dof + i];
             }
             m_simple_setup->addStartState(q_start);
         }
@@ -184,7 +184,7 @@ bool OMPLPlanner::InitPlan(OpenRAVE::RobotBasePtr robot,
             
                 ScopedState q_goal(m_state_space);
                 for (size_t i = 0; i < num_dof; i++) {
-                    q_goal->values[i] = m_parameters->vgoalconfig[i];
+                    q_goal->value(i) = m_parameters->vgoalconfig[i];
                 }
                 m_simple_setup->setGoalState(q_goal);
             } else {
@@ -197,7 +197,7 @@ bool OMPLPlanner::InitPlan(OpenRAVE::RobotBasePtr robot,
                 {
                     ScopedState q_goal(m_state_space);
                     for (size_t i = 0; i < num_dof; i++) {
-                        q_goal->values[i] = m_parameters->vgoalconfig[igoal*num_dof + i];
+                        q_goal->value(i) = m_parameters->vgoalconfig[igoal*num_dof + i];
                     }
                     ompl_goals->as<ompl::base::GoalStates>()->addState(q_goal);
                 }

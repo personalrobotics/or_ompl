@@ -87,6 +87,17 @@ void OpenRAVEHandler::log(std::string const &text, ompl::msg::LogLevel level,
     }
 }
 
+std::vector<bool> GetContinuousJoints(const OpenRAVE::RobotBasePtr robot, const std::vector<int> idx)
+{
+    const std::vector<OpenRAVE::RobotBase::JointPtr>& joints = robot->GetJoints();
+    std::vector<bool> isContinuous;
+    for (size_t j = 0; j < idx.size(); j++)
+    {
+        isContinuous.push_back(joints[idx[j]]->IsCircular(0));
+    }
+    return isContinuous;
+}
+
 RobotStateSpacePtr CreateStateSpace(OpenRAVE::RobotBasePtr const robot,
                                     OMPLPlannerParameters const &params)
 {
@@ -113,7 +124,8 @@ RobotStateSpacePtr CreateStateSpace(OpenRAVE::RobotBasePtr const robot,
 
     std::vector<int> dof_indices = robot->GetActiveDOFIndices();
     const unsigned int num_dof = dof_indices.size();
-    RobotStateSpacePtr state_space = boost::make_shared<RobotStateSpace>(dof_indices);
+    std::vector<bool> is_continuous = GetContinuousJoints(robot, dof_indices);
+    RobotStateSpacePtr state_space = boost::make_shared<RobotStateSpace>(dof_indices, is_continuous);
 
     RAVELOG_DEBUG("Setting joint limits.\n");
     std::vector<OpenRAVE::dReal> lowerLimits, upperLimits;
@@ -182,7 +194,7 @@ RobotStateSpacePtr CreateStateSpace(OpenRAVE::RobotBasePtr const robot,
 
 OpenRAVE::PlannerStatus ToORTrajectory(
         OpenRAVE::RobotBasePtr const &robot,
-        ompl::geometric::PathGeometric const &ompl_traj,
+        ompl::geometric::PathGeometric& ompl_traj,
         OpenRAVE::TrajectoryBasePtr or_traj)
 {
     using ompl::geometric::PathGeometric;
@@ -191,12 +203,13 @@ OpenRAVE::PlannerStatus ToORTrajectory(
     or_traj->Init(robot->GetActiveConfigurationSpecification("linear"));
 
     for (size_t i = 0; i < ompl_traj.getStateCount(); ++i){
-        RobotState const *state = ompl_traj.getState(i)->as<RobotState>();
+        RobotState  *state = ompl_traj.getState(i)->as<RobotState>();
         if (!state) {
             RAVELOG_ERROR("Unable to convert output trajectory."
                           "State is not a RealVectorStateSpace::StateType.");
             return OpenRAVE::PS_Failed;
         }
+        state->enforceBounds();
         or_traj->Insert(i, state->getValues(), true);
     }
     return OpenRAVE::PS_HasSolution;

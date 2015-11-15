@@ -118,7 +118,7 @@ void TSRGoal::sampleGoal(ompl::base::State *state) const {
 		// Set the state
 		if(success){
 
-			const RobotState* mstate = state->as<RobotState>();
+			RobotState* mstate = state->as<RobotState>();
 
             std::vector<int> arm_indices = _robot->GetActiveManipulator()->GetArmIndices();
             std::vector<int> state_indices = mstate->getIndices();
@@ -128,15 +128,15 @@ void TSRGoal::sampleGoal(ompl::base::State *state) const {
                                               state_indices.end(),
                                               arm_indices[idx]) - state_indices.begin();
 
-				mstate->values[sidx] = ik_solution[idx];
+				mstate->value(sidx) = ik_solution[idx];
 			}
 		}
 	}
 
 	if(!success){
 		RAVELOG_ERROR("[TSRGoal] Failed to sample valid goal.\n");
-        const RobotState* mstate = state->as<RobotState>();
-        mstate->values[0] = std::numeric_limits<double>::quiet_NaN();
+        RobotState* mstate = state->as<RobotState>();
+        mstate->value(0) = std::numeric_limits<double>::quiet_NaN();
 	}
 }
 
