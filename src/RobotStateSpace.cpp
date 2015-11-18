@@ -83,6 +83,7 @@ RobotStateSpace::RobotStateSpace(const std::vector<int> &dof_indices, const std:
 }
 
 ompl::base::State* RobotStateSpace::allocState() const {
+
     RobotState* state = new RobotState((RobotStateSpace*)this);
     allocStateComponents(state);
     return state;
