@@ -4,43 +4,31 @@
 using namespace or_ompl;
 namespace ob = ompl::base;
 
-RobotState::RobotState(const std::vector<int> &dof_indices, const std::vector<bool>& is_continuous) :
-        _indices(dof_indices), _isContinuous(is_continuous) {
+RobotState::RobotState(RobotStateSpace* stateSpace) :
+        _stateSpace(stateSpace) {
 
 }
 
 RobotState::~RobotState() {
-    _indices.clear();
 }
 
 void RobotState::set(const std::vector<double> &dof_values) {
 
-    for(unsigned int idx=0; idx < _indices.size(); idx++){
+    for(unsigned int idx=0; idx < _stateSpace->getDimension(); idx++){
         value(idx) = dof_values[idx];
     }
-    enforceBounds();
 }
 
 double& RobotState::value(const size_t& idx) {
-    if (_isContinuous[idx]) {
-        return as<ompl::base::SO2StateSpace::StateType>(idx)->value;
-    }
-    else {
-        return as<ompl::base::RealVectorStateSpace::StateType>(idx)->values[0];
-    }
+    return *(_stateSpace->getValueAddressAtIndex(this, idx));
 }
 
 const double& RobotState::value(const size_t& idx) const {
-    if (_isContinuous[idx]) {
-        return as<ompl::base::SO2StateSpace::StateType>(idx)->value;
-    }
-    else {
-        return as<ompl::base::RealVectorStateSpace::StateType>(idx)->values[0];
-    }
+    return *(_stateSpace->getValueAddressAtLocation(this, _stateSpace->getValueLocations()[idx]));
 }
 
 std::vector<double> RobotState::getValues() const {
-    std::vector<double> retval(_indices.size());
+    std::vector<double> retval(_stateSpace->getDimension());
 
     for(unsigned int idx=0; idx < retval.size(); idx++){
         retval[idx] = value(idx);
@@ -57,41 +45,34 @@ void RobotStateSpace::registerProjections() {
     StateSpace::registerProjections();
 }
 
-void  RobotState::enforceBounds() {
-    for (size_t i = 0; i < _indices.size(); i++) {
-        if (_isContinuous[i]) {
-            ompl::base::SO2StateSpace::StateType* state = this->as<ompl::base::SO2StateSpace::StateType>(i);
-            if (!state) continue;
-            else {
-                double v = fmod(state->value, 2.0 * M_PI);
-                if (v <= -M_PI)
-                 v += 2.0 * M_PI;
-                else
-                 if (v > M_PI)
-                     v -= 2.0 * M_PI;
-                state->value = v;
-            }
-        }
-    }
-}
-
 RobotStateSpace::RobotStateSpace(const std::vector<int> &dof_indices, const std::vector<bool>& is_continuous) :
         ompl::base::CompoundStateSpace(), _indices(dof_indices), _isContinuous(is_continuous) {
     BOOST_ASSERT(dof_indices.size() == is_continuous.size());
+    // TODO: THIS AINT RIGHT
+    size_t realDOFCount = 0;
     for (size_t i = 0; i < dof_indices.size(); i++) {
         if (is_continuous[i]) {
+            if (realDOFCount > 0)
+            {
+                addSubspace(ompl::base::StateSpacePtr(new ompl::base::RealVectorStateSpace(realDOFCount)), 1.0);
+                realDOFCount = 0;
+            }
             addSubspace(ompl::base::StateSpacePtr(new ompl::base::SO2StateSpace()), 1.0);
         }
         else {
-            addSubspace(ompl::base::StateSpacePtr(new ompl::base::RealVectorStateSpace(1)), 1.0);
+            realDOFCount++;
         }
+    }
+    if (realDOFCount > 0)
+    {
+        addSubspace(ompl::base::StateSpacePtr(new ompl::base::RealVectorStateSpace(realDOFCount)), 1.0);
     }
     _projectionEvaluator.reset(new RobotProjectionEvaluator(this));
 }
 
 ompl::base::State* RobotStateSpace::allocState() const {
 
-    RobotState* state = new RobotState(_indices, _isContinuous);
+    RobotState* state = new RobotState((RobotStateSpace*)this);
     allocStateComponents(state);
     return state;
 
@@ -99,13 +80,23 @@ ompl::base::State* RobotStateSpace::allocState() const {
 
 void RobotStateSpace::setBounds(const ompl::base::RealVectorBounds& bounds) {
     BOOST_ASSERT(bounds.high.size() == bounds.low.size());
-    BOOST_ASSERT(bounds.high.size() == components_.size());
+
     for (size_t i = 0; i < bounds.high.size(); i++) {
         if (_isContinuous[i]) {
             continue;
         }
         else {
-            components_[i]->as<ompl::base::RealVectorStateSpace>()->setBounds(bounds.low[i], bounds.high[i]);
+            // TODO: THIS AINT RIGHT
+            ompl::base::RealVectorStateSpace* space = components_[i]->as<ompl::base::RealVectorStateSpace>();
+            ompl::base::RealVectorBounds subBounds(space->getDimension());
+
+            for (size_t k = 0; k < space->getDimension(); k++) {
+                subBounds.high[k] = bounds.high[i + k];
+                subBounds.low[k] = bounds.low[i + k];
+            }
+
+            space->setBounds(subBounds);
+            i += space->getDimension();
         }
     }
 }

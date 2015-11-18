@@ -20,14 +20,13 @@ namespace or_ompl {
          * Constuctor - all dof values are initialized to 0
          * @param dof_indices The dof indices this state will represent
          */
-        RobotState(const std::vector<int> &dof_indices, const std::vector<bool>& is_continuous);
+        RobotState(RobotStateSpace* stateSpace);
 
         /**
          * Clear the indices vector
          */
         ~RobotState();
 
-        void enforceBounds();
 
         /**
          * Gets a reference to the value at index i.
@@ -46,15 +45,10 @@ namespace or_ompl {
          */
         std::vector<double> getValues() const;
 
-        /**
-         * @return An ordered list of indices this state corresponds to
-         */
-        std::vector<int> getIndices() const { return _indices; }
+        const RobotStateSpace*  getSpace() const { return _stateSpace; }
 
     private:
-        std::vector<int> _indices;
-        std::vector<bool> _isContinuous;
-
+        RobotStateSpace* _stateSpace;
     };
 
     /**
@@ -84,6 +78,11 @@ namespace or_ompl {
          * Set the upper/lower bounds of the state space.
          */
         void setBounds(const ompl::base::RealVectorBounds& bounds);
+
+        /**
+         * @return An ordered list of indices this state corresponds to
+         */
+        const std::vector<int>& getIndices() const { return _indices; }
 
     private:
         std::vector<int> _indices;

@@ -134,7 +134,6 @@ OpenRAVE::PlannerStatus OMPLSimplifier::PlanPath(OpenRAVE::TrajectoryBasePtr ptr
         for (size_t idof = 0; idof < num_dof; ++idof) {
             waypoint_ompl[idof] = waypoint_openrave[idof];
         }
-        waypoint_ompl->enforceBounds();
         path.append(waypoint_ompl.get());
     }
 
@@ -217,7 +216,7 @@ bool OMPLSimplifier::IsStateValid(ompl::base::State const *state)
     RobotState const *realVectorState = state->as<RobotState>();
 
     if (realVectorState) {
-        return !IsInOrCollision(realVectorState->getValues(), realVectorState->getIndices());
+        return !IsInOrCollision(realVectorState->getValues(), realVectorState->getSpace()->getIndices());
     } else {
         RAVELOG_ERROR("Invalid StateType. This should never happen.\n");
         return false;
