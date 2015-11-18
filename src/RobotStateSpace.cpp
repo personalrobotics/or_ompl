@@ -86,7 +86,6 @@ void RobotStateSpace::setBounds(const ompl::base::RealVectorBounds& bounds) {
             continue;
         }
         else {
-            // TODO: THIS AINT RIGHT
             ompl::base::RealVectorStateSpace* space = components_[i]->as<ompl::base::RealVectorStateSpace>();
             ompl::base::RealVectorBounds subBounds(space->getDimension());
 
