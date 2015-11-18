@@ -132,7 +132,7 @@ OpenRAVE::PlannerStatus OMPLSimplifier::PlanPath(OpenRAVE::TrajectoryBasePtr ptr
         // Insert the waypoint into the OMPL path.
         ScopedState waypoint_ompl(m_space_info);
         for (size_t idof = 0; idof < num_dof; ++idof) {
-            waypoint_ompl[idof] = waypoint_openrave[idof];
+            waypoint_ompl->value(idof) = waypoint_openrave[idof];
         }
         path.append(waypoint_ompl.get());
     }
