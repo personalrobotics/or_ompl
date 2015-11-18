@@ -134,6 +134,7 @@ OpenRAVE::PlannerStatus OMPLSimplifier::PlanPath(OpenRAVE::TrajectoryBasePtr ptr
         for (size_t idof = 0; idof < num_dof; ++idof) {
             waypoint_ompl[idof] = waypoint_openrave[idof];
         }
+        waypoint_ompl->enforceBounds();
         path.append(waypoint_ompl.get());
     }
 

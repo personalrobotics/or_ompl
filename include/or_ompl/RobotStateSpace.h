@@ -47,6 +47,8 @@ namespace or_ompl {
 
         const RobotStateSpace*  getSpace() const { return _stateSpace; }
 
+        void enforceBounds();
+
     private:
         RobotStateSpace* _stateSpace;
     };
