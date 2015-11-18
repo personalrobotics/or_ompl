@@ -383,7 +383,7 @@ bool OMPLPlanner::IsStateValid(ompl::base::State const *state)
         }
     }
     
-    return !IsInOrCollision(realVectorState->getValues(), realVectorState->getIndices());
+    return !IsInOrCollision(realVectorState->getValues(), realVectorState->getSpace()->getIndices());
 }
 
 bool OMPLPlanner::GetParametersCommand(std::ostream &sout, std::istream &sin) const

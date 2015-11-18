@@ -55,7 +55,7 @@ double TSRGoal::distanceGoal(const ompl::base::State *state) const {
 	// Put the robot in the pose that is represented in the state
 	const RobotState* mstate = state->as<RobotState>();
     unsigned int check_limits = 0; // The planner does this
-    _robot->SetDOFValues(mstate->getValues(), check_limits, mstate->getIndices());
+    _robot->SetDOFValues(mstate->getValues(), check_limits, mstate->getSpace()->getIndices());
 
 	// Get the end effector transform
 	OpenRAVE::Transform or_tf = active_manip->GetEndEffectorTransform();
@@ -121,7 +121,7 @@ void TSRGoal::sampleGoal(ompl::base::State *state) const {
 			RobotState* mstate = state->as<RobotState>();
 
             std::vector<int> arm_indices = _robot->GetActiveManipulator()->GetArmIndices();
-            std::vector<int> state_indices = mstate->getIndices();
+            std::vector<int> state_indices = mstate->getSpace()->getIndices();
 			for(unsigned int idx=0; idx < ik_solution.size(); idx++){
 
                 unsigned int sidx = std::find(state_indices.begin(),
