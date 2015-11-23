@@ -220,7 +220,7 @@ bool OMPLPlanner::InitPlan(OpenRAVE::RobotBasePtr robot,
         m_initialized = true;
         return true;
     } catch (std::runtime_error const &e) {
-        RAVELOG_ERROR("IntPlan failed: %s\n", e.what());
+        RAVELOG_ERROR("InitPlan failed: %s\n", e.what());
         return false;
     }
 }
