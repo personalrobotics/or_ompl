@@ -17,6 +17,7 @@ void RobotState::set(const std::vector<double> &dof_values) {
     for(unsigned int idx=0; idx < _stateSpace->getDimension(); idx++){
         value(idx) = dof_values[idx];
     }
+    enforceBounds();
 }
 
 double& RobotState::value(const size_t& idx) {
@@ -37,7 +38,9 @@ std::vector<double> RobotState::getValues() const {
     return retval;
 }
 
-
+void RobotState::enforceBounds() {
+    _stateSpace->enforceBounds(this);
+}
 
 void RobotStateSpace::registerProjections() {
     registerProjection("default", _projectionEvaluator);
@@ -48,25 +51,34 @@ void RobotStateSpace::registerProjections() {
 RobotStateSpace::RobotStateSpace(const std::vector<int> &dof_indices, const std::vector<bool>& is_continuous) :
         ompl::base::CompoundStateSpace(), _indices(dof_indices), _isContinuous(is_continuous) {
     BOOST_ASSERT(dof_indices.size() == is_continuous.size());
-    // TODO: THIS AINT RIGHT
+
+    // Keep track of how many real-valued DOFs we've encountered in a row.
     size_t realDOFCount = 0;
-    for (size_t i = 0; i < dof_indices.size(); i++) {
-        if (is_continuous[i]) {
-            if (realDOFCount > 0)
-            {
+    // For each dof...
+    for (size_t dofIdx = 0; dofIdx < dof_indices.size(); dofIdx++) {
+        // If the DOF is continuous...
+        if (is_continuous[dofIdx]) {
+            // If we've already encountered some real-valued DOFs, add a new subspace with them.
+            if (realDOFCount > 0) {
                 addSubspace(ompl::base::StateSpacePtr(new ompl::base::RealVectorStateSpace(realDOFCount)), 1.0);
+                // Reset the counter.
                 realDOFCount = 0;
             }
+            // Add a continuous subspace.
             addSubspace(ompl::base::StateSpacePtr(new ompl::base::SO2StateSpace()), 1.0);
         }
         else {
+            // Otherwise, the joint is a real DOF, and should be added to a subspace.
             realDOFCount++;
         }
     }
-    if (realDOFCount > 0)
-    {
+
+    // If at the end of the process there are some trailing real-valued DOFs, add a subspace for them.
+    if (realDOFCount > 0) {
         addSubspace(ompl::base::StateSpacePtr(new ompl::base::RealVectorStateSpace(realDOFCount)), 1.0);
     }
+    BOOST_ASSERT(getSubspaceCount() > 0);
+
     _projectionEvaluator.reset(new RobotProjectionEvaluator(this));
 }
 
@@ -80,24 +92,35 @@ ompl::base::State* RobotStateSpace::allocState() const {
 
 void RobotStateSpace::setBounds(const ompl::base::RealVectorBounds& bounds) {
     BOOST_ASSERT(bounds.high.size() == bounds.low.size());
-
-    for (size_t i = 0; i < bounds.high.size(); i++) {
-        if (_isContinuous[i]) {
+    // The index of the current subspace
+    size_t subspaceIdx = 0;
+    // For each joint...
+    for (size_t dofIdx = 0; dofIdx < bounds.high.size(); dofIdx++) {
+        // If the DOF is continuous, it has no limits. So skip to the next subspace.
+        if (_isContinuous[dofIdx]) {
+            subspaceIdx++;
             continue;
         }
         else {
-            ompl::base::RealVectorStateSpace* space = components_[i]->as<ompl::base::RealVectorStateSpace>();
+            // Otherwise get the current real-vector subspace (not the current joint)
+            ompl::base::RealVectorStateSpace* space = components_[subspaceIdx]->as<ompl::base::RealVectorStateSpace>();
             ompl::base::RealVectorBounds subBounds(space->getDimension());
 
+            // Set the bounds of each of the sub-components
             for (size_t k = 0; k < space->getDimension(); k++) {
-                subBounds.high[k] = bounds.high[i + k];
-                subBounds.low[k] = bounds.low[i + k];
+                subBounds.high[k] = bounds.high[dofIdx + k];
+                subBounds.low[k] = bounds.low[dofIdx + k];
             }
 
             space->setBounds(subBounds);
-            i += space->getDimension();
+            // The DOF index goes up by the number of DOFs in the subspace
+            dofIdx += space->getDimension();
+
+            subspaceIdx++;
         }
     }
+    // Sanity check to make sure that we covered every subspace.
+    BOOST_ASSERT(subspaceIdx == components_.size());
 }
 
 RobotProjectionEvaluator::RobotProjectionEvaluator(ompl::base::StateSpace* stateSpace) :

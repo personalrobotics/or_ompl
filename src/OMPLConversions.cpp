@@ -209,6 +209,7 @@ OpenRAVE::PlannerStatus ToORTrajectory(
                           "State is not a RealVectorStateSpace::StateType.");
             return OpenRAVE::PS_Failed;
         }
+        state->enforceBounds();
         or_traj->Insert(i, state->getValues(), true);
     }
     return OpenRAVE::PS_HasSolution;
