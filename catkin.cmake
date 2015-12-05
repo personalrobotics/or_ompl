@@ -16,19 +16,21 @@ check_cxx_source_compiles(
     class P: OpenRAVE::PlannerBase::PlannerParameters
     {void f(){bool (P::*x)(std::ostream&,int) const = &P::serialize;}};
     int main(){}"
-    OR_HAS_PPSEROPTS)
-if(OR_HAS_PPSEROPTS)
-  add_definitions(-DOR_HAS_PPSEROPTS=1)
-endif()
+    OR_OMPL_HAS_PPSEROPTS)
+configure_file(
+    include/${PROJECT_NAME}/config.h.in
+    ${CATKIN_DEVEL_PREFIX}/include/${PROJECT_NAME}/config.h
+)
 
 catkin_package(
-    INCLUDE_DIRS include/
+    INCLUDE_DIRS include ${CATKIN_DEVEL_PREFIX}/include
     LIBRARIES ${PROJECT_NAME}
     DEPENDS Boost Eigen OMPL OpenRAVE
 )
 
 include_directories(
-    include/${PROJECT_NAME}
+    include
+    ${CATKIN_DEVEL_PREFIX}/include
     ${Boost_INCLUDE_DIRS}
     ${Eigen_INCLUDE_DIRS}
     ${OMPL_INCLUDE_DIRS}
@@ -92,7 +94,12 @@ install(TARGETS or_ompl
 )
 install(DIRECTORY "include/${PROJECT_NAME}/"
     DESTINATION "${CATKIN_PACKAGE_INCLUDE_DESTINATION}"
+    PATTERN "*.in" EXCLUDE
     PATTERN ".svn" EXCLUDE
+)
+install(DIRECTORY
+    "${CATKIN_DEVEL_PREFIX}/include/${PROJECT_NAME}/"
+    DESTINATION "${CATKIN_PACKAGE_INCLUDE_DESTINATION}"
 )
 
 # Tests

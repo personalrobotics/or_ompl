@@ -34,7 +34,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include <boost/make_shared.hpp>
 #include <ompl/config.h>
-#include "OMPLConversions.h"
+#include <or_ompl/OMPLConversions.h>
 
 #define OMPL_VERSION_COMP (  OMPL_MAJOR_VERSION * 1000000 \
                            + OMPL_MINOR_VERSION * 1000 \

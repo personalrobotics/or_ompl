@@ -39,7 +39,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <openrave/planningutils.h>
 #include <ompl/geometric/SimpleSetup.h>
 
-#include "OMPLPlannerParameters.h"
+#include <or_ompl/OMPLPlannerParameters.h>
 
 namespace or_ompl
 {

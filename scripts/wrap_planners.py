@@ -36,7 +36,7 @@ factory_frontmatter = """\
 #include <string>
 #include <boost/assign/list_of.hpp>
 {includes:s}
-#include "PlannerRegistry.h"
+#include <or_ompl/PlannerRegistry.h>
 
 namespace or_ompl {{
 namespace registry {{

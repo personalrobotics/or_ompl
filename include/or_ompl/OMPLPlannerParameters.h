@@ -38,7 +38,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <openrave/planner.h>
 #include <boost/foreach.hpp>
 #include <boost/make_shared.hpp>
-#include "TSRChain.h"
+#include <or_ompl/config.h>
+#include <or_ompl/TSRChain.h>
 
 namespace or_ompl
 {
@@ -68,7 +69,7 @@ public:
 
 protected:
 
-#ifdef OR_HAS_PPSEROPTS
+#ifdef OR_OMPL_HAS_PPSEROPTS
     virtual bool serialize(std::ostream& O, int options=0) const
     {
         if (!PlannerParameters::serialize(O, options)) {
