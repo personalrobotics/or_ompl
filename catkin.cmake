@@ -1,4 +1,5 @@
 cmake_minimum_required(VERSION 2.8.3)
+include(CheckCXXSourceCompiles)
 
 find_package(catkin REQUIRED cmake_modules openrave_catkin)
 find_package(Boost REQUIRED COMPONENTS chrono system)
@@ -6,6 +7,19 @@ find_package(OMPL REQUIRED)
 find_package(OpenRAVE REQUIRED)
 find_package(TinyXML REQUIRED)
 find_package(Eigen REQUIRED)
+
+# 2013-01-05: int options arg added to PlannerParameters::serialize
+set(CMAKE_REQUIRED_INCLUDES ${OpenRAVE_INCLUDE_DIRS})
+set(CMAKE_REQUIRED_LIBRARIES ${OpenRAVE_LIBRARIES} ${Boost_LIBRARIES})
+check_cxx_source_compiles(
+    "#include <openrave/openrave.h>
+    class P: OpenRAVE::PlannerBase::PlannerParameters
+    {void f(){bool (P::*x)(std::ostream&,int) const = &P::serialize;}};
+    int main(){}"
+    OR_HAS_PPSEROPTS)
+if(OR_HAS_PPSEROPTS)
+  add_definitions(-DOR_HAS_PPSEROPTS=1)
+endif()
 
 catkin_package(
     INCLUDE_DIRS include/
