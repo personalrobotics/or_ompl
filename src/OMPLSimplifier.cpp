@@ -32,8 +32,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <boost/make_shared.hpp>
 #include <ompl/base/ScopedState.h>
 #include <ompl/util/Time.h>
-#include "OMPLConversions.h"
-#include "OMPLSimplifer.h"
+#include <or_ompl/OMPLConversions.h>
+#include <or_ompl/OMPLSimplifer.h>
 
 using OpenRAVE::PA_None;
 using OpenRAVE::PA_Interrupt;

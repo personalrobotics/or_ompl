@@ -1,5 +1,5 @@
-#include "TSRGoal.h"
-#include "RobotStateSpace.h"
+#include <or_ompl/TSRGoal.h>
+#include <or_ompl/RobotStateSpace.h>
 
 #include <boost/foreach.hpp>
 #include <ompl/base/spaces/RealVectorStateSpace.h>

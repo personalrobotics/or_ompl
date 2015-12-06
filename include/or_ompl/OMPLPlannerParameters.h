@@ -38,7 +38,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <openrave/planner.h>
 #include <boost/foreach.hpp>
 #include <boost/make_shared.hpp>
-#include "TSRChain.h"
+#include <or_ompl/config.h>
+#include <or_ompl/TSRChain.h>
 
 namespace or_ompl
 {
@@ -48,7 +49,7 @@ public:
     OMPLPlannerParameters()
         : m_seed(0)
         , m_timeLimit(10)
-        , m_isProcessing(false)
+        , m_isProcessingOMPL(false)
         , m_dat_filename("")
         , m_trajs_fileformat("")
     {
@@ -61,17 +62,26 @@ public:
 
     unsigned int m_seed;
     double m_timeLimit;
-    bool m_isProcessing;
+    bool m_isProcessingOMPL;
     std::string m_dat_filename;
     std::string m_trajs_fileformat;
     std::vector<TSRChain::Ptr> m_tsrchains;
 
 protected:
+
+#ifdef OR_OMPL_HAS_PPSEROPTS
+    virtual bool serialize(std::ostream& O, int options=0) const
+    {
+        if (!PlannerParameters::serialize(O, options)) {
+            return false;
+        }
+#else
     virtual bool serialize(std::ostream& O) const
     {
         if (!PlannerParameters::serialize(O)) {
             return false;
         }
+#endif
 
         O << "<seed>" << m_seed << "</seed>" << std::endl;
         O << "<time_limit>" << m_timeLimit << "</time_limit>" << std::endl;
@@ -87,7 +97,7 @@ protected:
     ProcessElement startElement(std::string const &name,
                                 std::list<std::pair<std::string, std::string> > const &atts)
     {
-        if (m_isProcessing) {
+        if (m_isProcessingOMPL) {
             return PE_Ignore;
         }
 
@@ -100,19 +110,19 @@ protected:
                 return PE_Ignore;
         }
 
-        m_isProcessing =
+        m_isProcessingOMPL =
              name == "seed"
           || name == "time_limit"
           || name == "dat_filename"
           || name == "trajs_fileformat"
           || name == "tsr_chain";
 
-        return m_isProcessing ? PE_Support : PE_Pass;
+        return m_isProcessingOMPL ? PE_Support : PE_Pass;
     }
 
     virtual bool endElement(std::string const &name)
     {
-        if (m_isProcessing) {
+        if (m_isProcessingOMPL) {
             if (name == "seed") {
                 _ss >> m_seed;
             } else if (name == "time_limit") {
@@ -132,7 +142,7 @@ protected:
             } else {
                 RAVELOG_WARN(str(boost::format("unknown tag %s\n") % name));
             }
-            m_isProcessing = false;
+            m_isProcessingOMPL = false;
             return false;
         }
 

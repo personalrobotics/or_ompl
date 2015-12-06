@@ -41,10 +41,10 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <ompl/base/StateSpaceTypes.h>
 #include <ompl/base/StateSpace.h>
 #include <ompl/base/spaces/RealVectorStateSpace.h>
-#include "OMPLConversions.h"
-#include "OMPLPlanner.h"
-#include "TSRGoal.h"
-#include "PlannerRegistry.h"
+#include <or_ompl/OMPLConversions.h>
+#include <or_ompl/OMPLPlanner.h>
+#include <or_ompl/TSRGoal.h>
+#include <or_ompl/PlannerRegistry.h>
 
 namespace or_ompl
 {

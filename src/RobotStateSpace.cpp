@@ -1,4 +1,4 @@
-#include "RobotStateSpace.h"
+#include <or_ompl/RobotStateSpace.h>
 #include <openrave/openrave.h>
 
 using namespace or_ompl;

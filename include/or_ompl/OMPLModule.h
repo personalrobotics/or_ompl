@@ -8,7 +8,7 @@
 #ifndef OMPLMODULE_H_
 #define OMPLMODULE_H_
 
-#include "OMPLPlanner.h"
+#include <or_ompl/OMPLPlanner.h>
 #include <openrave/module.h>
 
 namespace or_ompl

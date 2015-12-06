@@ -35,7 +35,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <openrave-core.h>
 #include <openrave/planner.h>
 #include <ompl/geometric/PathSimplifier.h>
-#include "OMPLPlannerParameters.h"
+#include <or_ompl/OMPLPlannerParameters.h>
 
 namespace or_ompl
 {

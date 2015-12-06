@@ -36,8 +36,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <ompl/util/Console.h>
 #include <ompl/geometric/PathGeometric.h>
 #include <openrave/openrave.h>
-#include "OMPLPlannerParameters.h"
-#include "RobotStateSpace.h"
+#include <or_ompl/OMPLPlannerParameters.h>
+#include <or_ompl/RobotStateSpace.h>
 
 namespace or_ompl {
 

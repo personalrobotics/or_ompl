@@ -1,8 +1,8 @@
 #ifndef TSR_GOAL_H_
 #define TSR_GOAL_H_
 
-#include "TSR.h"
-#include "TSRChain.h"
+#include <or_ompl/TSR.h>
+#include <or_ompl/TSRChain.h>
 #include <openrave-core.h>
 #include <ompl/base/goals/GoalSampleableRegion.h>
 #include <ompl/base/SpaceInformation.h>
