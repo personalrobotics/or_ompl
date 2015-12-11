@@ -454,13 +454,20 @@ bool OMPLPlanner::GetParameterValCommand(std::ostream &sout, std::istream &sin) 
     ompl::base::ParamSet const &param_set = planner->params();
     ParamMap const &param_map = param_set.getParams();
 
+    bool in_map = false;
     //Iterate through parameter map and return when it matches required param
     ParamMap::const_iterator it;
     for (it = param_map.begin(); it != param_map.end(); ++it) {
         if (it->first == inp_arg){
-            sout<<"searches "<<it->second->getValue();
+            in_map = true;
+            sout<<it->first<<" "<<it->second->getValue();
             break;
         }
+    }
+
+    if(!in_map){
+        RAVELOG_ERROR("Parameter not in set\n");
+        throw OpenRAVE::openrave_exception("Parameter not in set",OpenRAVE::ORE_InvalidArguments);
     }
 
     return true;
