@@ -49,8 +49,8 @@ public:
 
 std::vector<bool> GetContinuousJoints(const OpenRAVE::RobotBasePtr robot, const std::vector<int> idx);
 
-RobotStateSpacePtr CreateStateSpace(OpenRAVE::RobotBasePtr const robot,
-                                    OMPLPlannerParameters const &params);
+ompl::base::StateSpacePtr CreateStateSpace(OpenRAVE::RobotBasePtr const robot,
+                                           OMPLPlannerParameters const &params);
 
 OpenRAVE::PlannerStatus ToORTrajectory(OpenRAVE::RobotBasePtr const &robot,
                                        ompl::geometric::PathGeometric &ompl_traj,

@@ -79,13 +79,16 @@ private:
     ompl::base::StateSpacePtr m_state_space;
     ompl::base::PlannerPtr m_planner;
     OpenRAVE::RobotBasePtr m_robot;
+    unsigned int m_num_dof;
+    std::vector<int> m_dof_indices;
     OpenRAVE::CollisionReportPtr m_collisionReport;
     int m_numCollisionChecks;
     double m_totalCollisionTime;
     double m_totalPlanningTime;
 
     ompl::base::PlannerPtr CreatePlanner(OMPLPlannerParameters const &params);
-    bool IsStateValid(const ompl::base::State* state);
+    bool IsStateValidRealVector(const ompl::base::State* state);
+    bool IsStateValidCompound(const ompl::base::State* state);
     bool IsInOrCollision(std::vector<double> const &jointValues,
                          std::vector<int> const &jointIndices);
 

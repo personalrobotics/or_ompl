@@ -82,7 +82,7 @@ bool OMPLPlanner::InitPlan(OpenRAVE::RobotBasePtr robot,
     m_initialized = false;
 
     try {
-        typedef ompl::base::ScopedState<RobotStateSpace> ScopedState;
+        typedef ompl::base::ScopedState<ompl::base::StateSpace> ScopedState;
 
         if (!robot) {
             RAVELOG_ERROR("Robot must not be NULL.\n");
@@ -98,7 +98,9 @@ bool OMPLPlanner::InitPlan(OpenRAVE::RobotBasePtr robot,
         m_numCollisionChecks = 0;
 
         std::vector<int> dof_indices = robot->GetActiveDOFIndices();
+        m_dof_indices = dof_indices;
         const unsigned int num_dof = dof_indices.size();
+        m_num_dof = num_dof;
         m_parameters = boost::make_shared<OMPLPlannerParameters>();
         m_parameters->copy(params_raw);
 
@@ -134,7 +136,7 @@ bool OMPLPlanner::InitPlan(OpenRAVE::RobotBasePtr robot,
         {
             ScopedState q_start(m_state_space);
             for (size_t i = 0; i < num_dof; i++) {
-                q_start->value(i) = m_parameters->vinitialconfig[istart*num_dof + i];
+                q_start[i] = m_parameters->vinitialconfig[istart*num_dof + i];
             }
             m_simple_setup->addStartState(q_start);
         }
@@ -184,7 +186,7 @@ bool OMPLPlanner::InitPlan(OpenRAVE::RobotBasePtr robot,
             
                 ScopedState q_goal(m_state_space);
                 for (size_t i = 0; i < num_dof; i++) {
-                    q_goal->value(i) = m_parameters->vgoalconfig[i];
+                    q_goal[i] = m_parameters->vgoalconfig[i];
                 }
                 m_simple_setup->setGoalState(q_goal);
             } else {
@@ -197,7 +199,7 @@ bool OMPLPlanner::InitPlan(OpenRAVE::RobotBasePtr robot,
                 {
                     ScopedState q_goal(m_state_space);
                     for (size_t i = 0; i < num_dof; i++) {
-                        q_goal->value(i) = m_parameters->vgoalconfig[igoal*num_dof + i];
+                        q_goal[i] = m_parameters->vgoalconfig[igoal*num_dof + i];
                     }
                     ompl_goals->as<ompl::base::GoalStates>()->addState(q_goal);
                 }
@@ -214,8 +216,13 @@ bool OMPLPlanner::InitPlan(OpenRAVE::RobotBasePtr robot,
         m_simple_setup->setPlanner(m_planner);
 
         RAVELOG_DEBUG("Setting state validity checker.\n");
-        m_simple_setup->setStateValidityChecker(
-            boost::bind(&or_ompl::OMPLPlanner::IsStateValid, this, _1));
+        if (m_state_space->isCompound()) {
+            m_simple_setup->setStateValidityChecker(
+                boost::bind(&or_ompl::OMPLPlanner::IsStateValidCompound, this, _1));
+        } else {
+            m_simple_setup->setStateValidityChecker(
+                boost::bind(&or_ompl::OMPLPlanner::IsStateValidRealVector, this, _1));
+        }
 
         m_initialized = true;
         return true;
@@ -365,7 +372,28 @@ bool OMPLPlanner::IsInOrCollision(std::vector<double> const &values, std::vector
     return collided;
 }
 
-bool OMPLPlanner::IsStateValid(ompl::base::State const *state)
+bool OMPLPlanner::IsStateValidRealVector(ompl::base::State const *state)
+{
+    ompl::base::RealVectorStateSpace::StateType const *realVectorState = state->as<ompl::base::RealVectorStateSpace::StateType>();
+    
+    if (!realVectorState)
+    {
+        RAVELOG_ERROR("Invalid StateType. This should never happen.\n");
+        return false;
+    }
+    
+    std::vector<double> values(realVectorState->values, realVectorState->values+m_num_dof);
+    BOOST_FOREACH(double v, values) {
+        if(std::isnan(v)) {
+            RAVELOG_ERROR("Invalid value in state.\n");
+            return false;
+        }
+    }
+    
+    return !IsInOrCollision(values, m_dof_indices);
+}
+
+bool OMPLPlanner::IsStateValidCompound(ompl::base::State const *state)
 {
     RobotState const *realVectorState = state->as<RobotState>();
     

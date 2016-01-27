@@ -98,8 +98,8 @@ std::vector<bool> GetContinuousJoints(const OpenRAVE::RobotBasePtr robot, const 
     return isContinuous;
 }
 
-RobotStateSpacePtr CreateStateSpace(OpenRAVE::RobotBasePtr const robot,
-                                    OMPLPlannerParameters const &params)
+ompl::base::StateSpacePtr CreateStateSpace(OpenRAVE::RobotBasePtr const robot,
+                                           OMPLPlannerParameters const &params)
 {
     if (!robot) {
         RAVELOG_ERROR("Robot must not be NULL.\n");
@@ -122,24 +122,45 @@ RobotStateSpacePtr CreateStateSpace(OpenRAVE::RobotBasePtr const robot,
                       ompl::RNG::getSeed());
     }
 
+    // get active dof indices
     std::vector<int> dof_indices = robot->GetActiveDOFIndices();
     const unsigned int num_dof = dof_indices.size();
-    std::vector<bool> is_continuous = GetContinuousJoints(robot, dof_indices);
-    RobotStateSpacePtr state_space = boost::make_shared<RobotStateSpace>(dof_indices, is_continuous);
 
-    RAVELOG_DEBUG("Setting joint limits.\n");
+    // get continuous joints
+    std::vector<bool> is_continuous = GetContinuousJoints(robot, dof_indices);
+    BOOST_ASSERT(is_continuous.size() == num_dof);
+    bool any_continuous = false;
+    for (size_t i = 0; i < num_dof; ++i) {
+        if (is_continuous[i]) {
+            any_continuous = true;
+        }
+    }
+    
+    // get joint limits, convert to ompl format
     std::vector<OpenRAVE::dReal> lowerLimits, upperLimits;
     robot->GetActiveDOFLimits(lowerLimits, upperLimits);
     BOOST_ASSERT(lowerLimits.size() == num_dof);
     BOOST_ASSERT(upperLimits.size() == num_dof);
-
     ompl::base::RealVectorBounds bounds(num_dof);
     for (size_t i = 0; i < num_dof; ++i) {
         BOOST_ASSERT(lowerLimits[i] <= upperLimits[i]);
         bounds.setLow(i, lowerLimits[i]);
         bounds.setHigh(i, upperLimits[i]);
     }
-    state_space->setBounds(bounds);
+    
+    // construct state space
+    ompl::base::StateSpacePtr state_space;
+    if (any_continuous) {
+        state_space = boost::make_shared<RobotStateSpace>(dof_indices, is_continuous);
+        
+        RAVELOG_DEBUG("Setting joint limits.\n");
+        state_space->as<RobotStateSpace>()->setBounds(bounds);
+    } else {
+        state_space.reset(new ompl::base::RealVectorStateSpace(num_dof));
+        
+        RAVELOG_DEBUG("Setting joint limits.\n");
+        state_space->as<ompl::base::RealVectorStateSpace>()->setBounds(bounds);
+    }
 
     // Set the resolution at which OMPL should discretize edges for collision
     // checking. OpenRAVE supports per-joint resolutions, so we compute one
@@ -202,14 +223,27 @@ OpenRAVE::PlannerStatus ToORTrajectory(
     size_t const num_dof = robot->GetActiveDOF();
     or_traj->Init(robot->GetActiveConfigurationSpecification("linear"));
 
+    bool is_compound = ompl_traj.getSpaceInformation()->getStateSpace()->isCompound();
+
     for (size_t i = 0; i < ompl_traj.getStateCount(); ++i){
-        RobotState  *state = ompl_traj.getState(i)->as<RobotState>();
-        if (!state) {
-            RAVELOG_ERROR("Unable to convert output trajectory."
-                          "State is not a RealVectorStateSpace::StateType.");
-            return OpenRAVE::PS_Failed;
+        if (is_compound) {
+            RobotState  *state = ompl_traj.getState(i)->as<RobotState>();
+            if (!state) {
+                RAVELOG_ERROR("Unable to convert output trajectory."
+                              "State is not an or_ompl::RobotState::StateType.");
+                return OpenRAVE::PS_Failed;
+            }
+            or_traj->Insert(i, state->getValues(), true);
+        } else {
+            ompl::base::RealVectorStateSpace::StateType *state = ompl_traj.getState(i)->as<ompl::base::RealVectorStateSpace::StateType>();
+            if (!state) {
+                RAVELOG_ERROR("Unable to convert output trajectory."
+                              "State is not a RealVectorStateSpace::StateType.");
+                return OpenRAVE::PS_Failed;
+            }
+            std::vector<double> vec(state->values, state->values+num_dof);
+            or_traj->Insert(i, vec, true);
         }
-        or_traj->Insert(i, state->getValues(), true);
     }
     return OpenRAVE::PS_HasSolution;
 }
