@@ -153,16 +153,9 @@ RobotStateSpacePtr CreateStateSpace(OpenRAVE::RobotBasePtr const robot,
 
     double conservative_resolution = std::numeric_limits<double>::max();
     for (size_t i = 0; i < num_dof; ++i) {
-        if (upperLimits[i] > lowerLimits[i]) {
-            conservative_resolution = std::min(conservative_resolution, dof_resolutions[i]);
-        }
+        conservative_resolution = std::min(conservative_resolution, dof_resolutions[i]);
     }
-    
-    if (std::isinf(conservative_resolution)) {
-        RAVELOG_ERROR("All joints have equal lower and upper limits.\n");
-        return RobotStateSpacePtr();
-    }
-    
+
     double conservative_fraction = conservative_resolution / state_space->getMaximumExtent();
     state_space->setLongestValidSegmentFraction(conservative_fraction);
     RAVELOG_DEBUG("Computed resolution of %f (%f fraction of extents).\n",
