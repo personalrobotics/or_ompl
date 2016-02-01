@@ -356,11 +356,18 @@ OpenRAVE::PlannerStatus OMPLPlanner::PlanPath(OpenRAVE::TrajectoryBasePtr ptraj)
 
 bool OMPLPlanner::IsInOrCollision(std::vector<double> const &values, std::vector<int> const &indices)
 {
+    std::ofstream ccfile;
+    ccfile.open("or_ompl_colls.txt",std::ofstream::out| std::ofstream::app);
     boost::chrono::steady_clock::time_point const tic
        = boost::chrono::steady_clock::now();
+
+    for (int i=0;i<values.size();i++)
+        ccfile<<values[i]<<" ";
+    ccfile<<std::endl;
+    ccfile.close();
     
     m_robot->SetDOFValues(values, OpenRAVE::KinBody::CLA_Nothing, indices);
-    bool const collided = GetEnv()->CheckCollision(m_robot);
+    bool const collided = GetEnv()->CheckCollision(m_robot)  || m_robot->CheckSelfCollision();
     
     boost::chrono::steady_clock::time_point const toc
         = boost::chrono::steady_clock::now();
@@ -452,22 +459,18 @@ bool OMPLPlanner::GetParameterValCommand(std::ostream &sout, std::istream &sin) 
     // suggestion", which is used to generate the GUI in OMPL.app.
 
     ompl::base::ParamSet const &param_set = planner->params();
-    ParamMap const &param_map = param_set.getParams();
+    std::string value;
 
-    bool in_map = false;
-    //Iterate through parameter map and return when it matches required param
-    ParamMap::const_iterator it;
-    for (it = param_map.begin(); it != param_map.end(); ++it) {
-        if (it->first == inp_arg){
-            in_map = true;
-            sout<<it->first<<" "<<it->second->getValue();
-            break;
-        }
-    }
+    //Check if in parameter map
+    bool in_map = param_set.getParam(inp_arg,value);
 
     if(!in_map){
         RAVELOG_ERROR("Parameter not in set\n");
         throw OpenRAVE::openrave_exception("Parameter not in set",OpenRAVE::ORE_InvalidArguments);
+    }
+    else{
+        //Output key-value pair
+        sout<<inp_arg<<" "<<value;
     }
 
     return true;
