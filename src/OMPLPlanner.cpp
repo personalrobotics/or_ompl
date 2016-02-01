@@ -41,10 +41,10 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <ompl/base/StateSpaceTypes.h>
 #include <ompl/base/StateSpace.h>
 #include <ompl/base/spaces/RealVectorStateSpace.h>
-#include "OMPLConversions.h"
-#include "OMPLPlanner.h"
-#include "TSRGoal.h"
-#include "PlannerRegistry.h"
+#include <or_ompl/OMPLConversions.h>
+#include <or_ompl/OMPLPlanner.h>
+#include <or_ompl/TSRGoal.h>
+#include <or_ompl/PlannerRegistry.h>
 
 namespace or_ompl
 {
@@ -141,7 +141,7 @@ bool OMPLPlanner::InitPlan(OpenRAVE::RobotBasePtr robot,
         {
             ScopedState q_start(m_state_space);
             for (size_t i = 0; i < num_dof; i++) {
-                q_start->values[i] = m_parameters->vinitialconfig[istart*num_dof + i];
+                q_start->value(i) = m_parameters->vinitialconfig[istart*num_dof + i];
             }
             m_simple_setup->addStartState(q_start);
         }
@@ -191,7 +191,7 @@ bool OMPLPlanner::InitPlan(OpenRAVE::RobotBasePtr robot,
             
                 ScopedState q_goal(m_state_space);
                 for (size_t i = 0; i < num_dof; i++) {
-                    q_goal->values[i] = m_parameters->vgoalconfig[i];
+                    q_goal->value(i) = m_parameters->vgoalconfig[i];
                 }
                 m_simple_setup->setGoalState(q_goal);
             } else {
@@ -204,7 +204,7 @@ bool OMPLPlanner::InitPlan(OpenRAVE::RobotBasePtr robot,
                 {
                     ScopedState q_goal(m_state_space);
                     for (size_t i = 0; i < num_dof; i++) {
-                        q_goal->values[i] = m_parameters->vgoalconfig[igoal*num_dof + i];
+                        q_goal->value(i) = m_parameters->vgoalconfig[igoal*num_dof + i];
                     }
                     ompl_goals->as<ompl::base::GoalStates>()->addState(q_goal);
                 }
@@ -227,7 +227,7 @@ bool OMPLPlanner::InitPlan(OpenRAVE::RobotBasePtr robot,
         m_initialized = true;
         return true;
     } catch (std::runtime_error const &e) {
-        RAVELOG_ERROR("IntPlan failed: %s\n", e.what());
+        RAVELOG_ERROR("InitPlan failed: %s\n", e.what());
         return false;
     }
 }
@@ -396,7 +396,7 @@ bool OMPLPlanner::IsStateValid(ompl::base::State const *state)
         }
     }
     
-    return !IsInOrCollision(realVectorState->getValues(), realVectorState->getIndices());
+    return !IsInOrCollision(realVectorState->getValues(), realVectorState->getSpace()->getIndices());
 }
 
 bool OMPLPlanner::GetParametersCommand(std::ostream &sout, std::istream &sin) const
@@ -472,6 +472,7 @@ bool OMPLPlanner::GetParameterValCommand(std::ostream &sout, std::istream &sin) 
         //Output key-value pair
         sout<<inp_arg<<" "<<value;
     }
+
 
     return true;
 

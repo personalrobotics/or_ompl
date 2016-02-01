@@ -22,7 +22,7 @@ except subprocess.CalledProcessError as e:
 # Initialize OpenRAVE.
 openravepy.RaveInitialize(True)
 openravepy.misc.InitOpenRAVELogging()
-openravepy.RaveSetDebugLevel(openravepy.DebugLevel.Fatal)
+openravepy.RaveSetDebugLevel(openravepy.DebugLevel.Debug)
 
 
 class PlannerTestsMeta(type):
@@ -112,7 +112,7 @@ class PlannerTests(unittest.TestCase):
             params = openravepy.Planner.PlannerParameters()
             params.SetRobotActiveJoints(self.robot)
             params.SetGoalConfig(self.GOAL_CONFIG)
-            params.SetExtraParameters('<time_limit>30</time_limit>')
+            params.SetExtraParameters('<time_limit>60</time_limit>')
 
             cspec = self.robot.GetActiveConfigurationSpecification()
 

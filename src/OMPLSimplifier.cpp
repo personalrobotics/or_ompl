@@ -32,8 +32,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <boost/make_shared.hpp>
 #include <ompl/base/ScopedState.h>
 #include <ompl/util/Time.h>
-#include "OMPLConversions.h"
-#include "OMPLSimplifer.h"
+#include <or_ompl/OMPLConversions.h>
+#include <or_ompl/OMPLSimplifer.h>
 
 using OpenRAVE::PA_None;
 using OpenRAVE::PA_Interrupt;
@@ -132,7 +132,7 @@ OpenRAVE::PlannerStatus OMPLSimplifier::PlanPath(OpenRAVE::TrajectoryBasePtr ptr
         // Insert the waypoint into the OMPL path.
         ScopedState waypoint_ompl(m_space_info);
         for (size_t idof = 0; idof < num_dof; ++idof) {
-            waypoint_ompl[idof] = waypoint_openrave[idof];
+            waypoint_ompl->value(idof) = waypoint_openrave[idof];
         }
         path.append(waypoint_ompl.get());
     }
@@ -164,7 +164,6 @@ OpenRAVE::PlannerStatus OMPLSimplifier::PlanPath(OpenRAVE::TrajectoryBasePtr ptr
         // - snapToVertex: ratio of total path length used to snap samples to
         //                 vertices
         bool const changed = m_simplifier->shortcutPath(path, 1, 1, 1.0, 0.005);
-
         num_changes += !!changed;
         progress._iteration += 1;
 
@@ -215,7 +214,7 @@ bool OMPLSimplifier::IsStateValid(ompl::base::State const *state)
     RobotState const *realVectorState = state->as<RobotState>();
 
     if (realVectorState) {
-        return !IsInOrCollision(realVectorState->getValues(), realVectorState->getIndices());
+        return !IsInOrCollision(realVectorState->getValues(), realVectorState->getSpace()->getIndices());
     } else {
         RAVELOG_ERROR("Invalid StateType. This should never happen.\n");
         return false;

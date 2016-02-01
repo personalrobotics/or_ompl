@@ -1,4 +1,4 @@
-#include <TSR.h>
+#include <or_ompl/TSR.h>
 #include <Eigen/Geometry>
 #include <ompl/util/RandomNumbers.h>
 #include <vector>

@@ -35,10 +35,10 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <boost/function.hpp>
 #include <boost/make_shared.hpp>
 #include <openrave/plugin.h>
-#include "OMPLPlanner.h"
-#include "OMPLConversions.h"
-#include "OMPLSimplifer.h"
-#include "PlannerRegistry.h"
+#include <or_ompl/OMPLPlanner.h>
+#include <or_ompl/OMPLConversions.h>
+#include <or_ompl/OMPLSimplifer.h>
+#include <or_ompl/PlannerRegistry.h>
 
 using namespace OpenRAVE;
 

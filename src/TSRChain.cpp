@@ -1,4 +1,4 @@
-#include <TSRChain.h>
+#include <or_ompl/TSRChain.h>
 
 #include <limits>
 #include <vector>

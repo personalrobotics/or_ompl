@@ -36,8 +36,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <ompl/util/Console.h>
 #include <ompl/geometric/PathGeometric.h>
 #include <openrave/openrave.h>
-#include "OMPLPlannerParameters.h"
-#include "RobotStateSpace.h"
+#include <or_ompl/OMPLPlannerParameters.h>
+#include <or_ompl/RobotStateSpace.h>
 
 namespace or_ompl {
 
@@ -47,11 +47,13 @@ public:
                      char const *filename, int line);
 };
 
+std::vector<bool> GetContinuousJoints(const OpenRAVE::RobotBasePtr robot, const std::vector<int> idx);
+
 RobotStateSpacePtr CreateStateSpace(OpenRAVE::RobotBasePtr const robot,
                                     OMPLPlannerParameters const &params);
 
 OpenRAVE::PlannerStatus ToORTrajectory(OpenRAVE::RobotBasePtr const &robot,
-                                       ompl::geometric::PathGeometric const &ompl_traj,
+                                       ompl::geometric::PathGeometric &ompl_traj,
                                        OpenRAVE::TrajectoryBasePtr or_traj);
 
 }
