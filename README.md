@@ -42,15 +42,9 @@ dependencies:
 
 ## Installation Instructions
 
-The `CMakeLists.txt` file in the root of this repository supports three
-different types of builds:
-
-1. [Catkin](http://wiki.ros.org/catkin): for ROS groovy and above (preferred)
-2. [rosbuild](http://wiki.ros.org/rosbuild): for ROS fuerte
-3. Pure CMake: no ROS dependency
-
-See the appropriate section below for installation instructions specific to
-your environment.
+The `CMakeLists.txt` file in the root of this repository supports Catkin and
+standalone CMake builds. See the appropriate section below for installation
+instructions specific to your environment.
 
 ### Catkin Instructions
 
@@ -81,32 +75,7 @@ See the [documentation for
 openrave_catkin](https://github.com/personalrobotics/openrave_catkin/blob/master/README.md)
 for more information.
 
-### rosbuild Instructions
-
-In ROS fuerte, you can use rosbuild to build or_ompl just like any other ROS
-package. When using rosbuild, we assume that OMPL and OpenRAVE are both
-installed through wrapper ROS packages.  The wrapper package for OpenRAVE is
-provided by the [openrave_planning](https://github.com/jsk-ros-pkg/openrave_planning) stack.
-
-Once the dependencies are satisified, you can simply clone this repository into
-your `ROS_PACKAGE_PATH` and run `rosmake`:
-
-```shell
-$ cd /my/workspace
-$ export ROS_PACKAGE_PATH="$(pwd):${ROS_PACKAGE_PATH}"
-$ git clone https://github.com/personalrobotics/or_ompl.git
-$ rosmake or_ompl
-```
-
-The OpenRAVE plugins are built to the library `bin/libor_ompl.so`. You will
-need to manually add this directory to your `OPENRAVE_PLUGINS` path so that
-OpenRAVE can find it:
-
-```shell
-$ export OPENRAVE_PLUGINS="$(pwd)/or_ompl/lib:${OPENRAVE_PLUGINS}"
-```
-
-### Standalone Build Instructions
+### Standalone CMake Build Instructions
 
 You can build or_ompl entirely ROS-agnostic by setting the `NO_ROS` variable:
 
@@ -131,7 +100,6 @@ OMPL and OpenRAVE. However, you should be aware of a few limitations:
  - per-joint resolutions are not supported (a conservative resolution is selected)
  - kineodynamic planning is not supported
  - planning with affine DOFs is not implemented
- - continuous rotation joints are not supported
  - simplifier does not work with the `SmoothTrajectory` helper function
  - no support for multi-query planning (e.g. PRM)
 
