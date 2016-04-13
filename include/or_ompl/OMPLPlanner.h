@@ -64,6 +64,7 @@ public:
     }
     
     bool GetTimes(std::ostream & sout, std::istream & sin) const;
+    bool GetParameterValCommand(std::ostream &sout, std::istream &sin) const;
 
 protected:
     const ompl::base::PlannerPtr & get_planner()

@@ -163,32 +163,24 @@ ompl::base::StateSpacePtr CreateStateSpace(OpenRAVE::RobotBasePtr const robot,
     }
 
     // Set the resolution at which OMPL should discretize edges for collision
-    // checking. OpenRAVE supports per-joint resolutions, so we compute one
-    // conservative value for all joints. We then convert this to a fraction
+    // checking. OpenRAVE supports per-joint resolutions, so we compute
+    // a conservative minimum resolution required across all joints.
+    // We then convert this to a fraction
     // of the workspace extents to call setLongestValidSegmentFraction.
     RAVELOG_DEBUG("Setting resolution.\n");
     std::vector<OpenRAVE::dReal> dof_resolutions;
     robot->GetActiveDOFResolutions(dof_resolutions);
     BOOST_ASSERT(dof_resolutions.size() == num_dof);
 
-    double conservative_fraction = std::numeric_limits<double>::max();
-    double longest_extent = 0;
+    double conservative_resolution = std::numeric_limits<double>::max();
     for (size_t i = 0; i < num_dof; ++i) {
-        if (upperLimits[i] > lowerLimits[i]) {
-            double const joint_extents = upperLimits[i] - lowerLimits[i];
-            double const joint_fraction = dof_resolutions[i] / joint_extents;
-            conservative_fraction = std::min(conservative_fraction, joint_fraction);
-            longest_extent = std::max(longest_extent, joint_extents);
-        }
+        conservative_resolution = std::min(conservative_resolution, dof_resolutions[i]);
     }
 
-    if (std::isinf(conservative_fraction)) {
-        RAVELOG_ERROR("All joints have equal lower and upper limits.\n");
-        return RobotStateSpacePtr();
-    }
+    double conservative_fraction = conservative_resolution / state_space->getMaximumExtent();
     state_space->setLongestValidSegmentFraction(conservative_fraction);
     RAVELOG_DEBUG("Computed resolution of %f (%f fraction of extents).\n",
-                  conservative_fraction * longest_extent, conservative_fraction);
+                  conservative_resolution, conservative_fraction);
 
     // Per-DOF weights are not supported by OMPL.
     // TODO: Emulate this by scaling joint values.

@@ -60,9 +60,16 @@ OMPLPlanner::OMPLPlanner(OpenRAVE::EnvironmentBasePtr penv,
         boost::bind(&OMPLPlanner::GetParametersCommand, this, _1, _2),
         "returns the list of accepted planner parameters"
     );
+
+    RegisterCommand("GetParameterValue",
+        boost::bind(&OMPLPlanner::GetParameterValCommand, this, _1, _2),
+        "returns the value of a specific parameter"
+    );
+
     RegisterCommand("GetTimes",
         boost::bind(&OMPLPlanner::GetTimes,this,_1,_2),
         "get timing information from last plan");
+
 }
 
 OMPLPlanner::~OMPLPlanner()
@@ -142,16 +149,16 @@ bool OMPLPlanner::InitPlan(OpenRAVE::RobotBasePtr robot,
         }
 
         RAVELOG_DEBUG("Setting goal configuration.\n");
-		std::vector<TSRChain::Ptr> goal_chains;
-		BOOST_FOREACH(TSRChain::Ptr tsr_chain, m_parameters->m_tsrchains){
-			if(tsr_chain->sampleGoal()){
+        std::vector<TSRChain::Ptr> goal_chains;
+        BOOST_FOREACH(TSRChain::Ptr tsr_chain, m_parameters->m_tsrchains){
+            if(tsr_chain->sampleGoal()){
                 tsr_chain->setEnv(robot->GetEnv()); // required to enable distance to TSR chains
-				goal_chains.push_back(tsr_chain);
-			}else{
+                goal_chains.push_back(tsr_chain);
+            }else{
                 RAVELOG_ERROR("Only goal TSR chains are supported by OMPL. Failing.\n");
                 return false;
             }
-		}
+        }
 
         if(goal_chains.size() > 0 && m_parameters->vgoalconfig.size() > 0){
             RAVELOG_ERROR("A goal TSR chain has been supplied and a goal configuration"
@@ -162,8 +169,8 @@ bool OMPLPlanner::InitPlan(OpenRAVE::RobotBasePtr robot,
 
         if(goal_chains.size() > 0) {
             TSRGoal::Ptr goaltsr = boost::make_shared<TSRGoal>(m_simple_setup->getSpaceInformation(),
-															   goal_chains,
-															   robot);
+                                                               goal_chains,
+                                                               robot);
             m_simple_setup->setGoal(goaltsr);
         }else{
             if (m_parameters->vgoalconfig.size() % num_dof != 0) {
@@ -446,6 +453,53 @@ bool OMPLPlanner::GetParametersCommand(std::ostream &sout, std::istream &sin) co
 
     return true;
 }
+
+bool OMPLPlanner::GetParameterValCommand(std::ostream &sout, std::istream &sin) const
+{
+    typedef std::map<std::string, ompl::base::GenericParamPtr> ParamMap;
+    //Obtain argument from input stream
+    std::string inp_arg;
+    sin >> inp_arg;
+
+    ompl::base::PlannerPtr planner;
+    if (m_planner) {
+        planner = m_planner;
+    }
+    // We need an instance of the planner to query its ParamSet. Unfortunately,
+    // constructing the planner requires a SpaceInformationPtr, which can only
+    // be generated from an existing StateSpace. As a workaround, we construct
+    // a simple one-DOF state space and make a temporary planner instance.
+    else {
+        ompl::base::StateSpacePtr const state_space
+            = boost::make_shared<ompl::base::RealVectorStateSpace>(1);
+        ompl::base::SpaceInformationPtr const space_information 
+            = boost::make_shared<ompl::base::SpaceInformation>(state_space);
+        planner.reset(m_planner_factory(space_information));
+    }
+
+    // Query the supported parameters. Each planner has a name and a "range
+    // suggestion", which is used to generate the GUI in OMPL.app.
+
+    ompl::base::ParamSet const &param_set = planner->params();
+    std::string value;
+
+    //Check if in parameter map
+    bool in_map = param_set.getParam(inp_arg,value);
+
+    if(!in_map){
+        RAVELOG_ERROR("Parameter not in set\n");
+        throw OpenRAVE::openrave_exception("Parameter not in set",OpenRAVE::ORE_InvalidArguments);
+    }
+    else{
+        //Output key-value pair
+        sout<<inp_arg<<" "<<value;
+    }
+
+
+    return true;
+
+}
+
 
 bool OMPLPlanner::GetTimes(std::ostream & sout, std::istream & sin) const
 {
