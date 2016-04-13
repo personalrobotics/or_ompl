@@ -52,12 +52,14 @@ public:
         , m_isProcessingOMPL(false)
         , m_dat_filename("")
         , m_trajs_fileformat("")
+        , m_doBaked(false)
     {
         _vXMLParameters.push_back("seed");
         _vXMLParameters.push_back("time_limit");
         _vXMLParameters.push_back("dat_filename");
         _vXMLParameters.push_back("trajs_fileformat");
         _vXMLParameters.push_back("tsr_chain");
+        _vXMLParameters.push_back("do_baked");
     }
 
     unsigned int m_seed;
@@ -66,6 +68,7 @@ public:
     std::string m_dat_filename;
     std::string m_trajs_fileformat;
     std::vector<TSRChain::Ptr> m_tsrchains;
+    bool m_doBaked;
 
 protected:
 
@@ -90,6 +93,7 @@ protected:
         BOOST_FOREACH(TSRChain::Ptr chain, m_tsrchains) {
             O << "<tsr_chain>" << chain << "</tsr_chain>" << std::endl;
         }
+        O << "<do_baked>" << m_doBaked << "</do_baked>" << std::endl;
 
         return !!O;
     }
@@ -115,7 +119,8 @@ protected:
           || name == "time_limit"
           || name == "dat_filename"
           || name == "trajs_fileformat"
-          || name == "tsr_chain";
+          || name == "tsr_chain"
+          || name == "do_baked";
 
         return m_isProcessingOMPL ? PE_Support : PE_Pass;
     }
@@ -138,6 +143,16 @@ protected:
                     RAVELOG_ERROR("failed to deserialize TSRChain");
                 }else{
                     m_tsrchains.push_back(chain);
+                }
+            } else if (name == "do_baked") {
+                std::string strbool;
+                _ss >> strbool;
+                if (strbool=="on" || strbool=="yes" || strbool=="1" || strbool=="true") {
+                    m_doBaked = true;
+                } else if (strbool=="off" || strbool=="no" || strbool=="0" || strbool=="false") {
+                    m_doBaked = false;
+                } else {
+                    RAVELOG_WARN(str(boost::format("unknown boolean %s, ignoring\n") % strbool));
                 }
             } else {
                 RAVELOG_WARN(str(boost::format("unknown tag %s\n") % name));

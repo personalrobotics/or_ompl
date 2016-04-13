@@ -244,6 +244,9 @@ ompl::base::PlannerPtr OMPLPlanner::CreatePlanner(
         RAVELOG_ERROR("Failed creating planner.");
         return ompl::base::PlannerPtr();
     }
+    
+    // record whether we'll be doing baked checking
+    m_doBaked = params.m_doBaked;
 
     // Populate planner parameters from the PlannerParameters.
     std::string const params_str = "<ExtraParams>"
@@ -329,6 +332,34 @@ OpenRAVE::PlannerStatus OMPLPlanner::PlanPath(OpenRAVE::TrajectoryBasePtr ptraj)
                 = GetEnv()->GetCollisionChecker();
             OpenRAVE::CollisionOptionsStateSaver const collision_saver(
                 collision_checker, OpenRAVE::CO_ActiveDOFs, false);
+            
+            // If baked, initialize!
+            if (m_doBaked)
+            {
+                 OpenRAVE::CollisionCheckerBasePtr cc = GetEnv()->GetCollisionChecker();
+                 std::stringstream sinput("GetBakingFunctions"), soutput;
+                 try
+                 {
+                     if (!cc->SendCommand(soutput, sinput))
+                         throw OpenRAVE::openrave_exception();
+                 }
+                 catch (const OpenRAVE::openrave_exception & exc)
+                 {
+                     RAVELOG_ERROR("collision checker doesn't support baked checks!\n");
+                     return OpenRAVE::PS_Failed;
+                 }
+                 boost::function< void ()> * fn_bake_begin;
+                 boost::function< OpenRAVE::KinBodyPtr ()> * fn_bake_end;
+                 boost::function< bool (OpenRAVE::KinBodyConstPtr, OpenRAVE::CollisionReportPtr)> * fn_check_baked_collision;
+                 soutput >> (void *&)fn_bake_begin;
+                 soutput >> (void *&)fn_bake_end;
+                 soutput >> (void *&)fn_check_baked_collision;
+                 (*fn_bake_begin)();
+                 GetEnv()->CheckCollision(m_robot);
+                 m_robot->CheckSelfCollision();
+                 m_bakedKinbody = (*fn_bake_end)();
+                 m_bakedChecker = *fn_check_baked_collision;
+            }
 
             // Call the planner.
             m_simple_setup->solve(m_parameters->m_timeLimit);
@@ -346,6 +377,10 @@ OpenRAVE::PlannerStatus OMPLPlanner::PlanPath(OpenRAVE::TrajectoryBasePtr ptraj)
         planner_status = OpenRAVE::PS_Failed;
     }
     
+    // reset baked stuff
+    m_bakedKinbody.reset();
+    m_bakedChecker = NULL;
+    
     boost::chrono::steady_clock::time_point const toc
         = boost::chrono::steady_clock::now();
     m_totalPlanningTime += boost::chrono::duration_cast<
@@ -360,8 +395,14 @@ bool OMPLPlanner::IsInOrCollision(std::vector<double> const &values, std::vector
        = boost::chrono::steady_clock::now();
     
     m_robot->SetDOFValues(values, OpenRAVE::KinBody::CLA_Nothing, indices);
-    bool const collided = GetEnv()->CheckCollision(m_robot)
-                       || m_robot->CheckSelfCollision();
+    
+    bool collided;
+    if (m_doBaked && m_bakedKinbody) {
+        collided = m_bakedChecker(m_bakedKinbody, OpenRAVE::CollisionReportPtr());
+    } else {
+        collided = GetEnv()->CheckCollision(m_robot)
+                || m_robot->CheckSelfCollision();
+    }
     
     boost::chrono::steady_clock::time_point const toc
         = boost::chrono::steady_clock::now();

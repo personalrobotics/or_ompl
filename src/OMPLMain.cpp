@@ -65,6 +65,9 @@ InterfaceBasePtr CreateInterfaceValidated(
             if (candidate_name_lower == ompl_planner_name) {
                 or_ompl::PlannerFactory const factory = boost::bind(
                     &or_ompl::registry::create, candidate_name, _1);
+                
+                printf("CONSTRUCTING PLANNER!\n");
+                
                 return boost::make_shared<or_ompl::OMPLPlanner>(penv, factory);
             }
         }

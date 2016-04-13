@@ -84,6 +84,11 @@ private:
     int m_numCollisionChecks;
     double m_totalCollisionTime;
     double m_totalPlanningTime;
+    
+    /* baked checking (initialized on each PlanPath) */
+    bool m_doBaked;
+    OpenRAVE::KinBodyConstPtr m_bakedKinbody;
+    boost::function< bool (OpenRAVE::KinBodyConstPtr, OpenRAVE::CollisionReportPtr)> m_bakedChecker;
 
     ompl::base::PlannerPtr CreatePlanner(OMPLPlannerParameters const &params);
     bool IsStateValid(const ompl::base::State* state);
