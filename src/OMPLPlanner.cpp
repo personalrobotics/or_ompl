@@ -356,18 +356,12 @@ OpenRAVE::PlannerStatus OMPLPlanner::PlanPath(OpenRAVE::TrajectoryBasePtr ptraj)
 
 bool OMPLPlanner::IsInOrCollision(std::vector<double> const &values, std::vector<int> const &indices)
 {
-    std::ofstream ccfile;
-    ccfile.open("or_ompl_colls.txt",std::ofstream::out| std::ofstream::app);
     boost::chrono::steady_clock::time_point const tic
        = boost::chrono::steady_clock::now();
-
-    for (int i=0;i<values.size();i++)
-        ccfile<<values[i]<<" ";
-    ccfile<<std::endl;
-    ccfile.close();
     
     m_robot->SetDOFValues(values, OpenRAVE::KinBody::CLA_Nothing, indices);
-    bool const collided = GetEnv()->CheckCollision(m_robot)  || m_robot->CheckSelfCollision();
+    bool const collided = GetEnv()->CheckCollision(m_robot)
+                       || m_robot->CheckSelfCollision();
     
     boost::chrono::steady_clock::time_point const toc
         = boost::chrono::steady_clock::now();
