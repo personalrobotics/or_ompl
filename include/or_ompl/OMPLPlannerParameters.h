@@ -31,8 +31,9 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 *************************************************************************/
-#ifndef CPARAMETERS_H
-#define CPARAMETERS_H
+
+#ifndef OR_OMPL_PLANNER_PARAMETERS_H_
+#define OR_OMPL_PLANNER_PARAMETERS_H_
 
 #include <openrave-core.h>
 #include <openrave/planner.h>
@@ -43,6 +44,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 namespace or_ompl
 {
+
 class OMPLPlannerParameters : public OpenRAVE::PlannerBase::PlannerParameters
 {
 public:
@@ -151,6 +153,7 @@ protected:
 };
 
 typedef boost::shared_ptr<OMPLPlannerParameters> OMPLPlannerParametersPtr;
-}
 
-#endif
+} // namespace or_ompl
+
+#endif // OR_OMPL_PLANNER_PARAMETERS_H_

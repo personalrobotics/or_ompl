@@ -36,10 +36,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <ompl/config.h>
 #include <or_ompl/OMPLConversions.h>
 
-#define OMPL_VERSION_COMP (  OMPL_MAJOR_VERSION * 1000000 \
-                           + OMPL_MINOR_VERSION * 1000 \
-                           + OMPL_PATCH_VERSION)
-
 namespace or_ompl {
 
 void OpenRAVEHandler::log(std::string const &text, ompl::msg::LogLevel level,
@@ -225,4 +221,4 @@ OpenRAVE::PlannerStatus ToORTrajectory(
     return OpenRAVE::PS_HasSolution;
 }
 
-}
+} // namespace or_ompl

@@ -29,6 +29,7 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 *************************************************************************/
+
 #include <boost/make_shared.hpp>
 #include <ompl/base/ScopedState.h>
 #include <ompl/util/Time.h>
@@ -247,4 +248,4 @@ bool OMPLSimplifier::IsStateValidCompound(ompl::base::State const *state)
     return !IsInOrCollision(values, robotStateSpace->getIndices());
 }
 
-}
+} // namespace or_ompl
