@@ -29,7 +29,8 @@ namespace or_ompl {
 		 */
 		TSRGoal(const ompl::base::SpaceInformationPtr &si,
 				const TSR::Ptr &tsr,
-				OpenRAVE::RobotBasePtr robot);
+				OpenRAVE::RobotBasePtr robot,
+				const or_ompl::RobotStateSpace * robot_state_space);
 
 		/**
 		 * Constructor
@@ -40,7 +41,8 @@ namespace or_ompl {
 		 */
 		TSRGoal(const ompl::base::SpaceInformationPtr &si,
 				const TSRChain::Ptr &tsrchain,
-				OpenRAVE::RobotBasePtr robot);
+				OpenRAVE::RobotBasePtr robot,
+				const or_ompl::RobotStateSpace * robot_state_space);
 
 		/**
 		 * Constructor
@@ -51,7 +53,8 @@ namespace or_ompl {
 		 */
 		TSRGoal(const ompl::base::SpaceInformationPtr &si,
 				const std::vector<TSRChain::Ptr> &tsrchains,
-				OpenRAVE::RobotBasePtr robot);
+				OpenRAVE::RobotBasePtr robot,
+				const or_ompl::RobotStateSpace * robot_state_space);
 
 		/**
 		 * Destructor
@@ -87,6 +90,7 @@ namespace or_ompl {
 		virtual unsigned int maxSampleCount() const;
             
 	private:
+		const or_ompl::RobotStateSpace * _robot_state_space;
 		std::vector<TSRChain::Ptr> _tsr_chains;
 		OpenRAVE::RobotBasePtr _robot;
 	};

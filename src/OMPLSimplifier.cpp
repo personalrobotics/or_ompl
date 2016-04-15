@@ -231,14 +231,20 @@ bool OMPLSimplifier::IsStateValidRealVector(ompl::base::State const *state)
 
 bool OMPLSimplifier::IsStateValidCompound(ompl::base::State const *state)
 {
-    RobotState const *realVectorState = state->as<RobotState>();
+    RobotState const *robotState = state->as<RobotState>();
 
-    if (realVectorState) {
-        return !IsInOrCollision(realVectorState->getValues(), realVectorState->getSpace()->getIndices());
-    } else {
+    if (!robotState)
+    {
         RAVELOG_ERROR("Invalid StateType. This should never happen.\n");
         return false;
     }
+    
+    RobotStateSpace * robotStateSpace = (RobotStateSpace *)m_state_space.get();
+    
+    std::vector<double> values;
+    robotStateSpace->copyToReals(values, robotState);
+    
+    return !IsInOrCollision(values, robotStateSpace->getIndices());
 }
 
 }

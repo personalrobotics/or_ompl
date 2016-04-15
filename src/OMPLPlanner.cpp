@@ -168,9 +168,11 @@ bool OMPLPlanner::InitPlan(OpenRAVE::RobotBasePtr robot,
         }
 
         if(goal_chains.size() > 0) {
+            // TODO: what if this isn't a compound space?
             TSRGoal::Ptr goaltsr = boost::make_shared<TSRGoal>(m_simple_setup->getSpaceInformation(),
                                                                goal_chains,
-                                                               robot);
+                                                               robot,
+                                                               (const or_ompl::RobotStateSpace*)m_state_space.get());
             m_simple_setup->setGoal(goaltsr);
         }else{
             if (m_parameters->vgoalconfig.size() % num_dof != 0) {
@@ -402,15 +404,18 @@ bool OMPLPlanner::IsStateValidRealVector(ompl::base::State const *state)
 
 bool OMPLPlanner::IsStateValidCompound(ompl::base::State const *state)
 {
-    RobotState const *realVectorState = state->as<RobotState>();
+    RobotState const *robotState = state->as<RobotState>();
     
-    if (!realVectorState)
+    if (!robotState)
     {
         RAVELOG_ERROR("Invalid StateType. This should never happen.\n");
         return false;
     }
     
-    std::vector<double> values = realVectorState->getValues();
+    RobotStateSpace * robotStateSpace = (RobotStateSpace *)m_state_space.get();
+    
+    std::vector<double> values;
+    robotStateSpace->copyToReals(values, robotState);
     BOOST_FOREACH(double v, values) {
         if(std::isnan(v)) {
             RAVELOG_ERROR("Invalid value in state.\n");
@@ -418,7 +423,7 @@ bool OMPLPlanner::IsStateValidCompound(ompl::base::State const *state)
         }
     }
     
-    return !IsInOrCollision(realVectorState->getValues(), realVectorState->getSpace()->getIndices());
+    return !IsInOrCollision(values, robotStateSpace->getIndices());
 }
 
 bool OMPLPlanner::GetParametersCommand(std::ostream &sout, std::istream &sin) const

@@ -4,39 +4,12 @@
 using namespace or_ompl;
 namespace ob = ompl::base;
 
-RobotState::RobotState(RobotStateSpace* stateSpace) :
-        _stateSpace(stateSpace) {
+RobotState::RobotState() {
 
 }
 
 RobotState::~RobotState() {
 }
-
-void RobotState::set(const std::vector<double> &dof_values) {
-
-    for(unsigned int idx=0; idx < _stateSpace->getDimension(); idx++){
-        value(idx) = dof_values[idx];
-    }
-}
-
-double& RobotState::value(const size_t& idx) {
-    return *(_stateSpace->getValueAddressAtIndex(this, idx));
-}
-
-const double& RobotState::value(const size_t& idx) const {
-    return *(_stateSpace->getValueAddressAtLocation(this, _stateSpace->getValueLocations()[idx]));
-}
-
-std::vector<double> RobotState::getValues() const {
-    std::vector<double> retval(_stateSpace->getDimension());
-
-    for(unsigned int idx=0; idx < retval.size(); idx++){
-        retval[idx] = value(idx);
-    }
-
-    return retval;
-}
-
 
 
 void RobotStateSpace::registerProjections() {
@@ -72,7 +45,7 @@ RobotStateSpace::RobotStateSpace(const std::vector<int> &dof_indices, const std:
 
 ompl::base::State* RobotStateSpace::allocState() const {
 
-    RobotState* state = new RobotState((RobotStateSpace*)this);
+    RobotState* state = new RobotState();
     allocStateComponents(state);
     return state;
 
@@ -162,7 +135,8 @@ void RobotProjectionEvaluator::project(const ompl::base::State *state, ompl::bas
         return;
     }
 
-    std::vector<double> values = robotState->getValues();
+    std::vector<double> values;
+    _robotStateSpace->copyToReals(values, robotState);
     projection.resize(getDimension());
     _projectionMatrix.project(values.data(), projection);
 }

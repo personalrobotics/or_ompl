@@ -20,35 +20,12 @@ namespace or_ompl {
          * Constuctor - all dof values are initialized to 0
          * @param dof_indices The dof indices this state will represent
          */
-        RobotState(RobotStateSpace* stateSpace);
+        RobotState();
 
         /**
          * Clear the indices vector
          */
         ~RobotState();
-
-
-        /**
-         * Gets a reference to the value at index i.
-         */
-        double& value(const size_t& idx);
-        const double& value(const size_t& idx) const;
-
-        /**
-         * Sets the values in the state. 
-         * @param dof_values The values, this ordering must match the dof_indices
-         */
-        void set(const std::vector<double> &dof_values);
-
-        /**
-         * @return The values in the state
-         */
-        std::vector<double> getValues() const;
-
-        const RobotStateSpace*  getSpace() const { return _stateSpace; }
-
-    private:
-        RobotStateSpace* _stateSpace;
     };
 
     /**

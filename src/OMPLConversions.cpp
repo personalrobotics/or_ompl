@@ -215,27 +215,12 @@ OpenRAVE::PlannerStatus ToORTrajectory(
     size_t const num_dof = robot->GetActiveDOF();
     or_traj->Init(robot->GetActiveConfigurationSpecification("linear"));
 
-    bool is_compound = ompl_traj.getSpaceInformation()->getStateSpace()->isCompound();
+    ompl::base::StateSpacePtr space = ompl_traj.getSpaceInformation()->getStateSpace();
 
     for (size_t i = 0; i < ompl_traj.getStateCount(); ++i){
-        if (is_compound) {
-            RobotState  *state = ompl_traj.getState(i)->as<RobotState>();
-            if (!state) {
-                RAVELOG_ERROR("Unable to convert output trajectory."
-                              "State is not an or_ompl::RobotState::StateType.");
-                return OpenRAVE::PS_Failed;
-            }
-            or_traj->Insert(i, state->getValues(), true);
-        } else {
-            ompl::base::RealVectorStateSpace::StateType *state = ompl_traj.getState(i)->as<ompl::base::RealVectorStateSpace::StateType>();
-            if (!state) {
-                RAVELOG_ERROR("Unable to convert output trajectory."
-                              "State is not a RealVectorStateSpace::StateType.");
-                return OpenRAVE::PS_Failed;
-            }
-            std::vector<double> vec(state->values, state->values+num_dof);
-            or_traj->Insert(i, vec, true);
-        }
+        std::vector<double> values;
+        space->copyToReals(values, ompl_traj.getState(i));
+        or_traj->Insert(i, values, true);
     }
     return OpenRAVE::PS_HasSolution;
 }
