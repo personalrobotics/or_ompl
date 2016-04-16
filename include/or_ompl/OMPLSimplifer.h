@@ -55,8 +55,6 @@ public:
 
 private:
     OpenRAVE::RobotBasePtr m_robot;
-    unsigned int m_num_dof;
-    std::vector<int> m_dof_indices;
     OMPLPlannerParametersPtr m_parameters;
     ompl::base::StateSpacePtr m_state_space;
     OrStateValidityCheckerPtr m_or_validity_checker;

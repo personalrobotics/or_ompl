@@ -101,14 +101,10 @@ bool OMPLPlanner::InitPlan(OpenRAVE::RobotBasePtr robot,
         }
 
         m_robot = robot;
-        m_totalCollisionTime = 0.0;
         m_totalPlanningTime = 0.0;
-        m_numCollisionChecks = 0;
 
         std::vector<int> dof_indices = robot->GetActiveDOFIndices();
-        m_dof_indices = dof_indices;
         const unsigned int num_dof = dof_indices.size();
-        m_num_dof = num_dof;
         m_parameters = boost::make_shared<OMPLPlannerParameters>();
         m_parameters->copy(params_raw);
 
@@ -125,10 +121,10 @@ bool OMPLPlanner::InitPlan(OpenRAVE::RobotBasePtr robot,
         RAVELOG_DEBUG("Setting state validity checker.\n");
         if (m_state_space->isCompound()) {
             m_or_validity_checker.reset(new OrStateValidityChecker(
-                m_simple_setup->getSpaceInformation(), m_robot, m_dof_indices));
+                m_simple_setup->getSpaceInformation(), m_robot, dof_indices));
         } else {
             m_or_validity_checker.reset(new RealVectorOrStateValidityChecker(
-                m_simple_setup->getSpaceInformation(), m_robot, m_dof_indices));
+                m_simple_setup->getSpaceInformation(), m_robot, dof_indices));
         }
         m_simple_setup->setStateValidityChecker(
             boost::static_pointer_cast<ompl::base::StateValidityChecker>(m_or_validity_checker));
@@ -455,9 +451,9 @@ bool OMPLPlanner::GetParameterValCommand(std::ostream &sout, std::istream &sin) 
 
 bool OMPLPlanner::GetTimes(std::ostream & sout, std::istream & sin) const
 {
-    sout << "checktime " << m_totalCollisionTime;
+    sout << "checktime " << m_or_validity_checker->getTotalCollisionTime();
     sout << " totaltime " << m_totalPlanningTime;
-    sout << " n_checks " << m_numCollisionChecks;
+    sout << " n_checks " << m_or_validity_checker->getNumCollisionChecks();
     return true;
 }
 

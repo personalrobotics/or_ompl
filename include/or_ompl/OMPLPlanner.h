@@ -83,11 +83,7 @@ private:
     OrStateValidityCheckerPtr m_or_validity_checker;
     ompl::base::PlannerPtr m_planner;
     OpenRAVE::RobotBasePtr m_robot;
-    unsigned int m_num_dof;
-    std::vector<int> m_dof_indices;
     OpenRAVE::CollisionReportPtr m_collisionReport;
-    int m_numCollisionChecks;
-    double m_totalCollisionTime;
     double m_totalPlanningTime;
 
     ompl::base::PlannerPtr CreatePlanner(OMPLPlannerParameters const &params);

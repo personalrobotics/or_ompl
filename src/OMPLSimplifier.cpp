@@ -68,8 +68,7 @@ bool OMPLSimplifier::InitPlan(OpenRAVE::RobotBasePtr robot,
 
     m_robot = robot;
     m_cspec = m_robot->GetActiveConfigurationSpecification();
-    m_dof_indices = robot->GetActiveDOFIndices();
-    m_num_dof = m_dof_indices.size();
+    std::vector<int> dof_indices = robot->GetActiveDOFIndices();
 
     m_parameters = boost::make_shared<OMPLPlannerParameters>();
     m_parameters->copy(params_raw);
@@ -82,10 +81,10 @@ bool OMPLSimplifier::InitPlan(OpenRAVE::RobotBasePtr robot,
         m_space_info = boost::make_shared<SpaceInformation>(m_state_space);
         if (m_state_space->isCompound()) {
             m_or_validity_checker.reset(new OrStateValidityChecker(
-                m_space_info, m_robot, m_dof_indices));
+                m_space_info, m_robot, dof_indices));
         } else {
             m_or_validity_checker.reset(new RealVectorOrStateValidityChecker(
-                m_space_info, m_robot, m_dof_indices));
+                m_space_info, m_robot, dof_indices));
         }
         m_space_info->setStateValidityChecker(
             boost::static_pointer_cast<ompl::base::StateValidityChecker>(m_or_validity_checker));
