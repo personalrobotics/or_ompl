@@ -36,6 +36,10 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <ompl/config.h>
 #include <or_ompl/OMPLConversions.h>
 
+#define OMPL_VERSION_COMP (  OMPL_MAJOR_VERSION * 1000000 \
+                           + OMPL_MINOR_VERSION * 1000 \
+                           + OMPL_PATCH_VERSION)
+
 namespace or_ompl {
 
 void OpenRAVEHandler::log(std::string const &text, ompl::msg::LogLevel level,
@@ -118,11 +122,8 @@ ompl::base::StateSpacePtr CreateStateSpace(OpenRAVE::RobotBasePtr const robot,
                       ompl::RNG::getSeed());
     }
 
-    // get active dof indices
     std::vector<int> dof_indices = robot->GetActiveDOFIndices();
     const unsigned int num_dof = dof_indices.size();
-
-    // get continuous joints
     std::vector<bool> is_continuous = GetContinuousJoints(robot, dof_indices);
     BOOST_ASSERT(is_continuous.size() == num_dof);
     bool any_continuous = false;
@@ -132,11 +133,11 @@ ompl::base::StateSpacePtr CreateStateSpace(OpenRAVE::RobotBasePtr const robot,
         }
     }
     
-    // get joint limits, convert to ompl format
     std::vector<OpenRAVE::dReal> lowerLimits, upperLimits;
     robot->GetActiveDOFLimits(lowerLimits, upperLimits);
     BOOST_ASSERT(lowerLimits.size() == num_dof);
     BOOST_ASSERT(upperLimits.size() == num_dof);
+
     ompl::base::RealVectorBounds bounds(num_dof);
     for (size_t i = 0; i < num_dof; ++i) {
         BOOST_ASSERT(lowerLimits[i] <= upperLimits[i]);
@@ -221,4 +222,4 @@ OpenRAVE::PlannerStatus ToORTrajectory(
     return OpenRAVE::PS_HasSolution;
 }
 
-} // namespace or_ompl
+}

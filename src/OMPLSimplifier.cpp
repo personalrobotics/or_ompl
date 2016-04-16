@@ -29,7 +29,6 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 *************************************************************************/
-
 #include <boost/make_shared.hpp>
 #include <ompl/base/ScopedState.h>
 #include <ompl/util/Time.h>
@@ -213,4 +212,4 @@ OpenRAVE::PlannerStatus OMPLSimplifier::PlanPath(OpenRAVE::TrajectoryBasePtr ptr
     }
 }
 
-} // namespace or_ompl
+}
