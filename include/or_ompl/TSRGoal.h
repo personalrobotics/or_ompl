@@ -90,10 +90,10 @@ namespace or_ompl {
 		virtual unsigned int maxSampleCount() const;
             
 	private:
-		ompl::base::StateSpace * _state_space;
-		OrStateValidityCheckerPtr _or_validity_checker;
 		std::vector<TSRChain::Ptr> _tsr_chains;
 		OpenRAVE::RobotBasePtr _robot;
+		ompl::base::StateSpace * _state_space;
+		OrStateValidityCheckerPtr _or_validity_checker;
 	};
       
 }

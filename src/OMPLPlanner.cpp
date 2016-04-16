@@ -181,7 +181,6 @@ bool OMPLPlanner::InitPlan(OpenRAVE::RobotBasePtr robot,
         }
 
         if(goal_chains.size() > 0) {
-            // TODO: what if this isn't a compound space?
             TSRGoal::Ptr goaltsr = boost::make_shared<TSRGoal>(m_simple_setup->getSpaceInformation(),
                                                                goal_chains,
                                                                robot,

@@ -1,13 +1,13 @@
 #ifndef OR_OMPL_ROBOT_STATE_SPACE_H_
 #define OR_OMPL_ROBOT_STATE_SPACE_H_
 
-#include <boost/shared_ptr.hpp>
-#include <boost/weak_ptr.hpp>
 #include <ompl/base/StateSpace.h>
 #include <ompl/base/spaces/SO2StateSpace.h>
 #include <ompl/base/spaces/RealVectorStateSpace.h>
 #include <ompl/base/StateValidityChecker.h>
 #include <openrave/openrave.h>
+#include <boost/shared_ptr.hpp>
+#include <boost/weak_ptr.hpp>
 
 namespace or_ompl {
 

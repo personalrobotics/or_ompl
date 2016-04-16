@@ -12,10 +12,9 @@ TSRGoal::TSRGoal(const ob::SpaceInformationPtr &si,
 				 const TSR::Ptr &tsr, 
 				 OpenRAVE::RobotBasePtr robot,
 				 OrStateValidityCheckerPtr or_validity_checker)
-	: ob::GoalSampleableRegion(si)
+    : ob::GoalSampleableRegion(si), _robot(robot)
 	, _state_space(si->getStateSpace().get())
 	, _or_validity_checker(or_validity_checker)
-	, _robot(robot)
 {
     
 	std::vector<TSR::Ptr> tsrs(1);
@@ -28,10 +27,9 @@ TSRGoal::TSRGoal(const ob::SpaceInformationPtr &si,
 				 const TSRChain::Ptr &tsrchain, 
 				 OpenRAVE::RobotBasePtr robot,
 				 OrStateValidityCheckerPtr or_validity_checker)
-	: ob::GoalSampleableRegion(si)
+    : ob::GoalSampleableRegion(si), _robot(robot)
 	, _state_space(si->getStateSpace().get())
 	, _or_validity_checker(or_validity_checker)
-	, _robot(robot)
 {
 
 	_tsr_chains.push_back(tsrchain);
@@ -41,11 +39,9 @@ TSRGoal::TSRGoal(const ob::SpaceInformationPtr &si,
 				 const std::vector<TSRChain::Ptr> &tsrchains, 
 				 OpenRAVE::RobotBasePtr robot,
 				 OrStateValidityCheckerPtr or_validity_checker)
-	: ob::GoalSampleableRegion(si)
+    : ob::GoalSampleableRegion(si), _tsr_chains(tsrchains), _robot(robot)
 	, _state_space(si->getStateSpace().get())
 	, _or_validity_checker(or_validity_checker)
-	, _tsr_chains(tsrchains)
-	, _robot(robot)
 {
     
 }
@@ -70,7 +66,7 @@ double TSRGoal::distanceGoal(const ompl::base::State *state) const {
 
 	// Put the robot in the pose that is represented in the state
     unsigned int check_limits = 0; // The planner does this
-	_or_validity_checker->computeFk(state, check_limits);
+    _or_validity_checker->computeFk(state, check_limits);
 
 	// Get the end effector transform
 	OpenRAVE::Transform or_tf = active_manip->GetEndEffectorTransform();
@@ -144,7 +140,7 @@ void TSRGoal::sampleGoal(ompl::base::State *state) const {
                                               state_indices.end(),
                                               arm_indices[idx]) - state_indices.begin();
 
-                values[sidx] = ik_solution[idx];
+				values[sidx] = ik_solution[idx];
 			}
 			_state_space->copyFromReals(mstate, values);
 		}
