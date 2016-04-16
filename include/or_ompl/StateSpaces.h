@@ -1,5 +1,5 @@
-#ifndef OR_OMPL_ROBOT_STATE_SPACE_H_
-#define OR_OMPL_ROBOT_STATE_SPACE_H_
+#ifndef OR_OMPL_STATE_SPACES_H_
+#define OR_OMPL_STATE_SPACES_H_
 
 #include <ompl/base/StateSpace.h>
 #include <ompl/base/spaces/SO2StateSpace.h>
@@ -14,7 +14,7 @@ namespace or_ompl {
     /**
      * Implements a state space for an OpenRAVE robot
      */
-    class RobotStateSpace : public ompl::base::CompoundStateSpace {
+    class ContinuousJointsStateSpace : public ompl::base::CompoundStateSpace {
 
 
     public:
@@ -22,7 +22,7 @@ namespace or_ompl {
          * Constructor
          * @param dof_indices An ordered list of indices this state corresponds to
          */
-        RobotStateSpace(const std::vector<bool>& is_continuous);
+        ContinuousJointsStateSpace(const std::vector<bool>& is_continuous);
 
         /** \brief Register the projections for this state space. Usually, this is at least the default
             projection. These are implicit projections, set by the implementation of the state space. This is called by setup(). */
@@ -39,13 +39,13 @@ namespace or_ompl {
 
     };
 
-    typedef boost::shared_ptr<RobotStateSpace> RobotStateSpacePtr;
+    typedef boost::shared_ptr<ContinuousJointsStateSpace> ContinuousJointsStateSpacePtr;
 
-    class RobotProjectionEvaluator : public ompl::base::ProjectionEvaluator {
+    class ContinuousJointsProjectionEvaluator : public ompl::base::ProjectionEvaluator {
         public:
-            RobotProjectionEvaluator(ompl::base::StateSpace* stateSpace);
-            RobotProjectionEvaluator(ompl::base::StateSpacePtr stateSpace);
-            virtual ~RobotProjectionEvaluator();
+            ContinuousJointsProjectionEvaluator(ompl::base::StateSpace* stateSpace);
+            ContinuousJointsProjectionEvaluator(ompl::base::StateSpacePtr stateSpace);
+            virtual ~ContinuousJointsProjectionEvaluator();
 
             /** \brief Return the dimension of the projection defined by this evaluator */
             virtual unsigned int getDimension() const;
@@ -57,11 +57,11 @@ namespace or_ompl {
 
             virtual void setup();
         protected:
-            or_ompl::RobotStateSpace* _robotStateSpace;
+            or_ompl::ContinuousJointsStateSpace* _robotStateSpace;
             ompl::base::ProjectionMatrix _projectionMatrix;
     };
 
-    typedef boost::shared_ptr<RobotProjectionEvaluator> RobotProjectionEvaluatorPtr;
+    typedef boost::shared_ptr<ContinuousJointsProjectionEvaluator> ContinuousJointsProjectionEvaluatorPtr;
 
     /**
      * This is like ompl::base::StateValidityChecker,

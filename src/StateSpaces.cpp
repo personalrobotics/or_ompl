@@ -2,18 +2,18 @@
 #include <boost/foreach.hpp>
 #include <ompl/base/SpaceInformation.h>
 #include <openrave/openrave.h>
-#include <or_ompl/RobotStateSpace.h>
+#include <or_ompl/StateSpaces.h>
 
 using namespace or_ompl;
 namespace ob = ompl::base;
 
-void RobotStateSpace::registerProjections() {
+void ContinuousJointsStateSpace::registerProjections() {
     registerProjection("default", _projectionEvaluator);
     registerDefaultProjection(_projectionEvaluator);
     StateSpace::registerProjections();
 }
 
-RobotStateSpace::RobotStateSpace(const std::vector<bool>& is_continuous) :
+ContinuousJointsStateSpace::ContinuousJointsStateSpace(const std::vector<bool>& is_continuous) :
         ompl::base::CompoundStateSpace(), _isContinuous(is_continuous) {
     // TODO: THIS AINT RIGHT
     size_t realDOFCount = 0;
@@ -34,10 +34,10 @@ RobotStateSpace::RobotStateSpace(const std::vector<bool>& is_continuous) :
     {
         addSubspace(ompl::base::StateSpacePtr(new ompl::base::RealVectorStateSpace(realDOFCount)), 1.0);
     }
-    _projectionEvaluator.reset(new RobotProjectionEvaluator(this));
+    _projectionEvaluator.reset(new ContinuousJointsProjectionEvaluator(this));
 }
 
-void RobotStateSpace::setBounds(const ompl::base::RealVectorBounds& bounds) {
+void ContinuousJointsStateSpace::setBounds(const ompl::base::RealVectorBounds& bounds) {
     BOOST_ASSERT(bounds.high.size() == bounds.low.size());
 
     for (size_t i = 0; i < bounds.high.size(); i++) {
@@ -59,41 +59,41 @@ void RobotStateSpace::setBounds(const ompl::base::RealVectorBounds& bounds) {
     }
 }
 
-RobotProjectionEvaluator::RobotProjectionEvaluator(ompl::base::StateSpace* stateSpace) :
+ContinuousJointsProjectionEvaluator::ContinuousJointsProjectionEvaluator(ompl::base::StateSpace* stateSpace) :
     ompl::base::ProjectionEvaluator(stateSpace) {
-    RobotStateSpace* robotStateSpace = dynamic_cast<RobotStateSpace*>(stateSpace);
+    ContinuousJointsStateSpace* robotStateSpace = dynamic_cast<ContinuousJointsStateSpace*>(stateSpace);
 
     if (!robotStateSpace) {
-        RAVELOG_ERROR("Can only use RobotStateSpace with RobotProjectionEvaluator!");
+        RAVELOG_ERROR("Can only use ContinuousJointsStateSpace with RobotProjectionEvaluator!");
         return;
     }
 
     _robotStateSpace = robotStateSpace;
 }
 
-RobotProjectionEvaluator::RobotProjectionEvaluator(ompl::base::StateSpacePtr stateSpace) :
+ContinuousJointsProjectionEvaluator::ContinuousJointsProjectionEvaluator(ompl::base::StateSpacePtr stateSpace) :
     ProjectionEvaluator(stateSpace) {
-    RobotStateSpace* robotStateSpace = dynamic_cast<RobotStateSpace*>(stateSpace.get());
+    ContinuousJointsStateSpace* robotStateSpace = dynamic_cast<ContinuousJointsStateSpace*>(stateSpace.get());
 
     if (!robotStateSpace) {
-        RAVELOG_ERROR("Can only use RobotStateSpace with RobotProjectionEvaluator!");
+        RAVELOG_ERROR("Can only use ContinuousJointsStateSpace with RobotProjectionEvaluator!");
         return;
     }
 
     _robotStateSpace = robotStateSpace;
 }
 
-RobotProjectionEvaluator::~RobotProjectionEvaluator() {
+ContinuousJointsProjectionEvaluator::~ContinuousJointsProjectionEvaluator() {
 
 }
 
-void RobotProjectionEvaluator::setup() {
+void ContinuousJointsProjectionEvaluator::setup() {
     _projectionMatrix.mat = _projectionMatrix.ComputeRandom(_robotStateSpace->getDimension(), getDimension());
     defaultCellSizes();
     ProjectionEvaluator::setup();
 }
 
-void RobotProjectionEvaluator::defaultCellSizes() {
+void ContinuousJointsProjectionEvaluator::defaultCellSizes() {
     cellSizes_.resize(getDimension());
 
     for (size_t i = 0; i < getDimension(); i++) {
@@ -102,7 +102,7 @@ void RobotProjectionEvaluator::defaultCellSizes() {
 }
 
 /** \brief Return the dimension of the projection defined by this evaluator */
-unsigned int RobotProjectionEvaluator::getDimension() const {
+unsigned int ContinuousJointsProjectionEvaluator::getDimension() const {
     int dim = _robotStateSpace->getDimension();
     if (dim <= 2) {
         return dim;
@@ -113,7 +113,7 @@ unsigned int RobotProjectionEvaluator::getDimension() const {
 }
 
 /** \brief Compute the projection as an array of double values */
-void RobotProjectionEvaluator::project(const ompl::base::State *state, ompl::base::EuclideanProjection &projection) const {
+void ContinuousJointsProjectionEvaluator::project(const ompl::base::State *state, ompl::base::EuclideanProjection &projection) const {
     std::vector<double> values;
     _robotStateSpace->copyToReals(values, state);
     projection.resize(getDimension());

@@ -1,4 +1,4 @@
-#include <or_ompl/RobotStateSpace.h>
+#include <or_ompl/StateSpaces.h>
 #include <or_ompl/TSRGoal.h>
 
 #include <boost/foreach.hpp>

@@ -103,10 +103,10 @@ ompl::base::StateSpacePtr CreateStateSpace(OpenRAVE::RobotBasePtr const robot,
 {
     if (!robot) {
         RAVELOG_ERROR("Robot must not be NULL.\n");
-        return RobotStateSpacePtr();
+        return ompl::base::StateSpacePtr();
     } else if (robot->GetActiveDOF() == 0) {
         RAVELOG_ERROR("Zero DOFs are active.\n");
-        return RobotStateSpacePtr();
+        return ompl::base::StateSpacePtr();
     }
 
     if (params.m_seed) {
@@ -115,7 +115,7 @@ ompl::base::StateSpacePtr CreateStateSpace(OpenRAVE::RobotBasePtr const robot,
         if (ompl::RNG::getSeed() != params.m_seed) {
             RAVELOG_ERROR("Could not set OMPL seed. Was this the first or_ompl"
                           "  plan attempted?\n");
-            return RobotStateSpacePtr();
+            return ompl::base::StateSpacePtr();
         }
     } else {
         RAVELOG_DEBUG("Using default seed of %u for OMPL.\n",
@@ -148,9 +148,9 @@ ompl::base::StateSpacePtr CreateStateSpace(OpenRAVE::RobotBasePtr const robot,
     // construct state space
     ompl::base::StateSpacePtr state_space;
     if (any_continuous) {
-        state_space = boost::make_shared<RobotStateSpace>(is_continuous);
+        state_space = boost::make_shared<ContinuousJointsStateSpace>(is_continuous);
         RAVELOG_DEBUG("Setting joint limits.\n");
-        state_space->as<RobotStateSpace>()->setBounds(bounds);
+        state_space->as<ContinuousJointsStateSpace>()->setBounds(bounds);
     } else {
         state_space.reset(new ompl::base::RealVectorStateSpace(num_dof));
         RAVELOG_DEBUG("Setting joint limits.\n");
