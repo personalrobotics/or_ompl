@@ -148,7 +148,7 @@ ompl::base::StateSpacePtr CreateStateSpace(OpenRAVE::RobotBasePtr const robot,
     // construct state space
     ompl::base::StateSpacePtr state_space;
     if (any_continuous) {
-        state_space = boost::make_shared<RobotStateSpace>(dof_indices, is_continuous);
+        state_space = boost::make_shared<RobotStateSpace>(is_continuous);
         RAVELOG_DEBUG("Setting joint limits.\n");
         state_space->as<RobotStateSpace>()->setBounds(bounds);
     } else {

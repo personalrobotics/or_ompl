@@ -129,8 +129,6 @@ void TSRGoal::sampleGoal(ompl::base::State *state) const {
 		// Set the state
 		if(success){
 
-			RobotState* mstate = state->as<RobotState>();
-
             std::vector<int> arm_indices = _robot->GetActiveManipulator()->GetArmIndices();
             const std::vector<int> & state_indices = _or_validity_checker->getIndices();
             std::vector<double> values(state_indices.size());
@@ -142,17 +140,15 @@ void TSRGoal::sampleGoal(ompl::base::State *state) const {
 
 				values[sidx] = ik_solution[idx];
 			}
-			_state_space->copyFromReals(mstate, values);
+			_state_space->copyFromReals(state, values);
 		}
 	}
 
 	if(!success){
 		RAVELOG_ERROR("[TSRGoal] Failed to sample valid goal.\n");
-        RobotState* mstate = state->as<RobotState>();
-        // TODO: generalize this!
         const std::vector<int> & state_indices = _or_validity_checker->getIndices();
         std::vector<double> values(state_indices.size(), std::numeric_limits<double>::quiet_NaN());
-        _state_space->copyFromReals(mstate, values);
+        _state_space->copyFromReals(state, values);
 	}
 }
 

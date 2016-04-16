@@ -10,26 +10,7 @@
 #include <boost/weak_ptr.hpp>
 
 namespace or_ompl {
-
-    class RobotStateSpace;
-    /**
-     * Implements a state for an OpenRAVE robot
-     */
-    class RobotState : public ompl::base::CompoundStateSpace::StateType {
-
-    public:
-        /**
-         * Constuctor - all dof values are initialized to 0
-         * @param dof_indices The dof indices this state will represent
-         */
-        RobotState();
-
-        /**
-         * Clear the indices vector
-         */
-        ~RobotState();
-    };
-
+    
     /**
      * Implements a state space for an OpenRAVE robot
      */
@@ -37,12 +18,11 @@ namespace or_ompl {
 
 
     public:
-        typedef RobotState StateType;
         /**
          * Constructor
          * @param dof_indices An ordered list of indices this state corresponds to
          */
-        RobotStateSpace(const std::vector<int> &dof_indices, const std::vector<bool>& is_continuous);
+        RobotStateSpace(const std::vector<bool>& is_continuous);
 
         /** \brief Register the projections for this state space. Usually, this is at least the default
             projection. These are implicit projections, set by the implementation of the state space. This is called by setup(). */
@@ -53,13 +33,7 @@ namespace or_ompl {
          */
         void setBounds(const ompl::base::RealVectorBounds& bounds);
 
-        /**
-         * @return An ordered list of indices this state corresponds to
-         */
-        const std::vector<int>& getIndices() const { return _indices; }
-
     private:
-        std::vector<int> _indices;
         std::vector<bool> _isContinuous;
         ompl::base::ProjectionEvaluatorPtr _projectionEvaluator;
 
