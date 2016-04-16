@@ -40,6 +40,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <openrave/planningutils.h>
 #include <ompl/geometric/SimpleSetup.h>
 
+#include <or_ompl/RobotStateSpace.h>
 #include <or_ompl/OMPLPlannerParameters.h>
 
 namespace or_ompl
@@ -79,6 +80,7 @@ private:
     OMPLPlannerParametersPtr m_parameters;
     ompl::geometric::SimpleSetupPtr m_simple_setup;
     ompl::base::StateSpacePtr m_state_space;
+    OrStateValidityCheckerPtr m_or_validity_checker;
     ompl::base::PlannerPtr m_planner;
     OpenRAVE::RobotBasePtr m_robot;
     unsigned int m_num_dof;
@@ -89,10 +91,6 @@ private:
     double m_totalPlanningTime;
 
     ompl::base::PlannerPtr CreatePlanner(OMPLPlannerParameters const &params);
-    bool IsStateValidRealVector(const ompl::base::State* state);
-    bool IsStateValidCompound(const ompl::base::State* state);
-    bool IsInOrCollision(std::vector<double> const &jointValues,
-                         std::vector<int> const &jointIndices);
 
     bool GetParametersCommand(std::ostream &sout, std::istream &sin) const;
 };

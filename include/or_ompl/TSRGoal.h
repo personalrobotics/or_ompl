@@ -65,7 +65,7 @@ public:
 	TSRGoal(const ompl::base::SpaceInformationPtr &si,
 			const TSR::Ptr &tsr,
 			OpenRAVE::RobotBasePtr robot,
-			const or_ompl::RobotStateSpace * robot_state_space);
+			OrStateValidityCheckerPtr or_validity_checker);
 
 	/**
 	 * Constructor
@@ -77,7 +77,7 @@ public:
 	TSRGoal(const ompl::base::SpaceInformationPtr &si,
 			const TSRChain::Ptr &tsrchain,
 			OpenRAVE::RobotBasePtr robot,
-			const or_ompl::RobotStateSpace * robot_state_space);
+			OrStateValidityCheckerPtr or_validity_checker);
 
 	/**
 	 * Constructor
@@ -89,7 +89,7 @@ public:
 	TSRGoal(const ompl::base::SpaceInformationPtr &si,
 			const std::vector<TSRChain::Ptr> &tsrchains,
 			OpenRAVE::RobotBasePtr robot,
-			const or_ompl::RobotStateSpace * robot_state_space);
+			OrStateValidityCheckerPtr or_validity_checker);
 
 	/**
 	 * Destructor
@@ -125,7 +125,8 @@ public:
 	virtual unsigned int maxSampleCount() const;
 		
 private:
-	const or_ompl::RobotStateSpace * _robot_state_space;
+	ompl::base::StateSpace * _state_space;
+	OrStateValidityCheckerPtr _or_validity_checker;
 	std::vector<TSRChain::Ptr> _tsr_chains;
 	OpenRAVE::RobotBasePtr _robot;
 };

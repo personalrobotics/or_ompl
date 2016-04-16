@@ -59,14 +59,10 @@ private:
     std::vector<int> m_dof_indices;
     OMPLPlannerParametersPtr m_parameters;
     ompl::base::StateSpacePtr m_state_space;
+    OrStateValidityCheckerPtr m_or_validity_checker;
     ompl::base::SpaceInformationPtr m_space_info;
     ompl::geometric::PathSimplifierPtr m_simplifier;
     OpenRAVE::ConfigurationSpecification m_cspec;
-
-    bool IsInOrCollision(std::vector<double> const &values,
-                         std::vector<int> const &indices);
-    bool IsStateValidRealVector(ompl::base::State const *state);
-    bool IsStateValidCompound(ompl::base::State const *state);
 };
 
 typedef boost::shared_ptr<OMPLSimplifier> OMPLSimplifierPtr;

@@ -81,12 +81,15 @@ bool OMPLSimplifier::InitPlan(OpenRAVE::RobotBasePtr robot,
         m_state_space = CreateStateSpace(robot, *m_parameters);
         m_space_info = boost::make_shared<SpaceInformation>(m_state_space);
         if (m_state_space->isCompound()) {
-            m_space_info->setStateValidityChecker(
-                    boost::bind(&OMPLSimplifier::IsStateValidCompound, this, _1));
+            m_or_validity_checker.reset(new OrStateValidityChecker(
+                m_space_info, m_robot, m_dof_indices));
         } else {
-            m_space_info->setStateValidityChecker(
-                    boost::bind(&OMPLSimplifier::IsStateValidRealVector, this, _1));
+            m_or_validity_checker.reset(new RealVectorOrStateValidityChecker(
+                m_space_info, m_robot, m_dof_indices));
         }
+        m_space_info->setStateValidityChecker(
+            boost::static_pointer_cast<ompl::base::StateValidityChecker>(m_or_validity_checker));
+        
         m_space_info->setup();
         m_simplifier = boost::make_shared<PathSimplifier>(m_space_info);
         return true;
@@ -209,43 +212,6 @@ OpenRAVE::PlannerStatus OMPLSimplifier::PlanPath(OpenRAVE::TrajectoryBasePtr ptr
     } else {
         return PS_InterruptedWithSolution;
     }
-}
-
-bool OMPLSimplifier::IsInOrCollision(std::vector<double> const &values, std::vector<int> const &indices)
-{
-    m_robot->SetDOFValues(values, OpenRAVE::KinBody::CLA_Nothing, indices);
-    return GetEnv()->CheckCollision(m_robot) || m_robot->CheckSelfCollision();
-}
-
-bool OMPLSimplifier::IsStateValidRealVector(ompl::base::State const *state)
-{
-    ompl::base::RealVectorStateSpace::StateType const *realVectorState = state->as<ompl::base::RealVectorStateSpace::StateType>();
-
-    if (realVectorState) {
-        std::vector<double> values(realVectorState->values, realVectorState->values+m_num_dof);
-        return !IsInOrCollision(values, m_dof_indices);
-    } else {
-        RAVELOG_ERROR("Invalid StateType. This should never happen.\n");
-        return false;
-    }
-}
-
-bool OMPLSimplifier::IsStateValidCompound(ompl::base::State const *state)
-{
-    RobotState const *robotState = state->as<RobotState>();
-
-    if (!robotState)
-    {
-        RAVELOG_ERROR("Invalid StateType. This should never happen.\n");
-        return false;
-    }
-    
-    RobotStateSpace * robotStateSpace = (RobotStateSpace *)m_state_space.get();
-    
-    std::vector<double> values;
-    robotStateSpace->copyToReals(values, robotState);
-    
-    return !IsInOrCollision(values, robotStateSpace->getIndices());
 }
 
 } // namespace or_ompl

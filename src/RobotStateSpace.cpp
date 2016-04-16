@@ -32,8 +32,11 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 *************************************************************************/
 
-#include <or_ompl/RobotStateSpace.h>
+#include <boost/chrono.hpp>
+#include <boost/foreach.hpp>
+#include <ompl/base/SpaceInformation.h>
 #include <openrave/openrave.h>
+#include <or_ompl/RobotStateSpace.h>
 
 using namespace or_ompl;
 namespace ob = ompl::base;
@@ -75,14 +78,6 @@ RobotStateSpace::RobotStateSpace(const std::vector<int> &dof_indices, const std:
         addSubspace(ompl::base::StateSpacePtr(new ompl::base::RealVectorStateSpace(realDOFCount)), 1.0);
     }
     _projectionEvaluator.reset(new RobotProjectionEvaluator(this));
-}
-
-ompl::base::State* RobotStateSpace::allocState() const {
-
-    RobotState* state = new RobotState();
-    allocStateComponents(state);
-    return state;
-
 }
 
 void RobotStateSpace::setBounds(const ompl::base::RealVectorBounds& bounds) {
@@ -174,3 +169,76 @@ void RobotProjectionEvaluator::project(const ompl::base::State *state, ompl::bas
     projection.resize(getDimension());
     _projectionMatrix.project(values.data(), projection);
 }
+
+
+or_ompl::OrStateValidityChecker::OrStateValidityChecker(
+        const ompl::base::SpaceInformationPtr &si,
+        OpenRAVE::RobotBasePtr robot, std::vector<int> const &indices):
+    ompl::base::StateValidityChecker(si),
+    m_stateSpace(si->getStateSpace().get()),
+    m_env(robot->GetEnv()), m_robot(robot), m_indices(indices)
+{
+    resetStatistics();
+}
+
+bool or_ompl::OrStateValidityChecker::computeFk(const ompl::base::State *state, uint32_t checklimits) const
+{
+    std::vector<double> values;
+    m_stateSpace->copyToReals(values, state);
+    
+    BOOST_FOREACH(double v, values) {
+        if(std::isnan(v)) {
+            RAVELOG_ERROR("Invalid value in state.\n");
+            return false;
+        }
+    }
+    
+    m_robot->SetDOFValues(values, checklimits, m_indices);
+    return true;
+}
+
+bool or_ompl::OrStateValidityChecker::isValid(const ompl::base::State *state) const
+{
+    boost::chrono::steady_clock::time_point const tic
+       = boost::chrono::steady_clock::now();
+    
+    bool const collided = !computeFk(state, OpenRAVE::KinBody::CLA_Nothing)
+        || m_env->CheckCollision(m_robot)
+        || m_robot->CheckSelfCollision();
+    
+    boost::chrono::steady_clock::time_point const toc
+        = boost::chrono::steady_clock::now();
+    m_totalCollisionTime += boost::chrono::duration_cast<
+        boost::chrono::duration<double> >(toc - tic).count();
+    m_numCollisionChecks++;
+    
+    return !collided;
+}
+
+or_ompl::RealVectorOrStateValidityChecker::RealVectorOrStateValidityChecker(
+        const ompl::base::SpaceInformationPtr &si,
+        OpenRAVE::RobotBasePtr robot, std::vector<int> const &indices):
+    or_ompl::OrStateValidityChecker(si,robot,indices),
+    m_num_dof(si->getStateDimension())
+{
+}
+
+bool or_ompl::RealVectorOrStateValidityChecker::computeFk(const ompl::base::State *state, uint32_t checklimits) const
+{
+    ompl::base::RealVectorStateSpace::StateType const * real_state
+        = state->as<ompl::base::RealVectorStateSpace::StateType>();
+    
+    std::vector<double> values(real_state->values, real_state->values+m_num_dof);
+    
+    BOOST_FOREACH(double v, values) {
+        if(std::isnan(v)) {
+            RAVELOG_ERROR("Invalid value in state.\n");
+            return false;
+        }
+    }
+    
+    m_robot->SetDOFValues(values, checklimits, m_indices);
+    return true;
+}
+
+
