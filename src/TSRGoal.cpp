@@ -1,5 +1,5 @@
+#include <or_ompl/StateSpaces.h>
 #include <or_ompl/TSRGoal.h>
-#include <or_ompl/RobotStateSpace.h>
 
 #include <boost/foreach.hpp>
 #include <ompl/base/spaces/RealVectorStateSpace.h>
@@ -10,8 +10,12 @@ namespace ob = ompl::base;
 
 TSRGoal::TSRGoal(const ob::SpaceInformationPtr &si,
 				 const TSR::Ptr &tsr, 
-				 OpenRAVE::RobotBasePtr robot)
-    : ob::GoalSampleableRegion(si),  _robot(robot){
+				 OpenRAVE::RobotBasePtr robot,
+				 OrStateValidityCheckerPtr or_validity_checker)
+    : ob::GoalSampleableRegion(si), _robot(robot)
+	, _state_space(si->getStateSpace().get())
+	, _or_validity_checker(or_validity_checker)
+{
     
 	std::vector<TSR::Ptr> tsrs(1);
 	tsrs.push_back(tsr);
@@ -21,16 +25,24 @@ TSRGoal::TSRGoal(const ob::SpaceInformationPtr &si,
 
 TSRGoal::TSRGoal(const ob::SpaceInformationPtr &si,
 				 const TSRChain::Ptr &tsrchain, 
-				 OpenRAVE::RobotBasePtr robot)
-    : ob::GoalSampleableRegion(si), _robot(robot){
+				 OpenRAVE::RobotBasePtr robot,
+				 OrStateValidityCheckerPtr or_validity_checker)
+    : ob::GoalSampleableRegion(si), _robot(robot)
+	, _state_space(si->getStateSpace().get())
+	, _or_validity_checker(or_validity_checker)
+{
 
 	_tsr_chains.push_back(tsrchain);
 }
 
 TSRGoal::TSRGoal(const ob::SpaceInformationPtr &si,
 				 const std::vector<TSRChain::Ptr> &tsrchains, 
-				 OpenRAVE::RobotBasePtr robot)
-    : ob::GoalSampleableRegion(si), _tsr_chains(tsrchains), _robot(robot){
+				 OpenRAVE::RobotBasePtr robot,
+				 OrStateValidityCheckerPtr or_validity_checker)
+    : ob::GoalSampleableRegion(si), _tsr_chains(tsrchains), _robot(robot)
+	, _state_space(si->getStateSpace().get())
+	, _or_validity_checker(or_validity_checker)
+{
     
 }
 
@@ -53,9 +65,8 @@ double TSRGoal::distanceGoal(const ompl::base::State *state) const {
     OpenRAVE::RobotBase::ManipulatorPtr active_manip = _robot->GetActiveManipulator();
 
 	// Put the robot in the pose that is represented in the state
-	const RobotState* mstate = state->as<RobotState>();
     unsigned int check_limits = 0; // The planner does this
-    _robot->SetDOFValues(mstate->getValues(), check_limits, mstate->getSpace()->getIndices());
+    _or_validity_checker->computeFk(state, check_limits);
 
 	// Get the end effector transform
 	OpenRAVE::Transform or_tf = active_manip->GetEndEffectorTransform();
@@ -118,25 +129,26 @@ void TSRGoal::sampleGoal(ompl::base::State *state) const {
 		// Set the state
 		if(success){
 
-			RobotState* mstate = state->as<RobotState>();
-
             std::vector<int> arm_indices = _robot->GetActiveManipulator()->GetArmIndices();
-            std::vector<int> state_indices = mstate->getSpace()->getIndices();
+            const std::vector<int> & state_indices = _or_validity_checker->getIndices();
+            std::vector<double> values(state_indices.size());
 			for(unsigned int idx=0; idx < ik_solution.size(); idx++){
 
                 unsigned int sidx = std::find(state_indices.begin(),
                                               state_indices.end(),
                                               arm_indices[idx]) - state_indices.begin();
 
-				mstate->value(sidx) = ik_solution[idx];
+				values[sidx] = ik_solution[idx];
 			}
+			_state_space->copyFromReals(state, values);
 		}
 	}
 
 	if(!success){
 		RAVELOG_ERROR("[TSRGoal] Failed to sample valid goal.\n");
-        RobotState* mstate = state->as<RobotState>();
-        mstate->value(0) = std::numeric_limits<double>::quiet_NaN();
+        const std::vector<int> & state_indices = _or_validity_checker->getIndices();
+        std::vector<double> values(state_indices.size(), std::numeric_limits<double>::quiet_NaN());
+        _state_space->copyFromReals(state, values);
 	}
 }
 
