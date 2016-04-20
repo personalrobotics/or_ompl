@@ -30,6 +30,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 *************************************************************************/
 #include <boost/make_shared.hpp>
+#include <boost/scope_exit.hpp>
 #include <ompl/base/ScopedState.h>
 #include <ompl/util/Time.h>
 #include <or_ompl/OMPLConversions.h>
@@ -67,6 +68,7 @@ bool OMPLSimplifier::InitPlan(OpenRAVE::RobotBasePtr robot,
 
     m_robot = robot;
     m_cspec = m_robot->GetActiveConfigurationSpecification();
+    std::vector<int> dof_indices = robot->GetActiveDOFIndices();
 
     m_parameters = boost::make_shared<OMPLPlannerParameters>();
     m_parameters->copy(params_raw);
@@ -77,8 +79,16 @@ bool OMPLSimplifier::InitPlan(OpenRAVE::RobotBasePtr robot,
 
         m_state_space = CreateStateSpace(robot, *m_parameters);
         m_space_info = boost::make_shared<SpaceInformation>(m_state_space);
+        if (m_state_space->isCompound()) {
+            m_or_validity_checker.reset(new OrStateValidityChecker(
+                m_space_info, m_robot, dof_indices, m_parameters->m_doBaked));
+        } else {
+            m_or_validity_checker.reset(new RealVectorOrStateValidityChecker(
+                m_space_info, m_robot, dof_indices, m_parameters->m_doBaked));
+        }
         m_space_info->setStateValidityChecker(
-                boost::bind(&OMPLSimplifier::IsStateValid, this, _1));
+            boost::static_pointer_cast<ompl::base::StateValidityChecker>(m_or_validity_checker));
+        
         m_space_info->setup();
         m_simplifier = boost::make_shared<PathSimplifier>(m_space_info);
         return true;
@@ -97,7 +107,7 @@ bool OMPLSimplifier::InitPlan(OpenRAVE::RobotBasePtr robot, std::istream &input)
 
 OpenRAVE::PlannerStatus OMPLSimplifier::PlanPath(OpenRAVE::TrajectoryBasePtr ptraj)
 {
-    typedef ompl::base::ScopedState<RobotStateSpace> ScopedState;
+    typedef ompl::base::ScopedState<ompl::base::StateSpace> ScopedState;
 
     if (!m_simplifier) {
         RAVELOG_ERROR("Not initialized. Did you call InitPlan?\n");
@@ -132,7 +142,7 @@ OpenRAVE::PlannerStatus OMPLSimplifier::PlanPath(OpenRAVE::TrajectoryBasePtr ptr
         // Insert the waypoint into the OMPL path.
         ScopedState waypoint_ompl(m_space_info);
         for (size_t idof = 0; idof < num_dof; ++idof) {
-            waypoint_ompl->value(idof) = waypoint_openrave[idof];
+            waypoint_ompl[idof] = waypoint_openrave[idof];
         }
         path.append(waypoint_ompl.get());
     }
@@ -150,6 +160,12 @@ OpenRAVE::PlannerStatus OMPLSimplifier::PlanPath(OpenRAVE::TrajectoryBasePtr ptr
 
     RAVELOG_DEBUG("Running path simplification for %f seconds.\n",
                   m_parameters->m_timeLimit);
+    
+    // start validity checker
+    m_or_validity_checker->start();
+    BOOST_SCOPE_EXIT((m_or_validity_checker)) {
+        m_or_validity_checker->stop();
+    } BOOST_SCOPE_EXIT_END
 
     do {
         // Run one iteration of shortcutting. This gives us fine control over
@@ -200,24 +216,6 @@ OpenRAVE::PlannerStatus OMPLSimplifier::PlanPath(OpenRAVE::TrajectoryBasePtr ptr
         return PS_HasSolution;
     } else {
         return PS_InterruptedWithSolution;
-    }
-}
-
-bool OMPLSimplifier::IsInOrCollision(std::vector<double> const &values, std::vector<int> const &indices)
-{
-    m_robot->SetDOFValues(values, OpenRAVE::KinBody::CLA_Nothing, indices);
-    return GetEnv()->CheckCollision(m_robot) || m_robot->CheckSelfCollision();
-}
-
-bool OMPLSimplifier::IsStateValid(ompl::base::State const *state)
-{
-    RobotState const *realVectorState = state->as<RobotState>();
-
-    if (realVectorState) {
-        return !IsInOrCollision(realVectorState->getValues(), realVectorState->getSpace()->getIndices());
-    } else {
-        RAVELOG_ERROR("Invalid StateType. This should never happen.\n");
-        return false;
     }
 }
 

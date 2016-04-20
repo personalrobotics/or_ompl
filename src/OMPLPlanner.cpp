@@ -36,6 +36,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <boost/chrono.hpp>
 #include <boost/foreach.hpp>
 #include <boost/make_shared.hpp>
+#include <boost/scope_exit.hpp>
 #include <ompl/config.h>
 #include <ompl/base/goals/GoalStates.h>
 #include <ompl/base/StateSpaceTypes.h>
@@ -89,7 +90,7 @@ bool OMPLPlanner::InitPlan(OpenRAVE::RobotBasePtr robot,
     m_initialized = false;
 
     try {
-        typedef ompl::base::ScopedState<RobotStateSpace> ScopedState;
+        typedef ompl::base::ScopedState<ompl::base::StateSpace> ScopedState;
 
         if (!robot) {
             RAVELOG_ERROR("Robot must not be NULL.\n");
@@ -100,9 +101,7 @@ bool OMPLPlanner::InitPlan(OpenRAVE::RobotBasePtr robot,
         }
 
         m_robot = robot;
-        m_totalCollisionTime = 0.0;
         m_totalPlanningTime = 0.0;
-        m_numCollisionChecks = 0;
 
         std::vector<int> dof_indices = robot->GetActiveDOFIndices();
         const unsigned int num_dof = dof_indices.size();
@@ -118,7 +117,24 @@ bool OMPLPlanner::InitPlan(OpenRAVE::RobotBasePtr robot,
 
         RAVELOG_DEBUG("Creating OMPL setup.\n");
         m_simple_setup = boost::make_shared<ompl::geometric::SimpleSetup>(m_state_space);
+        
+        RAVELOG_DEBUG("Setting state validity checker.\n");
+        if (m_state_space->isCompound()) {
+            m_or_validity_checker.reset(new OrStateValidityChecker(
+                m_simple_setup->getSpaceInformation(), m_robot, dof_indices, m_parameters->m_doBaked));
+        } else {
+            m_or_validity_checker.reset(new RealVectorOrStateValidityChecker(
+                m_simple_setup->getSpaceInformation(), m_robot, dof_indices, m_parameters->m_doBaked));
+        }
+        m_simple_setup->setStateValidityChecker(
+            boost::static_pointer_cast<ompl::base::StateValidityChecker>(m_or_validity_checker));
 
+        // start validity checker
+        m_or_validity_checker->start();
+        BOOST_SCOPE_EXIT((m_or_validity_checker)) {
+            m_or_validity_checker->stop();
+        } BOOST_SCOPE_EXIT_END
+        
         RAVELOG_DEBUG("Setting initial configuration.\n");
         if (m_parameters->vinitialconfig.size() % num_dof != 0) {
             RAVELOG_ERROR("Start configuration has incorrect DOF;"
@@ -132,16 +148,22 @@ bool OMPLPlanner::InitPlan(OpenRAVE::RobotBasePtr robot,
             return false;
         }
         
-        if (num_starts == 1 && IsInOrCollision(m_parameters->vinitialconfig, dof_indices)) {
-            RAVELOG_ERROR("Single initial configuration in collision.\n");
-            return false;
+        if (num_starts == 1) {
+            ScopedState q_start(m_state_space);
+            for (size_t i = 0; i < num_dof; i++) {
+                q_start[i] = m_parameters->vinitialconfig[i];
+            }
+            if (!m_or_validity_checker->isValid(q_start.get())) {
+                RAVELOG_ERROR("Single initial configuration in collision.\n");
+                return false;
+            }
         }
         
         for (unsigned int istart=0; istart<num_starts; istart++)
         {
             ScopedState q_start(m_state_space);
             for (size_t i = 0; i < num_dof; i++) {
-                q_start->value(i) = m_parameters->vinitialconfig[istart*num_dof + i];
+                q_start[i] = m_parameters->vinitialconfig[istart*num_dof + i];
             }
             m_simple_setup->addStartState(q_start);
         }
@@ -168,7 +190,8 @@ bool OMPLPlanner::InitPlan(OpenRAVE::RobotBasePtr robot,
         if(goal_chains.size() > 0) {
             TSRGoal::Ptr goaltsr = boost::make_shared<TSRGoal>(m_simple_setup->getSpaceInformation(),
                                                                goal_chains,
-                                                               robot);
+                                                               robot,
+                                                               m_or_validity_checker);
             m_simple_setup->setGoal(goaltsr);
         }else{
             if (m_parameters->vgoalconfig.size() % num_dof != 0) {
@@ -184,15 +207,16 @@ bool OMPLPlanner::InitPlan(OpenRAVE::RobotBasePtr robot,
             }
             
             if (num_goals == 1) {
-                if (IsInOrCollision(m_parameters->vgoalconfig, dof_indices)) {
+                ScopedState q_goal(m_state_space);
+                for (size_t i = 0; i < num_dof; i++) {
+                    q_goal[i] = m_parameters->vgoalconfig[i];
+                }
+                
+                if (!m_or_validity_checker->isValid(q_goal.get())) {
                     RAVELOG_ERROR("Single goal configuration is in collision.\n");
                     return false;
                 }
-            
-                ScopedState q_goal(m_state_space);
-                for (size_t i = 0; i < num_dof; i++) {
-                    q_goal->value(i) = m_parameters->vgoalconfig[i];
-                }
+                
                 m_simple_setup->setGoalState(q_goal);
             } else {
                 // if multiple possible goals specified,
@@ -204,7 +228,7 @@ bool OMPLPlanner::InitPlan(OpenRAVE::RobotBasePtr robot,
                 {
                     ScopedState q_goal(m_state_space);
                     for (size_t i = 0; i < num_dof; i++) {
-                        q_goal->value(i) = m_parameters->vgoalconfig[igoal*num_dof + i];
+                        q_goal[i] = m_parameters->vgoalconfig[igoal*num_dof + i];
                     }
                     ompl_goals->as<ompl::base::GoalStates>()->addState(q_goal);
                 }
@@ -219,10 +243,6 @@ bool OMPLPlanner::InitPlan(OpenRAVE::RobotBasePtr robot,
             return false;
         }
         m_simple_setup->setPlanner(m_planner);
-
-        RAVELOG_DEBUG("Setting state validity checker.\n");
-        m_simple_setup->setStateValidityChecker(
-            boost::bind(&or_ompl::OMPLPlanner::IsStateValid, this, _1));
 
         m_initialized = true;
         return true;
@@ -244,9 +264,6 @@ ompl::base::PlannerPtr OMPLPlanner::CreatePlanner(
         RAVELOG_ERROR("Failed creating planner.");
         return ompl::base::PlannerPtr();
     }
-    
-    // record whether we'll be doing baked checking
-    m_doBaked = params.m_doBaked;
 
     // Populate planner parameters from the PlannerParameters.
     std::string const params_str = "<ExtraParams>"
@@ -333,33 +350,11 @@ OpenRAVE::PlannerStatus OMPLPlanner::PlanPath(OpenRAVE::TrajectoryBasePtr ptraj)
             OpenRAVE::CollisionOptionsStateSaver const collision_saver(
                 collision_checker, OpenRAVE::CO_ActiveDOFs, false);
             
-            // If baked, initialize!
-            if (m_doBaked)
-            {
-                 OpenRAVE::CollisionCheckerBasePtr cc = GetEnv()->GetCollisionChecker();
-                 std::stringstream sinput("GetBakingFunctions"), soutput;
-                 try
-                 {
-                     if (!cc->SendCommand(soutput, sinput))
-                         throw OpenRAVE::openrave_exception();
-                 }
-                 catch (const OpenRAVE::openrave_exception & exc)
-                 {
-                     RAVELOG_ERROR("collision checker doesn't support baked checks!\n");
-                     return OpenRAVE::PS_Failed;
-                 }
-                 boost::function< void ()> * fn_bake_begin;
-                 boost::function< OpenRAVE::KinBodyPtr ()> * fn_bake_end;
-                 boost::function< bool (OpenRAVE::KinBodyConstPtr, OpenRAVE::CollisionReportPtr)> * fn_check_baked_collision;
-                 soutput >> (void *&)fn_bake_begin;
-                 soutput >> (void *&)fn_bake_end;
-                 soutput >> (void *&)fn_check_baked_collision;
-                 (*fn_bake_begin)();
-                 GetEnv()->CheckCollision(m_robot);
-                 m_robot->CheckSelfCollision();
-                 m_bakedKinbody = (*fn_bake_end)();
-                 m_bakedChecker = *fn_check_baked_collision;
-            }
+            // start validity checker
+            m_or_validity_checker->start();
+            BOOST_SCOPE_EXIT((m_or_validity_checker)) {
+                m_or_validity_checker->stop();
+            } BOOST_SCOPE_EXIT_END
 
             // Call the planner.
             m_simple_setup->solve(m_parameters->m_timeLimit);
@@ -377,10 +372,6 @@ OpenRAVE::PlannerStatus OMPLPlanner::PlanPath(OpenRAVE::TrajectoryBasePtr ptraj)
         planner_status = OpenRAVE::PS_Failed;
     }
     
-    // reset baked stuff
-    m_bakedKinbody.reset();
-    m_bakedChecker = NULL;
-    
     boost::chrono::steady_clock::time_point const toc
         = boost::chrono::steady_clock::now();
     m_totalPlanningTime += boost::chrono::duration_cast<
@@ -389,50 +380,6 @@ OpenRAVE::PlannerStatus OMPLPlanner::PlanPath(OpenRAVE::TrajectoryBasePtr ptraj)
     return planner_status;
 }
 
-bool OMPLPlanner::IsInOrCollision(std::vector<double> const &values, std::vector<int> const &indices)
-{
-    boost::chrono::steady_clock::time_point const tic
-       = boost::chrono::steady_clock::now();
-    
-    m_robot->SetDOFValues(values, OpenRAVE::KinBody::CLA_Nothing, indices);
-    
-    bool collided;
-    if (m_doBaked && m_bakedKinbody) {
-        collided = m_bakedChecker(m_bakedKinbody, OpenRAVE::CollisionReportPtr());
-    } else {
-        collided = GetEnv()->CheckCollision(m_robot)
-                || m_robot->CheckSelfCollision();
-    }
-    
-    boost::chrono::steady_clock::time_point const toc
-        = boost::chrono::steady_clock::now();
-    m_totalCollisionTime += boost::chrono::duration_cast<
-        boost::chrono::duration<double> >(toc - tic).count();
-    m_numCollisionChecks++;
-    
-    return collided;
-}
-
-bool OMPLPlanner::IsStateValid(ompl::base::State const *state)
-{
-    RobotState const *realVectorState = state->as<RobotState>();
-    
-    if (!realVectorState)
-    {
-        RAVELOG_ERROR("Invalid StateType. This should never happen.\n");
-        return false;
-    }
-    
-    std::vector<double> values = realVectorState->getValues();
-    BOOST_FOREACH(double v, values) {
-        if(std::isnan(v)) {
-            RAVELOG_ERROR("Invalid value in state.\n");
-            return false;
-        }
-    }
-    
-    return !IsInOrCollision(realVectorState->getValues(), realVectorState->getSpace()->getIndices());
-}
 
 bool OMPLPlanner::GetParametersCommand(std::ostream &sout, std::istream &sin) const
 {
@@ -516,9 +463,9 @@ bool OMPLPlanner::GetParameterValCommand(std::ostream &sout, std::istream &sin) 
 
 bool OMPLPlanner::GetTimes(std::ostream & sout, std::istream & sin) const
 {
-    sout << "checktime " << m_totalCollisionTime;
+    sout << "checktime " << m_or_validity_checker->getTotalCollisionTime();
     sout << " totaltime " << m_totalPlanningTime;
-    sout << " n_checks " << m_numCollisionChecks;
+    sout << " n_checks " << m_or_validity_checker->getNumCollisionChecks();
     return true;
 }
 

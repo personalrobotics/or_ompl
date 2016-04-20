@@ -56,13 +56,10 @@ private:
     OpenRAVE::RobotBasePtr m_robot;
     OMPLPlannerParametersPtr m_parameters;
     ompl::base::StateSpacePtr m_state_space;
+    OrStateValidityCheckerPtr m_or_validity_checker;
     ompl::base::SpaceInformationPtr m_space_info;
     ompl::geometric::PathSimplifierPtr m_simplifier;
     OpenRAVE::ConfigurationSpecification m_cspec;
-
-    bool IsInOrCollision(std::vector<double> const &values,
-                         std::vector<int> const &indices);
-    bool IsStateValid(ompl::base::State const *state);
 };
 
 typedef boost::shared_ptr<OMPLSimplifier> OMPLSimplifierPtr;
