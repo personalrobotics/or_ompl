@@ -34,17 +34,14 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include <boost/make_shared.hpp>
 #include <ompl/config.h>
-#include <or_ompl/OMPLConversions.h>
 
-#define OMPL_VERSION_COMP (  OMPL_MAJOR_VERSION * 1000000 \
-                           + OMPL_MINOR_VERSION * 1000 \
-                           + OMPL_PATCH_VERSION)
+#include <or_ompl/OMPLConversions.h>
 
 namespace or_ompl {
 
 void OpenRAVEHandler::log(std::string const &text, ompl::msg::LogLevel level,
-                          char const *filename, int line)
-{
+                          char const *filename, int line) {
+
     int const openrave_level = (OpenRAVE::RaveGetDebugLevel()
                               & OpenRAVE::Level_OutputMask);
 
@@ -87,8 +84,7 @@ void OpenRAVEHandler::log(std::string const &text, ompl::msg::LogLevel level,
     }
 }
 
-std::vector<bool> GetContinuousJoints(const OpenRAVE::RobotBasePtr robot, const std::vector<int> idx)
-{
+std::vector<bool> GetContinuousJoints(const OpenRAVE::RobotBasePtr robot, const std::vector<int> idx) {
     const std::vector<OpenRAVE::RobotBase::JointPtr>& joints = robot->GetJoints();
     std::vector<bool> isContinuous;
     for (size_t j = 0; j < idx.size(); j++)
@@ -99,8 +95,7 @@ std::vector<bool> GetContinuousJoints(const OpenRAVE::RobotBasePtr robot, const 
 }
 
 ompl::base::StateSpacePtr CreateStateSpace(OpenRAVE::RobotBasePtr const robot,
-                                           OMPLPlannerParameters const &params)
-{
+                                           OMPLPlannerParameters const &params) {
     if (!robot) {
         RAVELOG_ERROR("Robot must not be NULL.\n");
         return ompl::base::StateSpacePtr();
@@ -203,8 +198,7 @@ ompl::base::StateSpacePtr CreateStateSpace(OpenRAVE::RobotBasePtr const robot,
 OpenRAVE::PlannerStatus ToORTrajectory(
         OpenRAVE::RobotBasePtr const &robot,
         ompl::geometric::PathGeometric& ompl_traj,
-        OpenRAVE::TrajectoryBasePtr or_traj)
-{
+        OpenRAVE::TrajectoryBasePtr or_traj) {
     using ompl::geometric::PathGeometric;
 
     size_t const num_dof = robot->GetActiveDOF();
@@ -220,4 +214,4 @@ OpenRAVE::PlannerStatus ToORTrajectory(
     return OpenRAVE::PS_HasSolution;
 }
 
-}
+} // namespace or_ompl

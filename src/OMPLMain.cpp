@@ -27,6 +27,7 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 *************************************************************************/
+
 #include <boost/algorithm/string/predicate.hpp>
 #include <boost/bind.hpp>
 #include <boost/lexical_cast.hpp>
@@ -35,6 +36,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <boost/function.hpp>
 #include <boost/make_shared.hpp>
 #include <openrave/plugin.h>
+
 #include <or_ompl/OMPLPlanner.h>
 #include <or_ompl/OMPLConversions.h>
 #include <or_ompl/OMPLSimplifer.h>
@@ -44,8 +46,7 @@ using namespace OpenRAVE;
 
 InterfaceBasePtr CreateInterfaceValidated(
         InterfaceType type, std::string const &interfacename,
-        std::istream &sinput, EnvironmentBasePtr penv)
-{
+        std::istream &sinput, EnvironmentBasePtr penv) {
     std::vector<std::string> const planner_names
         = or_ompl::registry::get_planner_names();
 
@@ -72,8 +73,7 @@ InterfaceBasePtr CreateInterfaceValidated(
     return InterfaceBasePtr();
 }
 
-void GetPluginAttributesValidated(PLUGININFO &info)
-{
+void GetPluginAttributesValidated(PLUGININFO &info) {
     std::vector<std::string> const planner_names
         = or_ompl::registry::get_planner_names();
 
@@ -89,6 +89,5 @@ void GetPluginAttributesValidated(PLUGININFO &info)
     ompl::msg::useOutputHandler(new or_ompl::OpenRAVEHandler);
 }
 
-RAVE_PLUGIN_API void DestroyPlugin()
-{
+RAVE_PLUGIN_API void DestroyPlugin() {
 }

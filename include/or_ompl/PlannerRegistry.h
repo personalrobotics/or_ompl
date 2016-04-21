@@ -29,8 +29,10 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 *************************************************************************/
-#ifndef PLANNERREGISTRY_H_
-#define PLANNERREGISTRY_H_
+
+#ifndef OR_OMPL_PLANNERREGISTRY_H_
+#define OR_OMPL_PLANNERREGISTRY_H_
+
 #include <string>
 #include <vector>
 #include <ompl/base/Planner.h>
@@ -44,6 +46,7 @@ std::vector<std::string> get_planner_names();
 ompl::base::Planner *create(std::string const &name,
                             ompl::base::SpaceInformationPtr space);
 
-}
-}
-#endif
+} // namespace registry
+} // namespace or_ompl
+
+#endif // OR_OMPL_PLANNERREGISTRY_H_
