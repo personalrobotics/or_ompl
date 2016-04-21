@@ -1,7 +1,42 @@
+/***********************************************************************
+
+Copyright (c) 2014, Carnegie Mellon University
+All rights reserved.
+
+Authors: Michael Koval <mkoval@cs.cmu.edu>
+         Matthew Klingensmith <mklingen@cs.cmu.edu>
+         Christopher Dellin <cdellin@cs.cmu.edu>
+
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are
+met:
+
+  Redistributions of source code must retain the above copyright
+  notice, this list of conditions and the following disclaimer.
+
+  Redistributions in binary form must reproduce the above copyright
+  notice, this list of conditions and the following disclaimer in the
+  documentation and/or other materials provided with the distribution.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+"AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+*************************************************************************/
+
 #include <boost/chrono.hpp>
 #include <boost/foreach.hpp>
-#include <ompl/base/SpaceInformation.h>
 #include <openrave/openrave.h>
+#include <ompl/base/SpaceInformation.h>
+
 #include <or_ompl/StateSpaces.h>
 
 using namespace or_ompl;
@@ -161,8 +196,7 @@ or_ompl::OrStateValidityChecker::OrStateValidityChecker(
     resetStatistics();
 }
 
-void or_ompl::OrStateValidityChecker::start()
-{
+void or_ompl::OrStateValidityChecker::start() {
     if (m_do_baked)
     {
         m_bake_begin();
@@ -171,13 +205,12 @@ void or_ompl::OrStateValidityChecker::start()
         m_baked_kinbody = m_bake_end();
     }
 }
-void or_ompl::OrStateValidityChecker::stop()
-{
+
+void or_ompl::OrStateValidityChecker::stop() {
     m_baked_kinbody.reset();
 }
 
-bool or_ompl::OrStateValidityChecker::computeFk(const ompl::base::State *state, uint32_t checklimits) const
-{
+bool or_ompl::OrStateValidityChecker::computeFk(const ompl::base::State *state, uint32_t checklimits) const {
     std::vector<double> values;
     m_stateSpace->copyToReals(values, state);
     
@@ -192,8 +225,7 @@ bool or_ompl::OrStateValidityChecker::computeFk(const ompl::base::State *state, 
     return true;
 }
 
-bool or_ompl::OrStateValidityChecker::isValid(const ompl::base::State *state) const
-{
+bool or_ompl::OrStateValidityChecker::isValid(const ompl::base::State *state) const {
     boost::chrono::steady_clock::time_point const tic
        = boost::chrono::steady_clock::now();
     
@@ -218,12 +250,10 @@ or_ompl::RealVectorOrStateValidityChecker::RealVectorOrStateValidityChecker(
         OpenRAVE::RobotBasePtr robot, std::vector<int> const &indices,
         bool do_baked):
     or_ompl::OrStateValidityChecker(si,robot,indices,do_baked),
-    m_num_dof(si->getStateDimension())
-{
+    m_num_dof(si->getStateDimension()) {
 }
 
-bool or_ompl::RealVectorOrStateValidityChecker::computeFk(const ompl::base::State *state, uint32_t checklimits) const
-{
+bool or_ompl::RealVectorOrStateValidityChecker::computeFk(const ompl::base::State *state, uint32_t checklimits) const {
     ompl::base::RealVectorStateSpace::StateType const * real_state
         = state->as<ompl::base::RealVectorStateSpace::StateType>();
     
@@ -239,5 +269,3 @@ bool or_ompl::RealVectorOrStateValidityChecker::computeFk(const ompl::base::Stat
     m_robot->SetDOFValues(values, checklimits, m_indices);
     return true;
 }
-
-

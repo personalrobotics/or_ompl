@@ -31,6 +31,7 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 *************************************************************************/
+
 #include <time.h>
 #include <tinyxml.h>
 #include <boost/chrono.hpp>
@@ -42,21 +43,20 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <ompl/base/StateSpaceTypes.h>
 #include <ompl/base/StateSpace.h>
 #include <ompl/base/spaces/RealVectorStateSpace.h>
+
 #include <or_ompl/OMPLConversions.h>
 #include <or_ompl/OMPLPlanner.h>
 #include <or_ompl/TSRGoal.h>
 #include <or_ompl/PlannerRegistry.h>
 
-namespace or_ompl
-{
+namespace or_ompl {
 
 OMPLPlanner::OMPLPlanner(OpenRAVE::EnvironmentBasePtr penv,
                          PlannerFactory const &planner_factory)
     : OpenRAVE::PlannerBase(penv)
     , m_initialized(false)
-    , m_planner_factory(planner_factory)
+    , m_planner_factory(planner_factory) {
 
-{
     RegisterCommand("GetParameters",
         boost::bind(&OMPLPlanner::GetParametersCommand, this, _1, _2),
         "returns the list of accepted planner parameters"
@@ -73,20 +73,17 @@ OMPLPlanner::OMPLPlanner(OpenRAVE::EnvironmentBasePtr penv,
 
 }
 
-OMPLPlanner::~OMPLPlanner()
-{
+OMPLPlanner::~OMPLPlanner() {
 }
 
-bool OMPLPlanner::InitPlan(OpenRAVE::RobotBasePtr robot, std::istream& input)
-{
+bool OMPLPlanner::InitPlan(OpenRAVE::RobotBasePtr robot, std::istream& input) {
     OMPLPlannerParametersPtr params = boost::make_shared<OMPLPlannerParameters>();
     input >> *params;
     return InitPlan(robot, params);
 }
 
 bool OMPLPlanner::InitPlan(OpenRAVE::RobotBasePtr robot,
-                           PlannerParametersConstPtr params_raw)
-{
+                           PlannerParametersConstPtr params_raw) {
     m_initialized = false;
 
     try {
@@ -253,8 +250,7 @@ bool OMPLPlanner::InitPlan(OpenRAVE::RobotBasePtr robot,
 }
 
 ompl::base::PlannerPtr OMPLPlanner::CreatePlanner(
-    OMPLPlannerParameters const &params)
-{
+    OMPLPlannerParameters const &params) {
     // Create the planner.
     ompl::base::SpaceInformationPtr const spaceInformation
             = m_simple_setup->getSpaceInformation();
@@ -328,8 +324,7 @@ ompl::base::PlannerPtr OMPLPlanner::CreatePlanner(
     return planner;
 }
 
-OpenRAVE::PlannerStatus OMPLPlanner::PlanPath(OpenRAVE::TrajectoryBasePtr ptraj)
-{
+OpenRAVE::PlannerStatus OMPLPlanner::PlanPath(OpenRAVE::TrajectoryBasePtr ptraj) {
     if (!m_initialized) {
         RAVELOG_ERROR("Unable to plan. Did you call InitPlan?\n");
         return OpenRAVE::PS_Failed;
@@ -380,9 +375,7 @@ OpenRAVE::PlannerStatus OMPLPlanner::PlanPath(OpenRAVE::TrajectoryBasePtr ptraj)
     return planner_status;
 }
 
-
-bool OMPLPlanner::GetParametersCommand(std::ostream &sout, std::istream &sin) const
-{
+bool OMPLPlanner::GetParametersCommand(std::ostream &sout, std::istream &sin) const {
     typedef std::map<std::string, ompl::base::GenericParamPtr> ParamMap;
 
     ompl::base::PlannerPtr planner;
@@ -414,8 +407,7 @@ bool OMPLPlanner::GetParametersCommand(std::ostream &sout, std::istream &sin) co
     return true;
 }
 
-bool OMPLPlanner::GetParameterValCommand(std::ostream &sout, std::istream &sin) const
-{
+bool OMPLPlanner::GetParameterValCommand(std::ostream &sout, std::istream &sin) const {
     typedef std::map<std::string, ompl::base::GenericParamPtr> ParamMap;
     //Obtain argument from input stream
     std::string inp_arg;
@@ -457,16 +449,14 @@ bool OMPLPlanner::GetParameterValCommand(std::ostream &sout, std::istream &sin) 
 
 
     return true;
-
 }
 
 
-bool OMPLPlanner::GetTimes(std::ostream & sout, std::istream & sin) const
-{
+bool OMPLPlanner::GetTimes(std::ostream & sout, std::istream & sin) const {
     sout << "checktime " << m_or_validity_checker->getTotalCollisionTime();
     sout << " totaltime " << m_totalPlanningTime;
     sout << " n_checks " << m_or_validity_checker->getNumCollisionChecks();
     return true;
 }
 
-}
+} // namespace or_ompl

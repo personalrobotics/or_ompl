@@ -31,8 +31,9 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 *************************************************************************/
-#ifndef OMPLPLANNER_H
-#define OMPLPLANNER_H
+
+#ifndef OR_OMPL_OMPLPLANNER_H_
+#define OR_OMPL_OMPLPLANNER_H_
 
 #include <openrave-core.h>
 #include <openrave/planner.h>
@@ -42,8 +43,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <or_ompl/StateSpaces.h>
 #include <or_ompl/OMPLPlannerParameters.h>
 
-namespace or_ompl
-{
+namespace or_ompl {
 
 typedef boost::function<ompl::base::Planner *(ompl::base::SpaceInformationPtr)> PlannerFactory;
 
@@ -59,8 +59,7 @@ public:
 
     virtual OpenRAVE::PlannerStatus PlanPath (OpenRAVE::TrajectoryBasePtr ptraj);
 
-    virtual PlannerParametersConstPtr GetParameters () const
-    {
+    virtual PlannerParametersConstPtr GetParameters () const {
         return m_parameters;
     }
     
@@ -68,8 +67,7 @@ public:
     bool GetParameterValCommand(std::ostream &sout, std::istream &sin) const;
 
 protected:
-    const ompl::base::PlannerPtr & get_planner()
-    {
+    const ompl::base::PlannerPtr & get_planner() {
         return m_planner;
     }
 
@@ -92,6 +90,6 @@ private:
 
 typedef boost::shared_ptr<OMPLPlanner> OMPLPlannerPtr;
 
-} /* namespace or_ompl */
+} // namespace or_ompl
 
-#endif /* OMPLPLANNER_H_ */
+#endif // OR_OMPL_OMPLPLANNER_H_
