@@ -31,11 +31,14 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 *************************************************************************/
-#ifndef OMPLCONVERSIONS_H_
-#define OMPLCONVERSIONS_H_
+
+#ifndef OR_OMPL_OMPLCONVERSIONS_H_
+#define OR_OMPL_OMPLCONVERSIONS_H_
+
+#include <openrave/openrave.h>
 #include <ompl/util/Console.h>
 #include <ompl/geometric/PathGeometric.h>
-#include <openrave/openrave.h>
+
 #include <or_ompl/OMPLPlannerParameters.h>
 #include <or_ompl/StateSpaces.h>
 
@@ -56,6 +59,6 @@ OpenRAVE::PlannerStatus ToORTrajectory(OpenRAVE::RobotBasePtr const &robot,
                                        ompl::geometric::PathGeometric &ompl_traj,
                                        OpenRAVE::TrajectoryBasePtr or_traj);
 
-}
+} // namespace or_ompl
 
-#endif
+#endif // OR_OMPL_OMPLCONVERSIONS_H_

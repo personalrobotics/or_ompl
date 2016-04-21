@@ -29,16 +29,17 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 *************************************************************************/
-#ifndef OMPLSIMPLIFIER_H
-#define OMPLSIMPLIFIER_H
+
+#ifndef OR_OMPL_OMPLSIMPLIFIER_H_
+#define OR_OMPL_OMPLSIMPLIFIER_H_
 
 #include <openrave-core.h>
 #include <openrave/planner.h>
 #include <ompl/geometric/PathSimplifier.h>
+
 #include <or_ompl/OMPLPlannerParameters.h>
 
-namespace or_ompl
-{
+namespace or_ompl {
 
 class OMPLSimplifier : public OpenRAVE::PlannerBase {
 public:
@@ -64,6 +65,6 @@ private:
 
 typedef boost::shared_ptr<OMPLSimplifier> OMPLSimplifierPtr;
 
-} /* namespace or_ompl */
+} // namespace or_ompl
 
-#endif /* OMPLPLANNER_H_ */
+#endif // OR_OMPL_OMPLSIMPLIFIER_H_

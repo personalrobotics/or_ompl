@@ -29,9 +29,11 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 *************************************************************************/
+
 #include <boost/make_shared.hpp>
 #include <ompl/base/ScopedState.h>
 #include <ompl/util/Time.h>
+
 #include <or_ompl/OMPLConversions.h>
 #include <or_ompl/OMPLSimplifer.h>
 
@@ -42,21 +44,17 @@ using OpenRAVE::PA_ReturnWithAnySolution;
 using OpenRAVE::PS_HasSolution;
 using OpenRAVE::PS_InterruptedWithSolution;
 
-namespace or_ompl
-{
+namespace or_ompl {
 
 OMPLSimplifier::OMPLSimplifier(OpenRAVE::EnvironmentBasePtr env)
-    : OpenRAVE::PlannerBase(env)
-{
+    : OpenRAVE::PlannerBase(env) {
 }
 
-OMPLSimplifier::~OMPLSimplifier()
-{
+OMPLSimplifier::~OMPLSimplifier() {
 }
 
 bool OMPLSimplifier::InitPlan(OpenRAVE::RobotBasePtr robot,
-                              PlannerParametersConstPtr params_raw)
-{
+                              PlannerParametersConstPtr params_raw) {
     if (!robot) {
         RAVELOG_ERROR("Robot must not be NULL.\n");
         return false;
@@ -97,15 +95,13 @@ bool OMPLSimplifier::InitPlan(OpenRAVE::RobotBasePtr robot,
     }
 }
 
-bool OMPLSimplifier::InitPlan(OpenRAVE::RobotBasePtr robot, std::istream &input)
-{
+bool OMPLSimplifier::InitPlan(OpenRAVE::RobotBasePtr robot, std::istream &input) {
     OMPLPlannerParametersPtr params = boost::make_shared<OMPLPlannerParameters>();
     input >> *params;
     return InitPlan(robot, params);
 }
 
-OpenRAVE::PlannerStatus OMPLSimplifier::PlanPath(OpenRAVE::TrajectoryBasePtr ptraj)
-{
+OpenRAVE::PlannerStatus OMPLSimplifier::PlanPath(OpenRAVE::TrajectoryBasePtr ptraj) {
     typedef ompl::base::ScopedState<ompl::base::StateSpace> ScopedState;
 
     if (!m_simplifier) {
@@ -212,4 +208,4 @@ OpenRAVE::PlannerStatus OMPLSimplifier::PlanPath(OpenRAVE::TrajectoryBasePtr ptr
     }
 }
 
-}
+} // namespace or_ompl

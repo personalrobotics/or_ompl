@@ -31,18 +31,20 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 *************************************************************************/
-#ifndef CPARAMETERS_H
-#define CPARAMETERS_H
 
-#include <openrave-core.h>
-#include <openrave/planner.h>
+#ifndef OR_OMPL_OMPLPLANNERPARAMETERS_H_
+#define OR_OMPL_OMPLPLANNERPARAMETERS_H_
+
 #include <boost/foreach.hpp>
 #include <boost/make_shared.hpp>
+#include <openrave-core.h>
+#include <openrave/planner.h>
+
 #include <or_ompl/config.h>
 #include <or_ompl/TSRChain.h>
 
-namespace or_ompl
-{
+namespace or_ompl {
+
 class OMPLPlannerParameters : public OpenRAVE::PlannerBase::PlannerParameters
 {
 public:
@@ -51,8 +53,7 @@ public:
         , m_timeLimit(10)
         , m_isProcessingOMPL(false)
         , m_dat_filename("")
-        , m_trajs_fileformat("")
-    {
+        , m_trajs_fileformat("") {
         _vXMLParameters.push_back("seed");
         _vXMLParameters.push_back("time_limit");
         _vXMLParameters.push_back("dat_filename");
@@ -70,14 +71,12 @@ public:
 protected:
 
 #ifdef OR_OMPL_HAS_PPSEROPTS
-    virtual bool serialize(std::ostream& O, int options=0) const
-    {
+    virtual bool serialize(std::ostream& O, int options=0) const {
         if (!PlannerParameters::serialize(O, options)) {
             return false;
         }
 #else
-    virtual bool serialize(std::ostream& O) const
-    {
+    virtual bool serialize(std::ostream& O) const {
         if (!PlannerParameters::serialize(O)) {
             return false;
         }
@@ -95,8 +94,7 @@ protected:
     }
 
     ProcessElement startElement(std::string const &name,
-                                std::list<std::pair<std::string, std::string> > const &atts)
-    {
+                                std::list<std::pair<std::string, std::string> > const &atts) {
         if (m_isProcessingOMPL) {
             return PE_Ignore;
         }
@@ -120,8 +118,7 @@ protected:
         return m_isProcessingOMPL ? PE_Support : PE_Pass;
     }
 
-    virtual bool endElement(std::string const &name)
-    {
+    virtual bool endElement(std::string const &name) {
         if (m_isProcessingOMPL) {
             if (name == "seed") {
                 _ss >> m_seed;
@@ -151,6 +148,7 @@ protected:
 };
 
 typedef boost::shared_ptr<OMPLPlannerParameters> OMPLPlannerParametersPtr;
-}
 
-#endif
+} // namespace or_ompl
+
+#endif // OR_OMPL_OMPLPLANNERPARAMETERS_H_
