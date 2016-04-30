@@ -129,9 +129,8 @@ protected:
     mutable double m_totalCollisionTime;
     // optional baked stuff
     const bool m_do_baked;
-    boost::function<void ()> m_bake_begin;
-    boost::function<OpenRAVE::KinBodyPtr ()> m_bake_end;
-    boost::function<bool (OpenRAVE::KinBodyConstPtr, OpenRAVE::CollisionReportPtr)> m_baked_checker;
+    OpenRAVE::CollisionCheckerBasePtr m_baked_checker;
+    std::string m_baked_kinbody_type;
     OpenRAVE::KinBodyPtr m_baked_kinbody;
 };
 

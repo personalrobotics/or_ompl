@@ -167,30 +167,18 @@ or_ompl::OrStateValidityChecker::OrStateValidityChecker(
 {
     if (m_do_baked)
     {
-        OpenRAVE::CollisionCheckerBasePtr cc = m_env->GetCollisionChecker();
-
-        std::stringstream sinput;
-        std::stringstream soutput;
-        sinput << "GetBakingFunctions";
+        m_baked_checker = m_env->GetCollisionChecker();
+        std::stringstream sinput("BakeGetType"), soutput;
         try
         {
-            if (!cc->SendCommand(soutput, sinput))
+            if (!m_baked_checker->SendCommand(soutput, sinput))
                 throw std::runtime_error("collision checker doesn't support baked checks!");
         }
         catch (const OpenRAVE::openrave_exception & exc)
         {
             throw std::runtime_error("collision checker doesn't support baked checks!");
         }
-
-        boost::function< void ()> * fn_bake_begin;
-        boost::function< OpenRAVE::KinBodyPtr ()> * fn_bake_end;
-        boost::function< bool (OpenRAVE::KinBodyConstPtr, OpenRAVE::CollisionReportPtr)> * fn_check_baked_collision;
-        soutput >> (void *&)fn_bake_begin;
-        soutput >> (void *&)fn_bake_end;
-        soutput >> (void *&)fn_check_baked_collision;
-        m_bake_begin = *fn_bake_begin;
-        m_bake_end = *fn_bake_end;
-        m_baked_checker = *fn_check_baked_collision;
+        m_baked_kinbody_type = soutput.str();
     }
     
     resetStatistics();
@@ -199,10 +187,13 @@ or_ompl::OrStateValidityChecker::OrStateValidityChecker(
 void or_ompl::OrStateValidityChecker::start() {
     if (m_do_baked)
     {
-        m_bake_begin();
+        // start baking
+        std::stringstream sinput("BakeBegin BakeEnd"), soutput;
+        m_baked_checker->SendCommand(soutput, sinput); // BakeBegin
+        m_baked_kinbody = OpenRAVE::RaveCreateKinBody(m_env, m_baked_kinbody_type);
         m_env->CheckCollision(m_robot);
         m_robot->CheckSelfCollision();
-        m_baked_kinbody = m_bake_end();
+        m_baked_checker->SendCommand(soutput, sinput); // BakeEnd
     }
 }
 
@@ -232,7 +223,7 @@ bool or_ompl::OrStateValidityChecker::isValid(const ompl::base::State *state) co
     bool collided = !computeFk(state, OpenRAVE::KinBody::CLA_Nothing);
     
     if (m_do_baked)
-        collided = collided || m_baked_checker(m_baked_kinbody, OpenRAVE::CollisionReportPtr());
+        collided = collided || m_baked_checker->CheckStandaloneSelfCollision(m_baked_kinbody);
     else
         collided = collided || m_env->CheckCollision(m_robot) || m_robot->CheckSelfCollision();
     
