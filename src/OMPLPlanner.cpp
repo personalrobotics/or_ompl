@@ -331,6 +331,7 @@ OpenRAVE::PlannerStatus OMPLPlanner::PlanPath(OpenRAVE::TrajectoryBasePtr ptraj)
         // TODO: Configure anytime algorithms to keep planning.
         //m_simpleSetup->getGoal()->setMaximumPathLength(0.0);
 
+        ompl::base::PlannerStatus ompl_status;
         {
             // Don't check collision with inactive links.
             OpenRAVE::CollisionCheckerBasePtr const collision_checker
@@ -339,14 +340,38 @@ OpenRAVE::PlannerStatus OMPLPlanner::PlanPath(OpenRAVE::TrajectoryBasePtr ptraj)
                 collision_checker, OpenRAVE::CO_ActiveDOFs, false);
 
             // Call the planner.
-            m_simple_setup->solve(m_parameters->m_timeLimit);
+            ompl_status = m_simple_setup->solve(m_parameters->m_timeLimit);
         }
-
-        if (m_simple_setup->haveExactSolutionPath()) {
+        
+        // Handle OMPL return codes, set planner_status and ptraj
+        switch ((ompl::base::PlannerStatus::StatusType)ompl_status) {
+        case ompl::base::PlannerStatus::INVALID_START:
+        case ompl::base::PlannerStatus::INVALID_GOAL:
+        case ompl::base::PlannerStatus::UNRECOGNIZED_GOAL_TYPE:
+        case ompl::base::PlannerStatus::CRASH:
+        case ompl::base::PlannerStatus::ABORT:
+        case ompl::base::PlannerStatus::TIMEOUT:
+            RAVELOG_ERROR("Planner returned %s.\n", ompl_status.asString().c_str());
+            planner_status = OpenRAVE::PS_Failed;
+            break;
+        case ompl::base::PlannerStatus::APPROXIMATE_SOLUTION:
+            if (!m_simple_setup->haveExactSolutionPath())
+            {
+                RAVELOG_ERROR("Planner returned %s, but not path found!\n", ompl_status.asString().c_str());
+                planner_status = OpenRAVE::PS_Failed;
+            }
+            ToORTrajectory(m_robot, m_simple_setup->getSolutionPath(), ptraj);
+            planner_status = OpenRAVE::PS_InterruptedWithSolution;
+            break;
+        case ompl::base::PlannerStatus::EXACT_SOLUTION:
+            if (!m_simple_setup->haveExactSolutionPath())
+            {
+                RAVELOG_ERROR("Planner returned %s, but not path found!\n", ompl_status.asString().c_str());
+                planner_status = OpenRAVE::PS_Failed;
+            }
             ToORTrajectory(m_robot, m_simple_setup->getSolutionPath(), ptraj);
             planner_status = OpenRAVE::PS_HasSolution;
-        } else {
-            planner_status = OpenRAVE::PS_Failed;
+            break;
         }
 
     } catch (std::runtime_error const &e) {
