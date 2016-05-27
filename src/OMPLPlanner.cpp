@@ -359,6 +359,7 @@ OpenRAVE::PlannerStatus OMPLPlanner::PlanPath(OpenRAVE::TrajectoryBasePtr ptraj)
             {
                 RAVELOG_ERROR("Planner returned %s, but not path found!\n", ompl_status.asString().c_str());
                 planner_status = OpenRAVE::PS_Failed;
+                break;
             }
             ToORTrajectory(m_robot, m_simple_setup->getSolutionPath(), ptraj);
             planner_status = OpenRAVE::PS_InterruptedWithSolution;
@@ -368,6 +369,7 @@ OpenRAVE::PlannerStatus OMPLPlanner::PlanPath(OpenRAVE::TrajectoryBasePtr ptraj)
             {
                 RAVELOG_ERROR("Planner returned %s, but not path found!\n", ompl_status.asString().c_str());
                 planner_status = OpenRAVE::PS_Failed;
+                break;
             }
             ToORTrajectory(m_robot, m_simple_setup->getSolutionPath(), ptraj);
             planner_status = OpenRAVE::PS_HasSolution;
