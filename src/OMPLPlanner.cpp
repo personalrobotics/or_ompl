@@ -267,7 +267,7 @@ ompl::base::PlannerPtr OMPLPlanner::CreatePlanner(
     }
 
     TiXmlElement const *root_xml = doc_xml.RootElement();
-    std::map<std::string, std::string> params_map;
+    std::vector< std::pair<std::string,std::string> > params_vec;
 
     for (TiXmlElement const *it_ele = root_xml->FirstChildElement();
          it_ele;
@@ -292,11 +292,18 @@ ompl::base::PlannerPtr OMPLPlanner::CreatePlanner(
         }
         std::string const value = text->Value();
 
-        params_map.insert(std::make_pair(key, value));
+        params_vec.push_back(std::make_pair(key, value));
     }
 
     ompl::base::ParamSet &param_set = planner->params();
-    bool const is_success = param_set.setParams(params_map, false);
+    bool is_success = true;
+    for (std::vector< std::pair<std::string,std::string> >::iterator
+        it=params_vec.begin(); it!=params_vec.end(); it++)
+    {
+        is_success = param_set.setParam(it->first, it->second);
+        if (!is_success)
+            break;
+    }
 
     // Print out the list of valid parameters.
     if (!is_success) {
