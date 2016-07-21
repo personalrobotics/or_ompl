@@ -274,7 +274,7 @@ ompl::base::PlannerPtr OMPLPlanner::CreatePlanner(
     }
 
     TiXmlElement const *root_xml = doc_xml.RootElement();
-    std::map<std::string, std::string> params_map;
+    std::vector< std::pair<std::string,std::string> > params_vec;
 
     for (TiXmlElement const *it_ele = root_xml->FirstChildElement();
          it_ele;
@@ -299,11 +299,18 @@ ompl::base::PlannerPtr OMPLPlanner::CreatePlanner(
         }
         std::string const value = text->Value();
 
-        params_map.insert(std::make_pair(key, value));
+        params_vec.push_back(std::make_pair(key, value));
     }
 
     ompl::base::ParamSet &param_set = planner->params();
-    bool const is_success = param_set.setParams(params_map, false);
+    bool is_success = true;
+    for (std::vector< std::pair<std::string,std::string> >::iterator
+        it=params_vec.begin(); it!=params_vec.end(); it++)
+    {
+        is_success = param_set.setParam(it->first, it->second);
+        if (!is_success)
+            break;
+    }
 
     // Print out the list of valid parameters.
     if (!is_success) {
@@ -338,22 +345,7 @@ OpenRAVE::PlannerStatus OMPLPlanner::PlanPath(OpenRAVE::TrajectoryBasePtr ptraj)
         // TODO: Configure anytime algorithms to keep planning.
         //m_simpleSetup->getGoal()->setMaximumPathLength(0.0);
 
-        {
-            // Don't check collision with inactive links.
-            OpenRAVE::CollisionCheckerBasePtr const collision_checker
-                = GetEnv()->GetCollisionChecker();
-            OpenRAVE::CollisionOptionsStateSaver const collision_saver(
-                collision_checker, OpenRAVE::CO_ActiveDOFs, false);
-            
-            // start validity checker
-            m_or_validity_checker->start();
-            BOOST_SCOPE_EXIT((m_or_validity_checker)) {
-                m_or_validity_checker->stop();
-            } BOOST_SCOPE_EXIT_END
-
-            // Call the planner.
-            m_simple_setup->solve(m_parameters->m_timeLimit);
-        }
+        m_simple_setup->solve(m_parameters->m_timeLimit);
 
         if (m_simple_setup->haveExactSolutionPath()) {
             ToORTrajectory(m_robot, m_simple_setup->getSolutionPath(), ptraj);
