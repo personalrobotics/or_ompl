@@ -338,16 +338,7 @@ OpenRAVE::PlannerStatus OMPLPlanner::PlanPath(OpenRAVE::TrajectoryBasePtr ptraj)
         // TODO: Configure anytime algorithms to keep planning.
         //m_simpleSetup->getGoal()->setMaximumPathLength(0.0);
 
-        {
-            // Don't check collision with inactive links.
-            OpenRAVE::CollisionCheckerBasePtr const collision_checker
-                = GetEnv()->GetCollisionChecker();
-            OpenRAVE::CollisionOptionsStateSaver const collision_saver(
-                collision_checker, OpenRAVE::CO_ActiveDOFs, false);
-
-            // Call the planner.
-            m_simple_setup->solve(m_parameters->m_timeLimit);
-        }
+        m_simple_setup->solve(m_parameters->m_timeLimit);
 
         if (m_simple_setup->haveExactSolutionPath()) {
             ToORTrajectory(m_robot, m_simple_setup->getSolutionPath(), ptraj);
