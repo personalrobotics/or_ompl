@@ -332,23 +332,15 @@ OpenRAVE::PlannerStatus OMPLPlanner::PlanPath(OpenRAVE::TrajectoryBasePtr ptraj)
 
     boost::chrono::steady_clock::time_point const tic
        = boost::chrono::steady_clock::now();
-    
+
     OpenRAVE::PlannerStatus planner_status;
+    
     try {
         // TODO: Configure anytime algorithms to keep planning.
         //m_simpleSetup->getGoal()->setMaximumPathLength(0.0);
 
         ompl::base::PlannerStatus ompl_status;
-        {
-            // Don't check collision with inactive links.
-            OpenRAVE::CollisionCheckerBasePtr const collision_checker
-                = GetEnv()->GetCollisionChecker();
-            OpenRAVE::CollisionOptionsStateSaver const collision_saver(
-                collision_checker, OpenRAVE::CO_ActiveDOFs, false);
-
-            // Call the planner.
-            ompl_status = m_simple_setup->solve(m_parameters->m_timeLimit);
-        }
+        ompl_status = m_simple_setup->solve(m_parameters->m_timeLimit);
         
         // Handle OMPL return codes, set planner_status and ptraj
         switch ((ompl::base::PlannerStatus::StatusType)ompl_status) {
