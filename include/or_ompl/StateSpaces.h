@@ -42,6 +42,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <ompl/base/spaces/SO2StateSpace.h>
 #include <ompl/base/spaces/RealVectorStateSpace.h>
 #include <ompl/base/StateValidityChecker.h>
+#include <or_ompl/config.h>
 
 namespace or_ompl {
 
@@ -72,7 +73,11 @@ private:
 
 };
 
+#ifdef OR_OMPL_HAS_BOOSTSMARTPTRS
 typedef boost::shared_ptr<ContinuousJointsStateSpace> ContinuousJointsStateSpacePtr;
+#else
+typedef std::shared_ptr<ContinuousJointsStateSpace> ContinuousJointsStateSpacePtr;
+#endif
 
 class ContinuousJointsProjectionEvaluator : public ompl::base::ProjectionEvaluator {
     public:
@@ -94,7 +99,11 @@ class ContinuousJointsProjectionEvaluator : public ompl::base::ProjectionEvaluat
         ompl::base::ProjectionMatrix _projectionMatrix;
 };
 
+#ifdef OR_OMPL_HAS_BOOSTSMARTPTRS
 typedef boost::shared_ptr<ContinuousJointsProjectionEvaluator> ContinuousJointsProjectionEvaluatorPtr;
+#else
+typedef std::shared_ptr<ContinuousJointsProjectionEvaluator> ContinuousJointsProjectionEvaluatorPtr;
+#endif
 
 /**
  * This is like ompl::base::StateValidityChecker,
@@ -123,7 +132,11 @@ protected:
     mutable double m_totalCollisionTime;
 };
 
+#ifdef OR_OMPL_HAS_BOOSTSMARTPTRS
 typedef boost::shared_ptr<OrStateValidityChecker> OrStateValidityCheckerPtr;
+#else
+typedef std::shared_ptr<OrStateValidityChecker> OrStateValidityCheckerPtr;
+#endif
 
 /**
  * StateRobotSetter for RealVectorStateSpaces
