@@ -42,45 +42,38 @@ namespace or_ompl {
 void OpenRAVEHandler::log(std::string const &text, ompl::msg::LogLevel level,
                           char const *filename, int line) {
 
-    int const openrave_level = (OpenRAVE::RaveGetDebugLevel()
-                              & OpenRAVE::Level_OutputMask);
+    int const openrave_threshold_level = (
+        OpenRAVE::RaveGetDebugLevel() & OpenRAVE::Level_OutputMask);
+    int openrave_message_level = OpenRAVE::Level_Debug;
 
     switch (level) {
     case ompl::msg::LOG_DEBUG:
-        if (openrave_level >= (int) OpenRAVE::Level_Debug) {
-            OpenRAVE::RavePrintfA_DEBUGLEVEL("[%s:%d] %s\n",
-                OpenRAVE::RaveGetSourceFilename(filename), line,
-                text.c_str());
-        }
+        openrave_message_level = OpenRAVE::Level_Debug;
         break;
 
     case ompl::msg::LOG_INFO:
-        if (openrave_level >= (int) OpenRAVE::Level_Info) {
-            OpenRAVE::RavePrintfA_INFOLEVEL("[%s:%d] %s\n",
-                OpenRAVE::RaveGetSourceFilename(filename), line,
-                text.c_str());
-        }
+        openrave_message_level = OpenRAVE::Level_Info;
         break;
 
     case ompl::msg::LOG_WARN:
-        if (openrave_level >= (int) OpenRAVE::Level_Warn) {
-            OpenRAVE::RavePrintfA_WARNLEVEL("[%s:%d] %s\n",
-                OpenRAVE::RaveGetSourceFilename(filename), line,
-                text.c_str());
-        }
+        openrave_message_level = OpenRAVE::Level_Warn;
         break;
 
     case ompl::msg::LOG_ERROR:
-        if (openrave_level >= (int) OpenRAVE::Level_Error) {
-            OpenRAVE::RavePrintfA_ERRORLEVEL("[%s:%d] %s\n",
-                OpenRAVE::RaveGetSourceFilename(filename), line,
-                text.c_str());
-        }
+        openrave_message_level = OpenRAVE::Level_Error;
         break;
 
     case ompl::msg::LOG_NONE:
     default:
-        RAVELOG_ERROR("Unknown OMPL log level %d.\n", level);
+        RAVELOG_ERROR("Unknown OMPL log level '%d'.\n", level);
+    }
+
+    if (openrave_message_level >= openrave_threshold_level)
+    {
+        log4cxx::spi::LocationInfo const location_info(
+            OpenRAVE::RaveGetSourceFilename(filename), "", line);
+        OpenRAVE::RavePrintfA_DEBUGLEVEL(
+            OpenRAVE::RaveGetLogger(), location_info, text);
     }
 }
 
