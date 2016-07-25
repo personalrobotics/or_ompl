@@ -342,28 +342,21 @@ OpenRAVE::PlannerStatus OMPLPlanner::PlanPath(OpenRAVE::TrajectoryBasePtr ptraj)
         ompl_status = m_simple_setup->solve(m_parameters->m_timeLimit);
 
         // Handle OMPL return codes, set planner_status and ptraj
-        if (ompl_status == ompl::base::PlannerStatus::APPROXIMATE_SOLUTION) {
-            if (m_simple_setup->haveExactSolutionPath())
-            {
+        if (ompl_status == ompl::base::PlannerStatus::EXACT_SOLUTION
+            || ompl_status == ompl::base::PlannerStatus::APPROXIMATE_SOLUTION) {
+
+            if (m_simple_setup->haveExactSolutionPath()) {
                 ToORTrajectory(m_robot, m_simple_setup->getSolutionPath(), ptraj);
-                planner_status = OpenRAVE::PS_InterruptedWithSolution;
-            }
-            else
-            {
+                if (ompl_status == ompl::base::PlannerStatus::EXACT_SOLUTION) {
+                    planner_status = OpenRAVE::PS_HasSolution;
+                } else {
+                    planner_status = OpenRAVE::PS_InterruptedWithSolution;
+                }
+            } else {
                 RAVELOG_ERROR("Planner returned %s, but no path found!\n", ompl_status.asString().c_str());
                 planner_status = OpenRAVE::PS_Failed;
             }
-        } else if (ompl_status == ompl::base::PlannerStatus::EXACT_SOLUTION) {
-            if (m_simple_setup->haveExactSolutionPath())
-            {
-                ToORTrajectory(m_robot, m_simple_setup->getSolutionPath(), ptraj);
-                planner_status = OpenRAVE::PS_HasSolution;
-            }
-            else
-            {
-                RAVELOG_ERROR("Planner returned %s, but no path found!\n", ompl_status.asString().c_str());
-                planner_status = OpenRAVE::PS_Failed;
-            }
+
         } else {
             // Intended to handle:
             // - PlannerStatus::INVALID_START
