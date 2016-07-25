@@ -73,12 +73,6 @@ private:
 
 };
 
-#ifdef OR_OMPL_HAS_BOOSTSMARTPTRS
-typedef boost::shared_ptr<ContinuousJointsStateSpace> ContinuousJointsStateSpacePtr;
-#else
-typedef std::shared_ptr<ContinuousJointsStateSpace> ContinuousJointsStateSpacePtr;
-#endif
-
 class ContinuousJointsProjectionEvaluator : public ompl::base::ProjectionEvaluator {
     public:
         ContinuousJointsProjectionEvaluator(ompl::base::StateSpace* stateSpace);
@@ -98,12 +92,6 @@ class ContinuousJointsProjectionEvaluator : public ompl::base::ProjectionEvaluat
         or_ompl::ContinuousJointsStateSpace* _robotStateSpace;
         ompl::base::ProjectionMatrix _projectionMatrix;
 };
-
-#ifdef OR_OMPL_HAS_BOOSTSMARTPTRS
-typedef boost::shared_ptr<ContinuousJointsProjectionEvaluator> ContinuousJointsProjectionEvaluatorPtr;
-#else
-typedef std::shared_ptr<ContinuousJointsProjectionEvaluator> ContinuousJointsProjectionEvaluatorPtr;
-#endif
 
 /**
  * This is like ompl::base::StateValidityChecker,
@@ -132,12 +120,6 @@ protected:
     mutable double m_totalCollisionTime;
 };
 
-#ifdef OR_OMPL_HAS_BOOSTSMARTPTRS
-typedef boost::shared_ptr<OrStateValidityChecker> OrStateValidityCheckerPtr;
-#else
-typedef std::shared_ptr<OrStateValidityChecker> OrStateValidityCheckerPtr;
-#endif
-
 /**
  * StateRobotSetter for RealVectorStateSpaces
  */
@@ -150,6 +132,16 @@ public:
 private:
     const std::size_t m_num_dof;
 };
+
+#ifdef OR_OMPL_HAS_BOOSTSMARTPTRS
+typedef boost::shared_ptr<ContinuousJointsStateSpace> ContinuousJointsStateSpacePtr;
+typedef boost::shared_ptr<ContinuousJointsProjectionEvaluator> ContinuousJointsProjectionEvaluatorPtr;
+typedef boost::shared_ptr<OrStateValidityChecker> OrStateValidityCheckerPtr;
+#else
+typedef std::shared_ptr<ContinuousJointsStateSpace> ContinuousJointsStateSpacePtr;
+typedef std::shared_ptr<ContinuousJointsProjectionEvaluator> ContinuousJointsProjectionEvaluatorPtr;
+typedef std::shared_ptr<OrStateValidityChecker> OrStateValidityCheckerPtr;
+#endif
 
 } // namespace or_ompl
 
