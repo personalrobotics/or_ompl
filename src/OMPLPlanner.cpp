@@ -344,15 +344,6 @@ OpenRAVE::PlannerStatus OMPLPlanner::PlanPath(OpenRAVE::TrajectoryBasePtr ptraj)
         
         // Handle OMPL return codes, set planner_status and ptraj
         switch ((ompl::base::PlannerStatus::StatusType)ompl_status) {
-        case ompl::base::PlannerStatus::INVALID_START:
-        case ompl::base::PlannerStatus::INVALID_GOAL:
-        case ompl::base::PlannerStatus::UNRECOGNIZED_GOAL_TYPE:
-        case ompl::base::PlannerStatus::CRASH:
-        case ompl::base::PlannerStatus::ABORT:
-        case ompl::base::PlannerStatus::TIMEOUT:
-            RAVELOG_ERROR("Planner returned %s.\n", ompl_status.asString().c_str());
-            planner_status = OpenRAVE::PS_Failed;
-            break;
         case ompl::base::PlannerStatus::APPROXIMATE_SOLUTION:
             if (!m_simple_setup->haveExactSolutionPath())
             {
@@ -372,6 +363,17 @@ OpenRAVE::PlannerStatus OMPLPlanner::PlanPath(OpenRAVE::TrajectoryBasePtr ptraj)
             }
             ToORTrajectory(m_robot, m_simple_setup->getSolutionPath(), ptraj);
             planner_status = OpenRAVE::PS_HasSolution;
+            break;
+        default:
+            // Intended to handle:
+            // - PlannerStatus::INVALID_START
+            // - PlannerStatus::INVALID_GOAL
+            // - PlannerStatus::UNRECOGNIZED_GOAL_TYPE
+            // - PlannerStatus::CRASH
+            //  -PlannerStatus::ABORT
+            // - PlannerStatus::TIMEOUT
+            RAVELOG_ERROR("Planner returned %s.\n", ompl_status.asString().c_str());
+            planner_status = OpenRAVE::PS_Failed;
             break;
         }
 
