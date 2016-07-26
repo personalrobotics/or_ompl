@@ -40,7 +40,7 @@ catkin_package(
 )
 
 if(NOT OR_OMPL_HAS_BOOSTSMARTPTRS)
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
 endif(NOT OR_OMPL_HAS_BOOSTSMARTPTRS)
 
 include_directories(
