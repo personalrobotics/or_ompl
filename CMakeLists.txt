@@ -19,6 +19,15 @@ check_cxx_source_compiles(
     {void f(){bool (P::*x)(std::ostream&,int) const = &P::serialize;}};
     int main(){}"
     OR_OMPL_HAS_PPSEROPTS)
+
+# 1.2.0 ompl (ROS kinetic) switched from boost to std smart pointers
+set(CMAKE_REQUIRED_INCLUDES ${OMPL_INCLUDE_DIRS})
+set(CMAKE_REQUIRED_LIBRARIES "")
+check_cxx_source_compiles(
+    "#include <ompl/base/StateSpace.h>
+    int main(){ ompl::base::StateSpacePtr s = boost::shared_ptr<ompl::base::StateSpace>(); }"
+    OR_OMPL_HAS_BOOSTSMARTPTRS)
+
 configure_file(
     include/${PROJECT_NAME}/config.h.in
     ${CATKIN_DEVEL_PREFIX}/include/${PROJECT_NAME}/config.h
@@ -29,6 +38,10 @@ catkin_package(
     LIBRARIES ${PROJECT_NAME}
     DEPENDS Boost Eigen OMPL OpenRAVE
 )
+
+if(NOT OR_OMPL_HAS_BOOSTSMARTPTRS)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
+endif(NOT OR_OMPL_HAS_BOOSTSMARTPTRS)
 
 include_directories(
     include

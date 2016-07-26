@@ -42,6 +42,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <ompl/base/spaces/SO2StateSpace.h>
 #include <ompl/base/spaces/RealVectorStateSpace.h>
 #include <ompl/base/StateValidityChecker.h>
+#include <or_ompl/config.h>
 
 namespace or_ompl {
 
@@ -72,8 +73,6 @@ private:
 
 };
 
-typedef boost::shared_ptr<ContinuousJointsStateSpace> ContinuousJointsStateSpacePtr;
-
 class ContinuousJointsProjectionEvaluator : public ompl::base::ProjectionEvaluator {
     public:
         ContinuousJointsProjectionEvaluator(ompl::base::StateSpace* stateSpace);
@@ -93,10 +92,6 @@ class ContinuousJointsProjectionEvaluator : public ompl::base::ProjectionEvaluat
         or_ompl::ContinuousJointsStateSpace* _robotStateSpace;
         ompl::base::ProjectionMatrix _projectionMatrix;
 };
-
-typedef boost::shared_ptr<ContinuousJointsProjectionEvaluator> ContinuousJointsProjectionEvaluatorPtr;
-
-
 
 
 /**
@@ -134,8 +129,6 @@ protected:
     OpenRAVE::KinBodyPtr m_baked_kinbody;
 };
 
-typedef boost::shared_ptr<OrStateValidityChecker> OrStateValidityCheckerPtr;
-
 /**
  * StateRobotSetter for RealVectorStateSpaces
  */
@@ -149,6 +142,16 @@ public:
 private:
     const std::size_t m_num_dof;
 };
+
+#ifdef OR_OMPL_HAS_BOOSTSMARTPTRS
+typedef boost::shared_ptr<ContinuousJointsStateSpace> ContinuousJointsStateSpacePtr;
+typedef boost::shared_ptr<ContinuousJointsProjectionEvaluator> ContinuousJointsProjectionEvaluatorPtr;
+typedef boost::shared_ptr<OrStateValidityChecker> OrStateValidityCheckerPtr;
+#else
+typedef std::shared_ptr<ContinuousJointsStateSpace> ContinuousJointsStateSpacePtr;
+typedef std::shared_ptr<ContinuousJointsProjectionEvaluator> ContinuousJointsProjectionEvaluatorPtr;
+typedef std::shared_ptr<OrStateValidityChecker> OrStateValidityCheckerPtr;
+#endif
 
 } // namespace or_ompl
 

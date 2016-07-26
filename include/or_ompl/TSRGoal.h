@@ -39,6 +39,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <ompl/base/SpaceInformation.h>
 #include <ompl/base/State.h>
 
+#include <or_ompl/config.h>
 #include <or_ompl/TSR.h>
 #include <or_ompl/TSRChain.h>
 
@@ -50,7 +51,11 @@ namespace or_ompl {
 class TSRGoal : public ompl::base::GoalSampleableRegion {
 
 public:
+#ifdef OR_OMPL_HAS_BOOSTSMARTPTRS
     typedef boost::shared_ptr<TSRGoal> Ptr;
+#else
+    typedef std::shared_ptr<TSRGoal> Ptr;
+#endif
 
     /**
      * Constructor

@@ -35,6 +35,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <ompl/base/ScopedState.h>
 #include <ompl/util/Time.h>
 
+#include <or_ompl/config.h>
 #include <or_ompl/OMPLConversions.h>
 #include <or_ompl/OMPLSimplifer.h>
 
@@ -76,7 +77,7 @@ bool OMPLSimplifier::InitPlan(OpenRAVE::RobotBasePtr robot,
         using ompl::geometric::PathSimplifier;
 
         m_state_space = CreateStateSpace(robot, *m_parameters);
-        m_space_info = boost::make_shared<SpaceInformation>(m_state_space);
+        m_space_info.reset(new SpaceInformation(m_state_space));
         if (m_state_space->isCompound()) {
             m_or_validity_checker.reset(new OrStateValidityChecker(
                 m_space_info, m_robot, dof_indices, m_parameters->m_doBaked));
@@ -84,11 +85,16 @@ bool OMPLSimplifier::InitPlan(OpenRAVE::RobotBasePtr robot,
             m_or_validity_checker.reset(new RealVectorOrStateValidityChecker(
                 m_space_info, m_robot, dof_indices, m_parameters->m_doBaked));
         }
+#ifdef OR_OMPL_HAS_BOOSTSMARTPTRS
         m_space_info->setStateValidityChecker(
             boost::static_pointer_cast<ompl::base::StateValidityChecker>(m_or_validity_checker));
+#else
+        m_space_info->setStateValidityChecker(
+            std::static_pointer_cast<ompl::base::StateValidityChecker>(m_or_validity_checker));
+#endif
         
         m_space_info->setup();
-        m_simplifier = boost::make_shared<PathSimplifier>(m_space_info);
+        m_simplifier.reset(new PathSimplifier(m_space_info));
         return true;
     } catch (std::runtime_error const &e) {
         RAVELOG_ERROR("IntPlan failed: %s\n", e.what());
