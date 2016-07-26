@@ -344,12 +344,36 @@ OpenRAVE::PlannerStatus OMPLPlanner::PlanPath(OpenRAVE::TrajectoryBasePtr ptraj)
         // TODO: Configure anytime algorithms to keep planning.
         //m_simpleSetup->getGoal()->setMaximumPathLength(0.0);
 
-        m_simple_setup->solve(m_parameters->m_timeLimit);
+        ompl::base::PlannerStatus ompl_status;
+        ompl_status = m_simple_setup->solve(m_parameters->m_timeLimit);
 
-        if (m_simple_setup->haveExactSolutionPath()) {
-            ToORTrajectory(m_robot, m_simple_setup->getSolutionPath(), ptraj);
-            planner_status = OpenRAVE::PS_HasSolution;
+        // Handle OMPL return codes, set planner_status and ptraj
+        if (ompl_status == ompl::base::PlannerStatus::EXACT_SOLUTION
+            || ompl_status == ompl::base::PlannerStatus::APPROXIMATE_SOLUTION) {
+
+            if (m_simple_setup->haveExactSolutionPath()) {
+                ToORTrajectory(m_robot, m_simple_setup->getSolutionPath(), ptraj);
+                if (ompl_status == ompl::base::PlannerStatus::EXACT_SOLUTION) {
+                    planner_status = OpenRAVE::PS_HasSolution;
+                } else {
+                    planner_status = OpenRAVE::PS_InterruptedWithSolution;
+                }
+            } else {
+                RAVELOG_ERROR("Planner returned %s, but no path found!\n", ompl_status.asString().c_str());
+                planner_status = OpenRAVE::PS_Failed;
+            }
+
         } else {
+            // Intended to handle:
+            // - PlannerStatus::INVALID_START
+            // - PlannerStatus::INVALID_GOAL
+            // - PlannerStatus::UNRECOGNIZED_GOAL_TYPE
+            // - PlannerStatus::CRASH
+            // - PlannerStatus::ABORT
+            // - PlannerStatus::TIMEOUT
+            // (these cases are not handled explicitly because different versions
+            //  of OMPL support different error cases)
+            RAVELOG_ERROR("Planner returned %s.\n", ompl_status.asString().c_str());
             planner_status = OpenRAVE::PS_Failed;
         }
 
