@@ -159,6 +159,32 @@ A working version of this script is included in `scripts/example.py`. See the
 [documentation on the OpenRAVE website](http://openrave.org/docs/latest_stable/tutorials/openravepy_examples/#directly-launching-planners)
 for more information about how to invoke an OpenRAVE planner.
 
+## Tuning Planner Performance
+
+Collision checking is often the bottleneck for motion planning for manipulators
+with the sample-based motion planners included in OMPL. You should consider
+using a fast collision checker plugin, like
+[or_fcl](https://github.com/personalrobotics/or_fcl), to achieve best
+performance with `or_ompl`.
+
+Additionally, you should consider setting the `ActiveDOFs` option during
+planning:
+
+>  Allows planners to greatly reduce redundant collision checks. If set and the
+>  target object is a robot, then only the links controlled by the currently
+>  set active DOFs and their attached bodies will be checked for collisions.
+>
+> The things that **will not be** checked for collision are: links that do not
+> remove with respect to each other as a result of moving the active dofs.
+
+You can use a `CollisionOptionsStateSaver` to set the flag and automatically
+restore the collision detector to its original state after planning is done:
+
+```python
+with CollisionOptionsStateSaver(env.GetCollisionChecker(), CollisionOptions.ActiveDOFs):
+    result = planner.PlanPath(traj)
+```
+
 ## Available Planners
 
 The following table shows which OMPL planners are available via `or_ompl`.   
