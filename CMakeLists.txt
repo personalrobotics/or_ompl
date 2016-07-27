@@ -35,7 +35,10 @@ check_cxx_source_compiles(
 
 # 1.2.0 ompl (ROS kinetic) switched from boost to std smart pointers
 set(CMAKE_REQUIRED_INCLUDES ${OMPL_INCLUDE_DIRS})
-set(CMAKE_REQUIRED_LIBRARIES "")
+set(CMAKE_REQUIRED_LIBRARIES)
+set(CMAKE_REQUIRED_DEFINITIONS)
+set(CMAKE_REQUIRED_FLAGS)
+
 check_cxx_source_compiles(
     "#include <ompl/base/StateSpace.h>
     int main(){ ompl::base::StateSpacePtr s = boost::shared_ptr<ompl::base::StateSpace>(); }"
