@@ -43,6 +43,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <ompl/base/StateSpace.h>
 #include <ompl/base/spaces/RealVectorStateSpace.h>
 
+#include <or_ompl/config.h>
 #include <or_ompl/OMPLConversions.h>
 #include <or_ompl/OMPLPlanner.h>
 #include <or_ompl/TSRGoal.h>
@@ -112,7 +113,7 @@ bool OMPLPlanner::InitPlan(OpenRAVE::RobotBasePtr robot,
         }
 
         RAVELOG_DEBUG("Creating OMPL setup.\n");
-        m_simple_setup = boost::make_shared<ompl::geometric::SimpleSetup>(m_state_space);
+        m_simple_setup.reset(new ompl::geometric::SimpleSetup(m_state_space));
         
         RAVELOG_DEBUG("Setting state validity checker.\n");
         if (m_state_space->isCompound()) {
@@ -122,8 +123,13 @@ bool OMPLPlanner::InitPlan(OpenRAVE::RobotBasePtr robot,
             m_or_validity_checker.reset(new RealVectorOrStateValidityChecker(
                 m_simple_setup->getSpaceInformation(), m_robot, dof_indices));
         }
+#ifdef OR_OMPL_HAS_BOOSTSMARTPTRS
         m_simple_setup->setStateValidityChecker(
             boost::static_pointer_cast<ompl::base::StateValidityChecker>(m_or_validity_checker));
+#else
+        m_simple_setup->setStateValidityChecker(
+            std::static_pointer_cast<ompl::base::StateValidityChecker>(m_or_validity_checker));
+#endif
 
         RAVELOG_DEBUG("Setting initial configuration.\n");
         if (m_parameters->vinitialconfig.size() % num_dof != 0) {
@@ -178,10 +184,10 @@ bool OMPLPlanner::InitPlan(OpenRAVE::RobotBasePtr robot,
         }
 
         if(goal_chains.size() > 0) {
-            TSRGoal::Ptr goaltsr = boost::make_shared<TSRGoal>(m_simple_setup->getSpaceInformation(),
-                                                               goal_chains,
-                                                               robot,
-                                                               m_or_validity_checker);
+            TSRGoal::Ptr goaltsr(new TSRGoal(m_simple_setup->getSpaceInformation(),
+                                             goal_chains,
+                                             robot,
+                                             m_or_validity_checker));
             m_simple_setup->setGoal(goaltsr);
         }else{
             if (m_parameters->vgoalconfig.size() % num_dof != 0) {
@@ -338,12 +344,36 @@ OpenRAVE::PlannerStatus OMPLPlanner::PlanPath(OpenRAVE::TrajectoryBasePtr ptraj)
         // TODO: Configure anytime algorithms to keep planning.
         //m_simpleSetup->getGoal()->setMaximumPathLength(0.0);
 
-        m_simple_setup->solve(m_parameters->m_timeLimit);
+        ompl::base::PlannerStatus ompl_status;
+        ompl_status = m_simple_setup->solve(m_parameters->m_timeLimit);
 
-        if (m_simple_setup->haveExactSolutionPath()) {
-            ToORTrajectory(m_robot, m_simple_setup->getSolutionPath(), ptraj);
-            planner_status = OpenRAVE::PS_HasSolution;
+        // Handle OMPL return codes, set planner_status and ptraj
+        if (ompl_status == ompl::base::PlannerStatus::EXACT_SOLUTION
+            || ompl_status == ompl::base::PlannerStatus::APPROXIMATE_SOLUTION) {
+
+            if (m_simple_setup->haveExactSolutionPath()) {
+                ToORTrajectory(m_robot, m_simple_setup->getSolutionPath(), ptraj);
+                if (ompl_status == ompl::base::PlannerStatus::EXACT_SOLUTION) {
+                    planner_status = OpenRAVE::PS_HasSolution;
+                } else {
+                    planner_status = OpenRAVE::PS_InterruptedWithSolution;
+                }
+            } else {
+                RAVELOG_ERROR("Planner returned %s, but no path found!\n", ompl_status.asString().c_str());
+                planner_status = OpenRAVE::PS_Failed;
+            }
+
         } else {
+            // Intended to handle:
+            // - PlannerStatus::INVALID_START
+            // - PlannerStatus::INVALID_GOAL
+            // - PlannerStatus::UNRECOGNIZED_GOAL_TYPE
+            // - PlannerStatus::CRASH
+            // - PlannerStatus::ABORT
+            // - PlannerStatus::TIMEOUT
+            // (these cases are not handled explicitly because different versions
+            //  of OMPL support different error cases)
+            RAVELOG_ERROR("Planner returned %s.\n", ompl_status.asString().c_str());
             planner_status = OpenRAVE::PS_Failed;
         }
 
@@ -372,10 +402,10 @@ bool OMPLPlanner::GetParametersCommand(std::ostream &sout, std::istream &sin) co
     // be generated from an existing StateSpace. As a workaround, we construct
     // a simple one-DOF state space and make a temporary planner instance.
     else {
-        ompl::base::StateSpacePtr const state_space
-            = boost::make_shared<ompl::base::RealVectorStateSpace>(1);
-        ompl::base::SpaceInformationPtr const space_information 
-            = boost::make_shared<ompl::base::SpaceInformation>(state_space);
+        ompl::base::StateSpacePtr const state_space(
+            new ompl::base::RealVectorStateSpace(1));
+        ompl::base::SpaceInformationPtr const space_information(
+            new ompl::base::SpaceInformation(state_space));
         planner.reset(m_planner_factory(space_information));
     }
 
@@ -407,10 +437,10 @@ bool OMPLPlanner::GetParameterValCommand(std::ostream &sout, std::istream &sin) 
     // be generated from an existing StateSpace. As a workaround, we construct
     // a simple one-DOF state space and make a temporary planner instance.
     else {
-        ompl::base::StateSpacePtr const state_space
-            = boost::make_shared<ompl::base::RealVectorStateSpace>(1);
-        ompl::base::SpaceInformationPtr const space_information 
-            = boost::make_shared<ompl::base::SpaceInformation>(state_space);
+        ompl::base::StateSpacePtr const state_space(
+            new ompl::base::RealVectorStateSpace(1));
+        ompl::base::SpaceInformationPtr const space_information(
+            new ompl::base::SpaceInformation(state_space));
         planner.reset(m_planner_factory(space_information));
     }
 
