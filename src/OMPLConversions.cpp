@@ -70,10 +70,16 @@ void OpenRAVEHandler::log(std::string const &text, ompl::msg::LogLevel level,
 
     if (openrave_message_level >= openrave_threshold_level)
     {
+#ifdef OR_OMPL_HAS_LOG4CXX
         log4cxx::spi::LocationInfo const location_info(
             OpenRAVE::RaveGetSourceFilename(filename), "", line);
         OpenRAVE::RavePrintfA_DEBUGLEVEL(
             OpenRAVE::RaveGetLogger(), location_info, text);
+#else
+        OpenRAVE::RavePrintfA_DEBUGLEVEL("[%s:%d] %s\n",
+            OpenRAVE::RaveGetSourceFilename(filename), line,
+            text.c_str());
+#endif
     }
 }
 

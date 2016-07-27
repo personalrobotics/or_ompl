@@ -1,1 +1,2 @@
 #cmakedefine OR_OMPL_HAS_PPSEROPTS 1
+#cmakedefine OR_OMPL_HAS_LOG4CXX 1

@@ -18,11 +18,19 @@ check_cxx_source_compiles(
     class P: OpenRAVE::PlannerBase::PlannerParameters
     {void f(){bool (P::*x)(std::ostream&,int) const = &P::serialize;}};
     int main(){}"
-    OR_OMPL_HAS_PPSEROPTS)
-configure_file(
-    include/${PROJECT_NAME}/config.h.in
-    ${CATKIN_DEVEL_PREFIX}/include/${PROJECT_NAME}/config.h
+    OR_OMPL_HAS_PPSEROPTS
 )
+check_cxx_source_compiles(
+    "#include <openrave/openrave.h>
+    int main(){OpenRAVE::RaveGetLogger();}"
+    OR_OMPL_HAS_LOG4CXX
+  )
+
+configure_file(
+    "include/${PROJECT_NAME}/config.h.in"
+    "${CATKIN_DEVEL_PREFIX}/include/${PROJECT_NAME}/config.h"
+)
+
 
 catkin_package(
     INCLUDE_DIRS include ${CATKIN_DEVEL_PREFIX}/include
