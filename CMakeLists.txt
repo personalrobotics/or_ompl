@@ -10,9 +10,22 @@ find_package(OpenRAVE REQUIRED)
 find_package(TinyXML REQUIRED)
 find_package(Eigen REQUIRED)
 
-# 2013-01-05: int options arg added to PlannerParameters::serialize
+# Setup compilation options for the check_cxx_source_compiles tests below.
 set(CMAKE_REQUIRED_INCLUDES ${OpenRAVE_INCLUDE_DIRS})
-set(CMAKE_REQUIRED_LIBRARIES ${OpenRAVE_LIBRARIES} ${Boost_LIBRARIES})
+set(CMAKE_REQUIRED_LIBRARIES
+  ${Boost_LIBRARIES}
+  ${OpenRAVE_CORE_LIBRARIES}
+  ${OpenRAVE_LIBRARIES})
+set(CMAKE_REQUIRED_DEFINITIONS
+  ${OpenRAVE_CXX_FLAGS}
+  ${OpenRAVE_LINK_FLAGS})
+
+set(CMAKE_REQUIRED_FLAGS)
+foreach(dir ${OpenRAVE_LIBRARY_DIRS})
+  list(APPEND CMAKE_REQUIRED_FLAGS "-L${dir}")
+endforeach()
+
+# 2013-01-05: int options arg added to PlannerParameters::serialize
 check_cxx_source_compiles(
     "#include <openrave/openrave.h>
     class P: OpenRAVE::PlannerBase::PlannerParameters
@@ -22,15 +35,18 @@ check_cxx_source_compiles(
 
 # 1.2.0 ompl (ROS kinetic) switched from boost to std smart pointers
 set(CMAKE_REQUIRED_INCLUDES ${OMPL_INCLUDE_DIRS})
-set(CMAKE_REQUIRED_LIBRARIES "")
+set(CMAKE_REQUIRED_LIBRARIES)
+set(CMAKE_REQUIRED_DEFINITIONS)
+set(CMAKE_REQUIRED_FLAGS)
+
 check_cxx_source_compiles(
     "#include <ompl/base/StateSpace.h>
     int main(){ ompl::base::StateSpacePtr s = boost::shared_ptr<ompl::base::StateSpace>(); }"
     OR_OMPL_HAS_BOOSTSMARTPTRS)
 
 configure_file(
-    include/${PROJECT_NAME}/config.h.in
-    ${CATKIN_DEVEL_PREFIX}/include/${PROJECT_NAME}/config.h
+    "include/${PROJECT_NAME}/config.h.in"
+    "${CATKIN_DEVEL_PREFIX}/include/${PROJECT_NAME}/config.h"
 )
 
 catkin_package(
