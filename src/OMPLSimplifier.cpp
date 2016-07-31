@@ -165,9 +165,6 @@ OpenRAVE::PlannerStatus OMPLSimplifier::PlanPath(OpenRAVE::TrajectoryBasePtr ptr
     
     // start validity checker
     m_or_validity_checker->start();
-    BOOST_SCOPE_EXIT((m_or_validity_checker)) {
-        m_or_validity_checker->stop();
-    } BOOST_SCOPE_EXIT_END
 
     do {
         // Run one iteration of shortcutting. This gives us fine control over

@@ -197,10 +197,6 @@ void or_ompl::OrStateValidityChecker::start() {
     }
 }
 
-void or_ompl::OrStateValidityChecker::stop() {
-    m_baked_kinbody.reset();
-}
-
 bool or_ompl::OrStateValidityChecker::computeFk(const ompl::base::State *state, uint32_t checklimits) const {
     std::vector<double> values;
     m_stateSpace->copyToReals(values, state);

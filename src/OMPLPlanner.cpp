@@ -134,9 +134,6 @@ bool OMPLPlanner::InitPlan(OpenRAVE::RobotBasePtr robot,
 
         // start validity checker
         m_or_validity_checker->start();
-        BOOST_SCOPE_EXIT((m_or_validity_checker)) {
-            m_or_validity_checker->stop();
-        } BOOST_SCOPE_EXIT_END
         
         RAVELOG_DEBUG("Setting initial configuration.\n");
         if (m_parameters->vinitialconfig.size() % num_dof != 0) {
