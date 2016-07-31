@@ -218,16 +218,19 @@ bool or_ompl::OrStateValidityChecker::isValid(const ompl::base::State *state) co
     
     bool collided = !computeFk(state, OpenRAVE::KinBody::CLA_Nothing);
     
-    if (m_do_baked)
-        collided = collided || m_baked_checker->CheckStandaloneSelfCollision(m_baked_kinbody);
-    else
-        collided = collided || m_env->CheckCollision(m_robot) || m_robot->CheckSelfCollision();
-    
-    boost::chrono::steady_clock::time_point const toc
-        = boost::chrono::steady_clock::now();
-    m_totalCollisionTime += boost::chrono::duration_cast<
-        boost::chrono::duration<double> >(toc - tic).count();
-    m_numCollisionChecks++;
+    if (!collided)
+    {
+        if (m_do_baked)
+            collided = collided || m_baked_checker->CheckStandaloneSelfCollision(m_baked_kinbody);
+        else
+            collided = collided || m_env->CheckCollision(m_robot) || m_robot->CheckSelfCollision();
+
+        boost::chrono::steady_clock::time_point const toc
+            = boost::chrono::steady_clock::now();
+        m_totalCollisionTime += boost::chrono::duration_cast<
+            boost::chrono::duration<double> >(toc - tic).count();
+        m_numCollisionChecks++;
+    }
     
     return !collided;
 }
