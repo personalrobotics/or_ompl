@@ -351,6 +351,12 @@ OpenRAVE::PlannerStatus OMPLPlanner::PlanPath(OpenRAVE::TrajectoryBasePtr ptraj)
         // TODO: Configure anytime algorithms to keep planning.
         //m_simpleSetup->getGoal()->setMaximumPathLength(0.0);
 
+        // start validity checker
+        m_or_validity_checker->start();
+        BOOST_SCOPE_EXIT((m_or_validity_checker)) {
+            m_or_validity_checker->stop();
+        } BOOST_SCOPE_EXIT_END
+
         ompl::base::PlannerStatus ompl_status;
         ompl_status = m_simple_setup->solve(m_parameters->m_timeLimit);
 
