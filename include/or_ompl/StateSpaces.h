@@ -93,6 +93,7 @@ class ContinuousJointsProjectionEvaluator : public ompl::base::ProjectionEvaluat
         ompl::base::ProjectionMatrix _projectionMatrix;
 };
 
+
 /**
  * This is like ompl::base::StateValidityChecker,
  * except it also knows how to compute forward kinematics
@@ -104,7 +105,10 @@ class OrStateValidityChecker: public ompl::base::StateValidityChecker
 {
 public:
     OrStateValidityChecker(const ompl::base::SpaceInformationPtr &si,
-        OpenRAVE::RobotBasePtr robot, std::vector<int> const &indices);
+        OpenRAVE::RobotBasePtr robot, std::vector<int> const &indices,
+        bool do_baked);
+    void start();
+    void stop();
     virtual bool computeFk(const ompl::base::State *state, uint32_t checklimits) const;
     virtual bool isValid(const ompl::base::State *state) const;
     void resetStatistics() { m_numCollisionChecks = 0; m_totalCollisionTime = 0.0; }
@@ -118,6 +122,11 @@ protected:
     std::vector<int> const m_indices;
     mutable int m_numCollisionChecks;
     mutable double m_totalCollisionTime;
+    // optional baked stuff
+    const bool m_do_baked;
+    OpenRAVE::CollisionCheckerBasePtr m_baked_checker;
+    std::string m_baked_kinbody_type;
+    OpenRAVE::KinBodyPtr m_baked_kinbody;
 };
 
 /**
@@ -127,7 +136,8 @@ class RealVectorOrStateValidityChecker: public OrStateValidityChecker
 {
 public:
     RealVectorOrStateValidityChecker(const ompl::base::SpaceInformationPtr &si,
-        OpenRAVE::RobotBasePtr robot, std::vector<int> const &indices);
+        OpenRAVE::RobotBasePtr robot, std::vector<int> const &indices,
+        bool do_baked);
     virtual bool computeFk(const ompl::base::State *state, uint32_t checklimits) const;
 private:
     const std::size_t m_num_dof;

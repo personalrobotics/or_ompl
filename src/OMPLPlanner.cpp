@@ -37,6 +37,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <boost/chrono.hpp>
 #include <boost/foreach.hpp>
 #include <boost/make_shared.hpp>
+#include <boost/scope_exit.hpp>
 #include <ompl/config.h>
 #include <ompl/base/goals/GoalStates.h>
 #include <ompl/base/StateSpaceTypes.h>
@@ -118,10 +119,10 @@ bool OMPLPlanner::InitPlan(OpenRAVE::RobotBasePtr robot,
         RAVELOG_DEBUG("Setting state validity checker.\n");
         if (m_state_space->isCompound()) {
             m_or_validity_checker.reset(new OrStateValidityChecker(
-                m_simple_setup->getSpaceInformation(), m_robot, dof_indices));
+                m_simple_setup->getSpaceInformation(), m_robot, dof_indices, m_parameters->m_doBaked));
         } else {
             m_or_validity_checker.reset(new RealVectorOrStateValidityChecker(
-                m_simple_setup->getSpaceInformation(), m_robot, dof_indices));
+                m_simple_setup->getSpaceInformation(), m_robot, dof_indices, m_parameters->m_doBaked));
         }
 #ifdef OR_OMPL_HAS_BOOSTSMARTPTRS
         m_simple_setup->setStateValidityChecker(
@@ -131,6 +132,12 @@ bool OMPLPlanner::InitPlan(OpenRAVE::RobotBasePtr robot,
             std::static_pointer_cast<ompl::base::StateValidityChecker>(m_or_validity_checker));
 #endif
 
+        // start validity checker
+        m_or_validity_checker->start();
+        BOOST_SCOPE_EXIT((m_or_validity_checker)) {
+            m_or_validity_checker->stop();
+        } BOOST_SCOPE_EXIT_END
+        
         RAVELOG_DEBUG("Setting initial configuration.\n");
         if (m_parameters->vinitialconfig.size() % num_dof != 0) {
             RAVELOG_ERROR("Start configuration has incorrect DOF;"
@@ -343,6 +350,12 @@ OpenRAVE::PlannerStatus OMPLPlanner::PlanPath(OpenRAVE::TrajectoryBasePtr ptraj)
     try {
         // TODO: Configure anytime algorithms to keep planning.
         //m_simpleSetup->getGoal()->setMaximumPathLength(0.0);
+
+        // start validity checker
+        m_or_validity_checker->start();
+        BOOST_SCOPE_EXIT((m_or_validity_checker)) {
+            m_or_validity_checker->stop();
+        } BOOST_SCOPE_EXIT_END
 
         ompl::base::PlannerStatus ompl_status;
         ompl_status = m_simple_setup->solve(m_parameters->m_timeLimit);

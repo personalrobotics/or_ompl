@@ -31,6 +31,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 *************************************************************************/
 
 #include <boost/make_shared.hpp>
+#include <boost/scope_exit.hpp>
 #include <ompl/base/ScopedState.h>
 #include <ompl/util/Time.h>
 
@@ -79,10 +80,10 @@ bool OMPLSimplifier::InitPlan(OpenRAVE::RobotBasePtr robot,
         m_space_info.reset(new SpaceInformation(m_state_space));
         if (m_state_space->isCompound()) {
             m_or_validity_checker.reset(new OrStateValidityChecker(
-                m_space_info, m_robot, dof_indices));
+                m_space_info, m_robot, dof_indices, m_parameters->m_doBaked));
         } else {
             m_or_validity_checker.reset(new RealVectorOrStateValidityChecker(
-                m_space_info, m_robot, dof_indices));
+                m_space_info, m_robot, dof_indices, m_parameters->m_doBaked));
         }
 #ifdef OR_OMPL_HAS_BOOSTSMARTPTRS
         m_space_info->setStateValidityChecker(
@@ -161,6 +162,12 @@ OpenRAVE::PlannerStatus OMPLSimplifier::PlanPath(OpenRAVE::TrajectoryBasePtr ptr
 
     RAVELOG_DEBUG("Running path simplification for %f seconds.\n",
                   m_parameters->m_timeLimit);
+    
+    // start validity checker
+    m_or_validity_checker->start();
+    BOOST_SCOPE_EXIT((m_or_validity_checker)) {
+        m_or_validity_checker->stop();
+    } BOOST_SCOPE_EXIT_END
 
     do {
         // Run one iteration of shortcutting. This gives us fine control over
