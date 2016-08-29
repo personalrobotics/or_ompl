@@ -175,7 +175,7 @@ planning:
 >  set active DOFs and their attached bodies will be checked for collisions.
 >
 > The things that **will not be** checked for collision are: links that do not
-> remove with respect to each other as a result of moving the active dofs.
+> move with respect to each other as a result of moving the active dofs.
 
 You can use a `CollisionOptionsStateSaver` to set the flag and automatically
 restore the collision detector to its original state after planning is done:
