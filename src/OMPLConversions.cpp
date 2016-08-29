@@ -156,16 +156,10 @@ ompl::base::StateSpacePtr CreateStateSpace(OpenRAVE::RobotBasePtr const robot,
     // construct state space
     ompl::base::StateSpacePtr state_space;
     if (any_continuous) {
-#if 0
-        state_space.reset(new ContinuousJointsStateSpace(is_continuous));
-        RAVELOG_DEBUG("Setting joint limits.\n");
-        state_space->as<ContinuousJointsStateSpace>()->setBounds(bounds);
-#else
         state_space.reset(new SemiTorusStateSpace(num_dof));
         state_space->as<SemiTorusStateSpace>()->setIsWrapping(is_continuous);
         RAVELOG_DEBUG("Setting joint limits.\n");
         state_space->as<SemiTorusStateSpace>()->setBounds(bounds);
-#endif
     } else {
         state_space.reset(new ompl::base::RealVectorStateSpace(num_dof));
         RAVELOG_DEBUG("Setting joint limits.\n");

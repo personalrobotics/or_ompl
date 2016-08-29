@@ -47,54 +47,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 namespace or_ompl {
 
 /**
- * Implements a state space for an OpenRAVE robot
- */
-class ContinuousJointsStateSpace : public ompl::base::CompoundStateSpace {
-
-public:
-    /**
-     * Constructor
-     * @param dof_indices An ordered list of indices this state corresponds to
-     */
-    ContinuousJointsStateSpace(const std::vector<bool>& is_continuous);
-
-    /** \brief Register the projections for this state space. Usually, this is at least the default
-        projection. These are implicit projections, set by the implementation of the state space. This is called by setup(). */
-    virtual void registerProjections();
-
-    /**
-     * Set the upper/lower bounds of the state space.
-     */
-    void setBounds(const ompl::base::RealVectorBounds& bounds);
-
-private:
-    std::vector<bool> _isContinuous;
-    ompl::base::ProjectionEvaluatorPtr _projectionEvaluator;
-
-};
-
-class ContinuousJointsProjectionEvaluator : public ompl::base::ProjectionEvaluator {
-    public:
-        ContinuousJointsProjectionEvaluator(ompl::base::StateSpace* stateSpace);
-        ContinuousJointsProjectionEvaluator(ompl::base::StateSpacePtr stateSpace);
-        virtual ~ContinuousJointsProjectionEvaluator();
-
-        /** \brief Return the dimension of the projection defined by this evaluator */
-        virtual unsigned int getDimension() const;
-
-        /** \brief Compute the projection as an array of double values */
-        virtual void project(const ompl::base::State *state, ompl::base::EuclideanProjection &projection) const;
-
-        virtual void defaultCellSizes();
-
-        virtual void setup();
-    protected:
-        or_ompl::ContinuousJointsStateSpace* _robotStateSpace;
-        ompl::base::ProjectionMatrix _projectionMatrix;
-};
-
-
-/**
  * This is like ompl::base::StateValidityChecker,
  * except it also knows how to compute forward kinematics
  * to match the state
@@ -144,12 +96,8 @@ private:
 };
 
 #ifdef OR_OMPL_HAS_BOOSTSMARTPTRS
-typedef boost::shared_ptr<ContinuousJointsStateSpace> ContinuousJointsStateSpacePtr;
-typedef boost::shared_ptr<ContinuousJointsProjectionEvaluator> ContinuousJointsProjectionEvaluatorPtr;
 typedef boost::shared_ptr<OrStateValidityChecker> OrStateValidityCheckerPtr;
 #else
-typedef std::shared_ptr<ContinuousJointsStateSpace> ContinuousJointsStateSpacePtr;
-typedef std::shared_ptr<ContinuousJointsProjectionEvaluator> ContinuousJointsProjectionEvaluatorPtr;
 typedef std::shared_ptr<OrStateValidityChecker> OrStateValidityCheckerPtr;
 #endif
 
