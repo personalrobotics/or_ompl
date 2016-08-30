@@ -34,7 +34,9 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include <boost/make_shared.hpp>
 #include <ompl/config.h>
+#include <ompl/base/spaces/RealVectorStateSpace.h>
 
+#include <or_ompl/SemiToroidalStateSpace.h>
 #include <or_ompl/OMPLConversions.h>
 
 namespace or_ompl {
@@ -135,6 +137,18 @@ ompl::base::StateSpacePtr CreateStateSpace(OpenRAVE::RobotBasePtr const robot,
     ompl::base::RealVectorBounds bounds(num_dof);
     for (size_t i = 0; i < num_dof; ++i) {
         BOOST_ASSERT(lowerLimits[i] <= upperLimits[i]);
+        if (is_continuous[i])
+        {
+            double diam = upperLimits[i] - lowerLimits[i];
+            if (fabs(diam - 2.0*M_PI) > std::numeric_limits<double>::epsilon() * 2.0)
+            {
+                RAVELOG_WARN("Robot DOF [%lu] is circular, but has limits [%f,%f]!\n",
+                    i, lowerLimits[i], upperLimits[i]);
+                RAVELOG_WARN("Ignoring limits and using [-PI,PI] instead ...\n");
+                lowerLimits[i] = -M_PI;
+                upperLimits[i] = M_PI;
+            }
+        }
         bounds.setLow(i, lowerLimits[i]);
         bounds.setHigh(i, upperLimits[i]);
     }
@@ -142,9 +156,10 @@ ompl::base::StateSpacePtr CreateStateSpace(OpenRAVE::RobotBasePtr const robot,
     // construct state space
     ompl::base::StateSpacePtr state_space;
     if (any_continuous) {
-        state_space.reset(new ContinuousJointsStateSpace(is_continuous));
+        state_space.reset(new SemiToroidalStateSpace(num_dof));
+        state_space->as<SemiToroidalStateSpace>()->setIsWrapping(is_continuous);
         RAVELOG_DEBUG("Setting joint limits.\n");
-        state_space->as<ContinuousJointsStateSpace>()->setBounds(bounds);
+        state_space->as<SemiToroidalStateSpace>()->setBounds(bounds);
     } else {
         state_space.reset(new ompl::base::RealVectorStateSpace(num_dof));
         RAVELOG_DEBUG("Setting joint limits.\n");
