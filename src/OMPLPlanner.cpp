@@ -481,6 +481,11 @@ bool OMPLPlanner::GetParameterValCommand(std::ostream &sout, std::istream &sin) 
 
 
 bool OMPLPlanner::GetTimes(std::ostream & sout, std::istream & sin) const {
+    if (!m_or_validity_checker)
+    {
+        RAVELOG_ERROR("GetTimes cannot be called before a plan has been initialized!\n");
+        return false;
+    }
     sout << "checktime " << m_or_validity_checker->getTotalCollisionTime();
     sout << " totaltime " << m_totalPlanningTime;
     sout << " n_checks " << m_or_validity_checker->getNumCollisionChecks();
