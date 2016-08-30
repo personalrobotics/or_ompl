@@ -95,7 +95,7 @@ add_library(${PROJECT_NAME}
     src/OMPLConversions.cpp
     src/OMPLPlanner.cpp
     src/OMPLSimplifier.cpp
-    src/SemiTorusStateSpace.cpp
+    src/SemiToroidalStateSpace.cpp
     src/StateSpaces.cpp
     src/TSR.cpp
     src/TSRChain.cpp

@@ -32,15 +32,15 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include <ompl/util/Exception.h>
 #include <ompl/base/spaces/RealVectorStateSpace.h>
-#include <or_ompl/SemiTorusStateSpace.h>
+#include <or_ompl/SemiToroidalStateSpace.h>
 
-or_ompl::SemiTorusStateSpace::SemiTorusStateSpace(unsigned int dim):
+or_ompl::SemiToroidalStateSpace::SemiToroidalStateSpace(unsigned int dim):
    ompl::base::RealVectorStateSpace(dim),
    isWrapping_(dim, false)
 {
 }
 
-void or_ompl::SemiTorusStateSpace::setIsWrapping(const std::vector<bool> &isWrapping)
+void or_ompl::SemiToroidalStateSpace::setIsWrapping(const std::vector<bool> &isWrapping)
 {
    if (isWrapping_.size() != dimension_)
       throw ompl::Exception("IsWrapping does not match dimension of state space: expected dimension " +
@@ -49,19 +49,19 @@ void or_ompl::SemiTorusStateSpace::setIsWrapping(const std::vector<bool> &isWrap
    isWrapping_ = isWrapping;
 }
 
-void or_ompl::SemiTorusStateSpace::addDimension(double minBound, double maxBound, bool isWrapping)
+void or_ompl::SemiToroidalStateSpace::addDimension(double minBound, double maxBound, bool isWrapping)
 {
    ompl::base::RealVectorStateSpace::addDimension(minBound,maxBound);
    isWrapping_.push_back(isWrapping);
 }
 
-void or_ompl::SemiTorusStateSpace::addDimension(const std::string &name, double minBound, double maxBound, bool isWrapping)
+void or_ompl::SemiToroidalStateSpace::addDimension(const std::string &name, double minBound, double maxBound, bool isWrapping)
 {
    addDimension(minBound, maxBound, isWrapping);
    setDimensionName(dimension_ - 1, name);
 }
 
-double or_ompl::SemiTorusStateSpace::getMaximumExtent() const
+double or_ompl::SemiToroidalStateSpace::getMaximumExtent() const
 {
    double e = 0.0;
    for (unsigned int i=0 ; i<dimension_ ; ++i)
@@ -74,7 +74,7 @@ double or_ompl::SemiTorusStateSpace::getMaximumExtent() const
    return sqrt(e);
 }
 
-double or_ompl::SemiTorusStateSpace::distance(const ompl::base::State *state1, const ompl::base::State *state2) const
+double or_ompl::SemiToroidalStateSpace::distance(const ompl::base::State *state1, const ompl::base::State *state2) const
 {
    double dist = 0.0;
    const double *s1 = static_cast<const StateType*>(state1)->values;
@@ -97,7 +97,7 @@ double or_ompl::SemiTorusStateSpace::distance(const ompl::base::State *state1, c
    return sqrt(dist);
 }
 
-bool or_ompl::SemiTorusStateSpace::equalStates(const ompl::base::State *state1, const ompl::base::State *state2) const
+bool or_ompl::SemiToroidalStateSpace::equalStates(const ompl::base::State *state1, const ompl::base::State *state2) const
 {
    const double *s1 = static_cast<const StateType*>(state1)->values;
    const double *s2 = static_cast<const StateType*>(state2)->values;
@@ -116,7 +116,7 @@ bool or_ompl::SemiTorusStateSpace::equalStates(const ompl::base::State *state1, 
    return true;
 }
 
-void or_ompl::SemiTorusStateSpace::interpolate(const ompl::base::State *from, const ompl::base::State *to, const double t, ompl::base::State *state) const
+void or_ompl::SemiToroidalStateSpace::interpolate(const ompl::base::State *from, const ompl::base::State *to, const double t, ompl::base::State *state) const
 {
    const StateType *rfrom = static_cast<const StateType*>(from);
    const StateType *rto = static_cast<const StateType*>(to);

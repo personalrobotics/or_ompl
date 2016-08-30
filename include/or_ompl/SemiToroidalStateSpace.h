@@ -42,10 +42,10 @@ namespace or_ompl {
  * space with many SO(2) components, except it should be faster because
  * all states are stored contiguously.
  */
-class SemiTorusStateSpace: public ompl::base::RealVectorStateSpace
+class SemiToroidalStateSpace: public ompl::base::RealVectorStateSpace
 {
 public:
-   SemiTorusStateSpace(unsigned int dim=0);
+   SemiToroidalStateSpace(unsigned int dim=0);
    
    virtual void setIsWrapping(const std::vector<bool> &isWrapping);
    virtual const std::vector<bool> & getIsWrapping() const { return isWrapping_; }

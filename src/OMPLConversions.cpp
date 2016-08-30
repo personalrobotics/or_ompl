@@ -36,7 +36,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <ompl/config.h>
 #include <ompl/base/spaces/RealVectorStateSpace.h>
 
-#include <or_ompl/SemiTorusStateSpace.h>
+#include <or_ompl/SemiToroidalStateSpace.h>
 #include <or_ompl/OMPLConversions.h>
 
 namespace or_ompl {
@@ -156,10 +156,10 @@ ompl::base::StateSpacePtr CreateStateSpace(OpenRAVE::RobotBasePtr const robot,
     // construct state space
     ompl::base::StateSpacePtr state_space;
     if (any_continuous) {
-        state_space.reset(new SemiTorusStateSpace(num_dof));
-        state_space->as<SemiTorusStateSpace>()->setIsWrapping(is_continuous);
+        state_space.reset(new SemiToroidalStateSpace(num_dof));
+        state_space->as<SemiToroidalStateSpace>()->setIsWrapping(is_continuous);
         RAVELOG_DEBUG("Setting joint limits.\n");
-        state_space->as<SemiTorusStateSpace>()->setBounds(bounds);
+        state_space->as<SemiToroidalStateSpace>()->setBounds(bounds);
     } else {
         state_space.reset(new ompl::base::RealVectorStateSpace(num_dof));
         RAVELOG_DEBUG("Setting joint limits.\n");
