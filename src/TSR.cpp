@@ -33,7 +33,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <vector>
 #include <Eigen/Geometry>
 #include <ompl/util/RandomNumbers.h>
-
 #include <or_ompl/TSR.h>
 
 using namespace or_ompl;
@@ -51,20 +50,20 @@ TSR::TSR(const Eigen::Affine3d &T0_w, const Eigen::Affine3d &Tw_e, const Eigen::
 
 bool TSR::deserialize(std::stringstream &ss) {
 
-    // TODO: Do we need this stuff? 
+    // TODO: Do we need this stuff?
     int manipind_ignored;
     ss >> manipind_ignored;
 
     std::string relativebodyname_ignored;
     ss >> relativebodyname_ignored;
-   
+
     if( relativebodyname_ignored != "NULL" )
     {
         std::string relativelinkname_ignored;
-        ss >> relativelinkname_ignored;  
-    }  
-    
-    // Read in the T0_w matrix 
+        ss >> relativelinkname_ignored;
+    }
+
+    // Read in the T0_w matrix
     double tmp;
     for(unsigned int c=0; c < 3; c++){
         for(unsigned int r=0; r < 3; r++){
@@ -76,9 +75,9 @@ bool TSR::deserialize(std::stringstream &ss) {
     for(unsigned int idx=0; idx < 3; idx++){
         ss >> tmp;
         _T0_w.translation()(idx) = tmp;
-    }    
+    }
 
-    // Read in the Tw_e matrix 
+    // Read in the Tw_e matrix
     for(unsigned int c=0; c < 3; c++){
         for(unsigned int r=0; r < 3; r++){
             ss >> tmp;
@@ -91,7 +90,7 @@ bool TSR::deserialize(std::stringstream &ss) {
         _Tw_e.translation()(idx) = tmp;
     }
 
-    // Read in the Bw matrix 
+    // Read in the Bw matrix
     for(unsigned int r=0; r < 6; r++){
         for(unsigned int c=0; c < 2; c++){
             ss >> tmp;
@@ -107,13 +106,49 @@ bool TSR::deserialize(std::stringstream &ss) {
     return _initialized;
 }
 
+void TSR::serialize(std::ostream& ss)
+{
+    static const int manipind_ignored = 0;
+    static const std::string relativebodyname_ignored = "NULL";
+    static const std::string relativelinkname_ignored = "";
+
+    if (!_initialized)
+        throw std::runtime_error("TSR is not initialized.");
+
+    ss << manipind_ignored
+       << ' ' << relativebodyname_ignored;
+
+    if( relativebodyname_ignored != "NULL")
+        ss << ' ' << relativelinkname_ignored;
+
+    // T0_w matrix
+    for(unsigned int c=0; c < 3; c++)
+    for(unsigned int r=0; r < 3; r++)
+        ss << ' ' << _T0_w.matrix()(r,c);
+
+    for(unsigned int idx=0; idx < 3; idx++)
+        ss << ' ' << _T0_w.translation()(idx);
+
+    // Tw_e matrix
+    for(unsigned int c=0; c < 3; c++)
+    for(unsigned int r=0; r < 3; r++)
+        ss << ' ' << _Tw_e.matrix()(r,c);
+
+    for(unsigned int idx=0; idx < 3; idx++)
+        ss << ' ' << _Tw_e.translation()(idx);
+
+    // Read in the Bw matrix
+    for(unsigned int r=0; r < 6; r++)
+    for(unsigned int c=0; c < 2; c++)
+        ss << ' ' << _Bw(r,c);
+}
 
 Eigen::Matrix<double, 6, 1> TSR::distance(const Eigen::Affine3d &ee_pose) const {
     Eigen::Matrix<double, 6, 1> dist = Eigen::Matrix<double, 6, 1>::Zero();
 
     // First compute the pose of the w frame in world coordinates, given the ee_pose
     Eigen::Affine3d w_in_world = ee_pose * _Tw_e_inv;
-    
+
     // Next compute the pose of the w frame relative to its original pose (as specified by T0_w)
     Eigen::Affine3d w_offset = _T0_w_inv * w_in_world;
 
@@ -134,7 +169,6 @@ Eigen::Matrix<double, 6, 1> TSR::displacement(const Eigen::Affine3d &ee_pose) co
     Eigen::Matrix<double, 6, 1> disp = Eigen::Matrix<double, 6, 1>::Zero();
 
     for(unsigned int idx=0; idx < 6; idx++){
-        
         if(dist(idx,0) < _Bw(idx,0)){
             disp(idx,0) = dist(idx,0) - _Bw(idx,0);
         }else if(dist(idx,0) > _Bw(idx,1)){
@@ -149,11 +183,11 @@ Eigen::Affine3d TSR::sampleDisplacementTransform(void) const {
 
     // First sample uniformly betwee each of the bounds of Bw
     std::vector<double> d_sample(6);
-    
+
     ompl::RNG rng;
     for(unsigned int idx=0; idx < d_sample.size(); idx++){
         if(_Bw(idx,1) > _Bw(idx,0)){
-            d_sample[idx] = rng.uniformReal(_Bw(idx,0), _Bw(idx,1));         
+            d_sample[idx] = rng.uniformReal(_Bw(idx,0), _Bw(idx,1));
         }
     }
 
@@ -180,7 +214,7 @@ Eigen::Affine3d TSR::sampleDisplacementTransform(void) const {
 
 Eigen::Affine3d TSR::sample() const {
 
-    Eigen::Affine3d tf = sampleDisplacementTransform(); 
-    
+    Eigen::Affine3d tf = sampleDisplacementTransform();
+
     return _T0_w * tf * _Tw_e;
 }

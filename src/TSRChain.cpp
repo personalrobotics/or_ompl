@@ -38,13 +38,16 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <or_ompl/TSRChain.h>
 
 using namespace or_ompl;
+using OpenRAVE::openrave_exception;
+using OpenRAVE::ORE_Failed;
+
 
 TSRChain::TSRChain() : _initialized(false), _sample_start(false), _sample_goal(false), _constrain(false), _tsr_robot(TSRRobot::Ptr()) {
 
 }
 
-TSRChain::TSRChain(const bool &sample_start, 
-                   const bool &sample_goal, 
+TSRChain::TSRChain(const bool &sample_start,
+                   const bool &sample_goal,
                    const bool &constrain,
                    const std::vector<TSR::Ptr> &tsrs) :
     _initialized(true), _sample_start(sample_start), _sample_goal(sample_goal),
@@ -53,25 +56,48 @@ TSRChain::TSRChain(const bool &sample_start,
 }
 
 bool TSRChain::deserialize(std::stringstream &ss) {
-
-    ss >> _sample_start;
-    ss >> _sample_goal;
-    ss >> _constrain;
-
     int num_tsrs;
-    ss >> num_tsrs;
 
-    _tsrs.resize(num_tsrs);
-    bool valid = true;
-    for(unsigned int idx = 0; idx < num_tsrs; idx++){
+    ss >> _sample_start
+       >> _sample_goal
+       >> _constrain
+       >> num_tsrs;
+
+    _tsrs.clear();
+
+    for(int idx = 0; idx < num_tsrs; idx++){
         TSR::Ptr new_tsr = boost::make_shared<TSR>();
-        valid &= new_tsr->deserialize(ss);
-        _tsrs[idx] = new_tsr;
+
+        if (!new_tsr->deserialize(ss)){
+            RAVELOG_ERROR("Failed deserializing TSR %d of %d in TSRChain.\n",
+                idx + 1, num_tsrs);
+            return false;
+        }
+
+        _tsrs.push_back(new_tsr);
     }
 
-    return valid;
+    // TODO: Ignored are mmicbody name and mimicbodyjoints
 
-    // TODO: Ignored are mmicbody name and mimicbodyjoints    
+    if (!ss){
+        RAVELOG_ERROR("Failed deserializing TSRChain.\n");
+        return false;
+    }
+
+    return true;
+}
+
+void TSRChain::serialize(std::ostream& ss)
+{
+    ss << _sample_start
+       << ' ' << _sample_goal
+       << ' ' << _constrain
+       << ' ' << _tsrs.size();
+
+    BOOST_FOREACH(const boost::shared_ptr<TSR> &tsr_chain, _tsrs){
+        ss << ' ';
+        tsr_chain->serialize(ss);
+    }
 }
 
 Eigen::Affine3d TSRChain::sample() const {
@@ -98,7 +124,7 @@ Eigen::Matrix<double, 6, 1> TSRChain::distance(const Eigen::Affine3d &ee_pose) c
         TSR::Ptr tsr = _tsrs.front();
         return tsr->distance(ee_pose);
     }
-     
+
     if(!_tsr_robot){
         throw OpenRAVE::openrave_exception(
             "Failed to compute distance to TSRChain. Did you set the"
@@ -106,18 +132,18 @@ Eigen::Matrix<double, 6, 1> TSRChain::distance(const Eigen::Affine3d &ee_pose) c
             OpenRAVE::ORE_InvalidState
         );
     }
-    
+
     if(!_tsr_robot->construct()){
         throw OpenRAVE::openrave_exception(
             "Failed to robotize TSR.",
             OpenRAVE::ORE_Failed
         );
     }
-    
+
     RAVELOG_DEBUG("[TSRChain] Solving IK to compute distance");
     // Compute the ideal pose of the end-effector
     Eigen::Affine3d Ttarget = ee_pose * _tsrs.back()->getEndEffectorOffsetTransform().inverse();
-    
+
     // Ask the robot to solve ik to find the closest possible end-effector transform
     Eigen::Affine3d Tnear = _tsr_robot->findNearestFeasibleTransform(Ttarget);
 
@@ -137,5 +163,5 @@ Eigen::Matrix<double, 6, 1> TSRChain::distance(const Eigen::Affine3d &ee_pose) c
 void TSRChain::setEnv(const OpenRAVE::EnvironmentBasePtr &penv) {
 
     _tsr_robot = boost::make_shared<TSRRobot>(_tsrs, penv);
-    
+
 }
