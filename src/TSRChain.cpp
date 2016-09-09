@@ -42,20 +42,35 @@ using OpenRAVE::openrave_exception;
 using OpenRAVE::ORE_Failed;
 
 
-TSRChain::TSRChain() : _initialized(false), _sample_start(false), _sample_goal(false), _constrain(false), _tsr_robot(TSRRobot::Ptr()) {
-
+TSRChain::TSRChain()
+    : _initialized(false)
+    , _sample_start(false)
+    , _sample_goal(false)
+    , _constrain(false)
+    , _tsr_robot()
+{
 }
 
 TSRChain::TSRChain(const bool &sample_start,
                    const bool &sample_goal,
                    const bool &constrain,
-                   const std::vector<TSR::Ptr> &tsrs) :
-    _initialized(true), _sample_start(sample_start), _sample_goal(sample_goal),
-    _constrain(constrain), _tsrs(tsrs), _tsr_robot(TSRRobot::Ptr()) {
-
+                   const std::vector<TSR::Ptr> &tsrs)
+    : _initialized(true)
+    , _sample_start(sample_start)
+    , _sample_goal(sample_goal)
+    , _constrain(constrain)
+    , _tsrs(tsrs)
+    , _tsr_robot()
+{
 }
 
-bool TSRChain::deserialize(std::stringstream &ss) {
+bool TSRChain::deserialize(std::stringstream &ss)
+{
+    return deserialize(static_cast<std::istream &>(ss));
+}
+
+bool TSRChain::deserialize(std::istream &ss)
+{
     int num_tsrs;
 
     ss >> _sample_start
@@ -65,7 +80,8 @@ bool TSRChain::deserialize(std::stringstream &ss) {
 
     _tsrs.clear();
 
-    for(int idx = 0; idx < num_tsrs; idx++){
+    for(int idx = 0; idx < num_tsrs; idx++)
+    {
         TSR::Ptr new_tsr = boost::make_shared<TSR>();
 
         if (!new_tsr->deserialize(ss)){
@@ -79,7 +95,8 @@ bool TSRChain::deserialize(std::stringstream &ss) {
 
     // TODO: Ignored are mmicbody name and mimicbodyjoints
 
-    if (!ss){
+    if (!ss)
+    {
         RAVELOG_ERROR("Failed deserializing TSRChain.\n");
         return false;
     }
@@ -160,8 +177,8 @@ Eigen::Matrix<double, 6, 1> TSRChain::distance(const Eigen::Affine3d &ee_pose) c
     return dist;
 }
 
-void TSRChain::setEnv(const OpenRAVE::EnvironmentBasePtr &penv) {
-
+void TSRChain::setEnv(const OpenRAVE::EnvironmentBasePtr &penv)
+{
     _tsr_robot = boost::make_shared<TSRRobot>(_tsrs, penv);
 
 }

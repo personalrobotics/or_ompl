@@ -77,6 +77,12 @@ bool TSRRobot::construct() {
 
         TSR::Ptr tsr = _tsrs[i];
         Eigen::Matrix<double, 6, 2> Bw = tsr->getBounds();
+
+        if (tsr->relative_body_name() != "NULL")
+        {
+            RAVELOG_ERROR("[TSRRobot] ERROR: TSRs relative to a body is not supported.\n");
+            return _initialized;
+        }
         
         for(int j=0; j < 6; j++){
             

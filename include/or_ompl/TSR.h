@@ -60,12 +60,17 @@ public:
         const Eigen::Affine3d &Tw_e,
         const Eigen::Matrix<double, 6, 2> &Bw);
 
+    int manipulator_index() const;
+    std::string relative_body_name() const;
+    std::string relative_link_name() const;
+
     /**
      * Deserialize a serialized TSR.
      *
      * @param ss The stream to read the serialized TSR from
      */
     bool deserialize(std::stringstream &ss);
+    bool deserialize(std::istream &ss);
 
     /**
      * Serialize a TSR Chain.
@@ -134,6 +139,9 @@ protected:
     Eigen::Affine3d _Tw_e;
     Eigen::Affine3d _Tw_e_inv;
     Eigen::Matrix<double, 6, 2> _Bw;
+    int _manipulator_index;
+    std::string _relative_body_name;
+    std::string _relative_link_name;
     bool _initialized;
 };
 

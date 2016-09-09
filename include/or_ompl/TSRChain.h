@@ -70,6 +70,7 @@ public:
      *
      * @param ss The stream to read the serialized TSR from
      */
+    bool deserialize(std::istream &ss);
     bool deserialize(std::stringstream &ss);
 
     /**

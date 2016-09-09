@@ -37,94 +37,90 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 using namespace or_ompl;
 
-TSR::TSR() : _initialized(false) {
+TSR::TSR()
+    : _initialized(false)
+{
 }
 
-TSR::TSR(const Eigen::Affine3d &T0_w, const Eigen::Affine3d &Tw_e, const Eigen::Matrix<double, 6, 2> &Bw) :
-    _T0_w(T0_w), _Tw_e(Tw_e), _Bw(Bw), _initialized(true) {
-
+TSR::TSR(
+        const Eigen::Affine3d &T0_w,
+        const Eigen::Affine3d &Tw_e,
+        const Eigen::Matrix<double, 6, 2> &Bw)
+    : _T0_w(T0_w)
+    , _Tw_e(Tw_e)
+    , _Bw(Bw)
+    , _manipulator_index(-1)
+    , _relative_body_name("NULL")
+    , _relative_link_name("")
+    , _initialized(true)
+{
     _T0_w_inv = _T0_w.inverse();
     _Tw_e_inv = _Tw_e.inverse();
-
 }
 
-bool TSR::deserialize(std::stringstream &ss) {
+bool TSR::deserialize(std::stringstream &ss)
+{
+    return deserialize(static_cast<std::istream &>(ss));
+}
 
-    // TODO: Do we need this stuff?
-    int manipind_ignored;
-    ss >> manipind_ignored;
+bool TSR::deserialize(std::istream &ss)
+{
+    // Set _initialized to false in case an error occurs.
+    _initialized = false;
 
-    std::string relativebodyname_ignored;
-    ss >> relativebodyname_ignored;
+    ss >> _manipulator_index
+       >> _relative_body_name;
 
-    if( relativebodyname_ignored != "NULL" )
-    {
-        std::string relativelinkname_ignored;
-        ss >> relativelinkname_ignored;
-    }
+    if(_relative_body_name != "NULL")
+        ss >> _relative_link_name;
 
     // Read in the T0_w matrix
-    double tmp;
-    for(unsigned int c=0; c < 3; c++){
-        for(unsigned int r=0; r < 3; r++){
-            ss >> tmp;
-            _T0_w.matrix()(r,c) = tmp;
-        }
-    }
+    for(unsigned int c=0; c < 3; c++)
+    for(unsigned int r=0; r < 3; r++)
+        ss >> _T0_w.matrix()(r,c);
 
-    for(unsigned int idx=0; idx < 3; idx++){
-        ss >> tmp;
-        _T0_w.translation()(idx) = tmp;
-    }
+    for(unsigned int idx=0; idx < 3; idx++)
+        ss >> _T0_w.translation()(idx);
 
     // Read in the Tw_e matrix
-    for(unsigned int c=0; c < 3; c++){
-        for(unsigned int r=0; r < 3; r++){
-            ss >> tmp;
-            _Tw_e.matrix()(r,c) = tmp;
-        }
-    }
+    for(unsigned int c=0; c < 3; c++)
+    for(unsigned int r=0; r < 3; r++)
+        ss >> _Tw_e.matrix()(r,c);
 
-    for(unsigned int idx=0; idx < 3; idx++){
-        ss >> tmp;
-        _Tw_e.translation()(idx) = tmp;
-    }
+    for(unsigned int idx=0; idx < 3; idx++)
+        ss >> _Tw_e.translation()(idx);
 
     // Read in the Bw matrix
-    for(unsigned int r=0; r < 6; r++){
-        for(unsigned int c=0; c < 2; c++){
-            ss >> tmp;
-            _Bw(r,c) = tmp;
-        }
-    }
+    for(unsigned int r=0; r < 6; r++)
+    for(unsigned int c=0; c < 2; c++)
+        ss >> _Bw(r,c);
+
+    // Check for an error.
+    if (!ss)
+        return false;
 
     _T0_w_inv = _T0_w.inverse();
     _Tw_e_inv = _Tw_e.inverse();
-
     _initialized = true;
 
-    return _initialized;
+    return true;
 }
 
 void TSR::serialize(std::ostream& ss)
 {
-    static const int manipind_ignored = 0;
-    static const std::string relativebodyname_ignored = "NULL";
-    static const std::string relativelinkname_ignored = "";
-
     if (!_initialized)
         throw std::runtime_error("TSR is not initialized.");
 
-    ss << manipind_ignored
-       << ' ' << relativebodyname_ignored;
+    ss << _manipulator_index
+       << ' ' << _relative_body_name;
 
-    if( relativebodyname_ignored != "NULL")
-        ss << ' ' << relativelinkname_ignored;
+    if(_relative_body_name != "NULL")
+        ss << ' ' << _relative_link_name;
 
     // T0_w matrix
     for(unsigned int c=0; c < 3; c++)
     for(unsigned int r=0; r < 3; r++)
-        ss << ' ' << _T0_w.matrix()(r,c);
+        ss << ' ' << _T0_w.matrix()(r, c);
 
     for(unsigned int idx=0; idx < 3; idx++)
         ss << ' ' << _T0_w.translation()(idx);
@@ -132,7 +128,7 @@ void TSR::serialize(std::ostream& ss)
     // Tw_e matrix
     for(unsigned int c=0; c < 3; c++)
     for(unsigned int r=0; r < 3; r++)
-        ss << ' ' << _Tw_e.matrix()(r,c);
+        ss << ' ' << _Tw_e.matrix()(r, c);
 
     for(unsigned int idx=0; idx < 3; idx++)
         ss << ' ' << _Tw_e.translation()(idx);
@@ -140,7 +136,7 @@ void TSR::serialize(std::ostream& ss)
     // Read in the Bw matrix
     for(unsigned int r=0; r < 6; r++)
     for(unsigned int c=0; c < 2; c++)
-        ss << ' ' << _Bw(r,c);
+        ss << ' ' << _Bw(r, c);
 }
 
 Eigen::Matrix<double, 6, 1> TSR::distance(const Eigen::Affine3d &ee_pose) const {
