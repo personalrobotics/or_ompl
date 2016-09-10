@@ -86,14 +86,16 @@ protected:
         }
 #endif
 
-        O << "<seed>" << m_seed << "</seed>" << std::endl;
-        O << "<time_limit>" << m_timeLimit << "</time_limit>" << std::endl;
-        O << "<dat_filename>" << m_dat_filename << "</dat_filename>" << std::endl;
-        O << "<trajs_fileformat>" << m_trajs_fileformat << "</trajs_fileformat>" << std::endl;
+        O << "<seed>" << m_seed << "</seed>\n"
+          << "<time_limit>" << m_timeLimit << "</time_limit>\n"
+          << "<dat_filename>" << m_dat_filename << "</dat_filename>\n"
+          << "<trajs_fileformat>" << m_trajs_fileformat << "</trajs_fileformat>\n"
+          << "<do_baked>" << m_doBaked << "</do_baked>\n";
         BOOST_FOREACH(TSRChain::Ptr chain, m_tsrchains) {
-            O << "<tsr_chain>" << chain << "</tsr_chain>" << std::endl;
+            O << "<tsr_chain>";
+            chain->serialize(O);
+            O << "</tsr_chain>\n";
         }
-        O << "<do_baked>" << m_doBaked << "</do_baked>" << std::endl;
 
         return !!O;
     }
@@ -138,7 +140,7 @@ protected:
                 TSRChain::Ptr chain = boost::make_shared<TSRChain>();
                 bool success = chain->deserialize(_ss);
                 if(!success){
-                    RAVELOG_ERROR("failed to deserialize TSRChain");
+                    RAVELOG_ERROR("failed to deserialize TSRChain\n");
                 }else{
                     m_tsrchains.push_back(chain);
                 }

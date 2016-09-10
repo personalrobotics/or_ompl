@@ -37,10 +37,10 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <Eigen/Dense>
 
 namespace or_ompl {
-        
+
 class TSR {
 
-public: 
+public:
     typedef boost::shared_ptr<TSR> Ptr;
 
     /**
@@ -60,12 +60,24 @@ public:
         const Eigen::Affine3d &Tw_e,
         const Eigen::Matrix<double, 6, 2> &Bw);
 
+    int manipulator_index() const;
+    std::string relative_body_name() const;
+    std::string relative_link_name() const;
+
     /**
-     * Deserialize a serialized TSR.  
-     *  
+     * Deserialize a serialized TSR.
+     *
      * @param ss The stream to read the serialized TSR from
      */
     bool deserialize(std::stringstream &ss);
+    bool deserialize(std::istream &ss);
+
+    /**
+     * Serialize a TSR Chain.
+     *
+     * @param ss The stream to read the serialized TSR from
+     */
+    void serialize(std::ostream& ss);
 
     /**
      * Compute the distance to the TSR
@@ -76,7 +88,7 @@ public:
 
     /**
      * Compute the displacement to the TSR
-     * 
+     *
      * @param ee_pose The pose of the end-effector in world frame
      */
     Eigen::Matrix<double, 6, 1> displacement(const Eigen::Affine3d &ee_pose) const;
@@ -87,7 +99,7 @@ public:
      * @return The sampled pose
      */
     Eigen::Affine3d sample(void) const;
-        
+
     /**
      * Sample a displacement transform from the TSR
      * @return The sampled transform
@@ -108,7 +120,7 @@ public:
      * @return The bounds specified for the TSR (Bw)
      */
     Eigen::Matrix<double, 6, 2> getBounds(void) const { return _Bw; }
-    
+
     /**
      * Output operator
      */
@@ -127,9 +139,12 @@ protected:
     Eigen::Affine3d _Tw_e;
     Eigen::Affine3d _Tw_e_inv;
     Eigen::Matrix<double, 6, 2> _Bw;
+    int _manipulator_index;
+    std::string _relative_body_name;
+    std::string _relative_link_name;
     bool _initialized;
 };
-       
+
 } // namespace or_ompl
 
 #endif // OR_OMPL_TSR_H_

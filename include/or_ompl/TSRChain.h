@@ -51,7 +51,7 @@ public:
      * Constructor
      */
     TSRChain();
-    
+
     /**
      * Constructor
      *
@@ -60,17 +60,25 @@ public:
      * @param constrain True if the chain should be applied trajectory wide
      * @param tsrs The list of TSRs in the chain
      */
-    TSRChain(const bool &sample_start, 
-             const bool &sample_goal, 
+    TSRChain(const bool &sample_start,
+             const bool &sample_goal,
              const bool &constrain,
              const std::vector<TSR::Ptr> &tsrs);
 
     /**
-     * Deserialize a serialized TSR Chain.  
-     *  
+     * Deserialize a serialized TSR Chain.
+     *
      * @param ss The stream to read the serialized TSR from
      */
+    bool deserialize(std::istream &ss);
     bool deserialize(std::stringstream &ss);
+
+    /**
+     * Serialize a TSR Chain.
+     *
+     * @param ss The stream to read the serialized TSR from
+     */
+    void serialize(std::ostream& ss);
 
     /**
      * @return True if this chain should be used to sample a start
@@ -86,7 +94,7 @@ public:
      * @return True if this chain should be applied as a trajectory wide constraint
      */
     bool isTrajectoryConstraint() const { return _constrain; }
-    
+
 
     /**
      * @return The list of TSRs that make up this chain
@@ -120,7 +128,7 @@ private:
     std::vector<TSR::Ptr> _tsrs;
     TSRRobot::Ptr _tsr_robot;
 };
-       
+
 } // namespace or_ompl
 
 #endif // OR_OMPL_TSRCHAIN_H_
